@@ -182,6 +182,13 @@
           </div>`;
         })()}
 
+        <h3 style="margin-top:2rem">Edit profile</h3>
+        <div class="card" style="margin-bottom:1.4rem">
+          <div class="field" style="max-width:400px"><label>Full name</label><input id="prof-name" value="${esc(c.name)}" maxlength="80"></div>
+          <div class="field" style="max-width:400px"><label>Email <span class="muted">(optional)</span></label><input id="prof-email" type="email" value="${esc(c.email || '')}" maxlength="120" placeholder="your@email.com"></div>
+          <button class="btn btn-ghost btn-sm" id="prof-save">Save changes</button>
+        </div>
+
         <h3 style="margin-top:2rem">Communication preferences</h3>
         <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:2.5rem">
           <div>
@@ -209,6 +216,18 @@
           navigator.clipboard.writeText(url).then(() => toast('Referral link copied!')).catch(() => toast('Copy this link: ' + url));
         }
       });
+      const profSaveBtn = document.getElementById('prof-save');
+      if (profSaveBtn) profSaveBtn.addEventListener('click', async () => {
+        const name  = document.getElementById('prof-name').value.trim();
+        const email = document.getElementById('prof-email').value.trim();
+        if (!name) { toast('Name cannot be empty.'); return; }
+        profSaveBtn.disabled = true; profSaveBtn.textContent = 'Saving…';
+        const r = await api.updateProfile({ name, email });
+        profSaveBtn.disabled = false; profSaveBtn.textContent = 'Save changes';
+        if (r.ok) toast('Profile updated!');
+        else toast(r.data.error || 'Could not save.');
+      });
+
       const mktOptoutBtn = document.getElementById('mktOptout');
       if (mktOptoutBtn) mktOptoutBtn.addEventListener('click', async () => {
         const r = await api.marketingOptout();

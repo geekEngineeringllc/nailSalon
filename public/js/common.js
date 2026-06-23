@@ -269,6 +269,7 @@ const api = {
   },
   async myReferral() { return (await fetch('/api/referral')).json(); },
   async adminReferrals() { return (await fetch('/api/admin/referrals')).json(); },
+  async updateProfile(payload) { const r = await fetch('/api/me', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async marketingOptout() { const r = await fetch('/api/marketing/optout', { method: 'POST' }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async marketingOptin() { const r = await fetch('/api/marketing/optin', { method: 'POST' }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async adminBroadcasts() { return (await fetch('/api/admin/broadcasts')).json(); },

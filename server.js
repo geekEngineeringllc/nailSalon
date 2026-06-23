@@ -2301,6 +2301,29 @@ async function handleAPI(req, res, url) {
     });
   }
 
+  // PATCH /api/me — update profile (name, email)
+  if (req.method === 'PATCH' && url.pathname === '/api/me') {
+    const sess = getSession(req);
+    if (!sess) return sendJSON(res, 401, { error: 'Please log in.' });
+    const { name, email } = await readBody(req);
+    const trimName  = typeof name  === 'string' ? name.trim()  : null;
+    const trimEmail = typeof email === 'string' ? email.trim() : null;
+    if (trimName !== null && trimName.length < 2) return sendJSON(res, 400, { error: 'Name must be at least 2 characters.' });
+    if (trimEmail !== null && trimEmail.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimEmail)) {
+      return sendJSON(res, 400, { error: 'Invalid email address.' });
+    }
+    return withLock(() => {
+      const fresh = loadDB();
+      const cust = (fresh.customers || []).find((c) => c.id === sess.customerId);
+      if (!cust) return sendJSON(res, 401, { error: 'Not logged in.' });
+      if (trimName  !== null) cust.name  = trimName;
+      if (trimEmail !== null) cust.email = trimEmail;
+      saveDB(fresh);
+      audit(req, 'profile.update', { id: cust.id, name: cust.name });
+      return sendJSON(res, 200, { ok: true, customer: { name: cust.name, email: cust.email } });
+    });
+  }
+
   // --- Tips + Commission ---
 
   // POST /api/admin/bookings/tip { id, tipAmount } — record/update tip on a completed booking
