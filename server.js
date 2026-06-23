@@ -1012,6 +1012,63 @@ async function handleAPI(req, res, url) {
     return sendJSON(res, 200, { booking: b });
   }
 
+  // GET /api/bookings/ics?ref=&phone=  — download iCalendar file for a booking
+  if (req.method === 'GET' && url.pathname === '/api/bookings/ics') {
+    const refVal  = String(q.get('ref')   || '').trim().toUpperCase();
+    const phoneVal = String(q.get('phone') || '').replace(/\D/g, '');
+    if (!refVal || !phoneVal) return sendJSON(res, 400, { error: 'ref and phone are required.' });
+    const b = db.bookings.find(
+      (x) => x.ref === refVal && x.customer.phone.replace(/\D/g, '') === phoneVal
+    );
+    if (!b) return sendJSON(res, 404, { error: 'Booking not found.' });
+
+    // Build start/end datetimes (naive local — no TZ suffix)
+    const totalMins = (b.services || []).reduce((sum, s) => sum + (s.duration || 0), 0) || 60;
+    const [yy, mm, dd] = (b.date || '').split('-').map(Number);
+    const [hh, mi] = (b.time || '00:00').split(':').map(Number);
+    const pad = (n) => String(n).padStart(2, '0');
+    const dtFmt = (y, mo, d, h, m) => `${y}${pad(mo)}${pad(d)}T${pad(h)}${pad(m)}00`;
+    const startDt = dtFmt(yy, mm, dd, hh, mi);
+    const endMin  = mi + totalMins;
+    const endDt   = dtFmt(yy, mm, dd, hh + Math.floor(endMin / 60), endMin % 60);
+    const stampDt = dtFmt(...(() => { const n = new Date(); return [n.getUTCFullYear(), n.getUTCMonth()+1, n.getUTCDate(), n.getUTCHours(), n.getUTCMinutes()]; })()) + 'Z';
+
+    const addr = db.salon && db.salon.address ? db.salon.address : 'Lumière Beauty & Nail Studio';
+    const descLines = [
+      `Service: ${b.serviceName}`,
+      `Artist: ${b.staffName}`,
+      `Booking ref: ${b.ref}`,
+      `Manage: ${req.headers.host ? 'http://' + req.headers.host + '/manage.html' : '/manage.html'}`,
+    ];
+    const fold = (s) => s.match(/.{1,75}/g).join('\r\n ');  // iCal line folding
+
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Lumière Beauty & Nail Studio//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      `UID:${b.ref}@lumierestudio.com`,
+      `DTSTAMP:${stampDt}`,
+      `DTSTART:${startDt}`,
+      `DTEND:${endDt}`,
+      fold(`SUMMARY:${b.serviceName} at Lumière`),
+      fold(`DESCRIPTION:${descLines.join('\\n')}`),
+      fold(`LOCATION:${addr}`),
+      'STATUS:CONFIRMED',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n') + '\r\n';
+
+    res.writeHead(200, {
+      'Content-Type': 'text/calendar; charset=utf-8',
+      'Content-Disposition': `attachment; filename="lumiere-${b.ref}.ics"`,
+      'Cache-Control': 'no-store',
+    });
+    return res.end(ics);
+  }
+
   // POST /api/bookings/reschedule  { id, date, time }
   if (req.method === 'POST' && url.pathname === '/api/bookings/reschedule') {
     const { id, date, time } = await readBody(req);
@@ -2316,6 +2373,67 @@ async function handleAPI(req, res, url) {
       .filter((p) => p.stock <= (p.lowStockThreshold ?? 5))
       .map((p) => ({ ...p, lowStock: true }));
     return sendJSON(res, 200, { products: low });
+  }
+
+  // GET /api/admin/reports/daily?date=YYYY-MM-DD — daily appointment sheet
+  if (req.method === 'GET' && url.pathname === '/api/admin/reports/daily') {
+    const date = url.searchParams.get('date') || new Date().toISOString().slice(0, 10);
+    const bookings = (db.bookings || [])
+      .filter(b => b.date === date && b.status !== 'cancelled')
+      .sort((a, b) => a.time.localeCompare(b.time));
+    const cfg = db.config || {};
+    const staffMap = Object.fromEntries((cfg.staff || []).map(s => [s.id, s.name]));
+    const svcMap = Object.fromEntries((cfg.services || []).map(s => [s.id, { name: s.name, duration: s.duration }]));
+    const rows = bookings.map(b => ({
+      ref: b.ref,
+      time: b.time,
+      serviceName: b.serviceName || (svcMap[b.serviceId] || {}).name || b.serviceId,
+      staffName: b.staffName || staffMap[b.staffId] || b.staffId,
+      customerName: b.customer ? b.customer.name : '—',
+      customerPhone: b.customer ? b.customer.phone : '',
+      price: b.price || 0,
+      tip: b.tip || 0,
+      status: b.status,
+      notes: b.customer ? (b.customer.notes || '') : ''
+    }));
+    const byStaff = {};
+    rows.forEach(r => {
+      if (!byStaff[r.staffName]) byStaff[r.staffName] = [];
+      byStaff[r.staffName].push(r);
+    });
+    const revenue = rows.filter(r => r.status === 'completed').reduce((s, r) => s + (r.price || 0), 0);
+    const tips = rows.filter(r => r.status === 'completed').reduce((s, r) => s + (r.tip || 0), 0);
+    return sendJSON(res, 200, { date, rows, byStaff, summary: { total: rows.length, revenue, tips } });
+  }
+
+  // GET /api/admin/reports/revenue?from=&to= — revenue export (CSV-ready)
+  if (req.method === 'GET' && url.pathname === '/api/admin/reports/revenue') {
+    const from = url.searchParams.get('from') || '';
+    const to = url.searchParams.get('to') || '';
+    const bookings = (db.bookings || []).filter(b => {
+      if (b.status !== 'completed') return false;
+      if (from && b.date < from) return false;
+      if (to && b.date > to) return false;
+      return true;
+    }).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+    const rows = bookings.map(b => ({
+      date: b.date, time: b.time, ref: b.ref,
+      service: b.serviceName || b.serviceId,
+      staff: b.staffName || b.staffId,
+      customer: b.customer ? b.customer.name : '',
+      phone: b.customer ? b.customer.phone : '',
+      price: b.price || 0,
+      tip: b.tip || 0,
+      total: (b.price || 0) + (b.tip || 0)
+    }));
+    const totals = { revenue: rows.reduce((s,r)=>s+r.price,0), tips: rows.reduce((s,r)=>s+r.tip,0), total: rows.reduce((s,r)=>s+r.total,0), count: rows.length };
+    if (url.searchParams.get('format') === 'csv') {
+      const header = 'Date,Time,Ref,Service,Artist,Customer,Phone,Price,Tip,Total\r\n';
+      const csv = rows.map(r => [r.date,r.time,r.ref,r.service,r.staff,r.customer,r.phone,r.price.toFixed(2),r.tip.toFixed(2),r.total.toFixed(2)].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+      res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="revenue-${from||'all'}-${to||'all'}.csv"`, 'Cache-Control': 'no-store' });
+      return res.end(header + csv);
+    }
+    return sendJSON(res, 200, { rows, totals, from, to });
   }
 
   return sendJSON(res, 404, { error: 'Unknown API route.' });

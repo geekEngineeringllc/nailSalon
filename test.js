@@ -991,6 +991,37 @@ function loadEsc() {
     const galDelBad = await req('POST', '/api/admin/gallery/delete', {});
     ok('M8: gallery/delete no id field → 400', galDelBad.s === 400, galDelBad.b);
 
+    // --- M9.4 Add-to-Calendar (.ics) ---
+    // Book a single appointment to get a ref + phone for ICS testing
+    const icsDate = plusDays(5);
+    const icsBook = await req('POST', '/api/bookings', {
+      services: ['classic-mani'], staffId: 'ava', date: icsDate, time: '10:00',
+      customer: { name: 'Cal Test', phone: '5550019999', email: 'cal@test.com' }
+    });
+    ok('M9.4 setup: booking created', icsBook.s === 201, icsBook.b);
+    const icsRef   = icsBook.b.booking && icsBook.b.booking.ref;
+    const icsPhone = '5550019999';
+
+    // Valid request → 200 + text/calendar
+    const icsRes = await reqRaw('GET', `/api/bookings/ics?ref=${icsRef}&phone=${icsPhone}`);
+    ok('M9.4: GET /api/bookings/ics → 200',          icsRes.s === 200, icsRes.s);
+    ok('M9.4: content-type is text/calendar',         (icsRes.h['content-type'] || '').includes('text/calendar'), icsRes.h['content-type']);
+    ok('M9.4: content-disposition is attachment',     (icsRes.h['content-disposition'] || '').includes('attachment'), icsRes.h['content-disposition']);
+    ok('M9.4: body contains BEGIN:VCALENDAR',         icsRes.body.includes('BEGIN:VCALENDAR'), icsRes.body.slice(0, 80));
+    ok('M9.4: body contains DTSTART',                 icsRes.body.includes('DTSTART:'), icsRes.body.slice(0, 200));
+    ok('M9.4: body contains DTEND',                   icsRes.body.includes('DTEND:'), icsRes.body.slice(0, 200));
+    ok('M9.4: body contains booking ref as UID',      icsRes.body.includes(icsRef), icsRes.body.slice(0, 400));
+    ok('M9.4: body contains Lumière in SUMMARY',      icsRes.body.includes('Lumière'), icsRes.body);
+    ok('M9.4: body ends with END:VCALENDAR',          icsRes.body.trim().endsWith('END:VCALENDAR'), icsRes.body.slice(-40));
+
+    // Wrong phone → 404
+    const icsBad = await reqRaw('GET', `/api/bookings/ics?ref=${icsRef}&phone=0000000000`);
+    ok('M9.4: wrong phone → 404',  icsBad.s === 404, icsBad.s);
+
+    // Missing params → 400
+    const icsMissing = await reqRaw('GET', '/api/bookings/ics?ref=');
+    ok('M9.4: missing params → 400', icsMissing.s === 400, icsMissing.s);
+
   } catch (e) {
     fail++; console.log('  FAIL harness error →', e.message); if (log) console.log(log);
   } finally {

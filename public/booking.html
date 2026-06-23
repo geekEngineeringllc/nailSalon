@@ -34,7 +34,7 @@
     </section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js?v=2"></script>
+  <script src="js/common.js?v=3"></script>
   <script>
     let CFG;
     const state = { step: 1, serviceIds: [], staffId: null, date: null, time: null,
@@ -380,6 +380,7 @@
           ${d.skipped && d.skipped.length ? `<div style="background:#fff3cd;border-radius:10px;padding:.8rem 1.2rem;font-size:.85rem;margin:1rem auto 0;max-width:460px;text-align:left">
             <strong>Heads up</strong> — we couldn't book ${d.skipped.length} date${d.skipped.length>1?'s':''} (${d.skipped.map(s=>s.date).join(', ')}). Book those individually if you'd like.</div>` : ''}
           <div style="margin-top:1.8rem;display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap">
+            ${d.booked.map(b => `<a class="btn btn-ghost" href="/api/bookings/ics?ref=${b.ref}&phone=${encodeURIComponent(first.customer.phone)}" download>📅 Add ${b.ref} to Calendar</a>`).join('')}
             <a class="btn btn-primary" href="booking.html">Book another</a>
             <a class="btn btn-ghost" href="index.html">Back home</a>
           </div>
@@ -408,6 +409,7 @@
             <div class="summary-line"><span>Due at salon</span><strong>${money(b.price)}</strong></div>
           </div>
           <div style="margin-top:1.8rem;display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap">
+            <a class="btn btn-ghost" href="/api/bookings/ics?ref=${b.ref}&phone=${encodeURIComponent(b.customer.phone)}" download>📅 Add to Calendar</a>
             <a class="btn btn-primary" href="booking.html">Book another</a>
             <a class="btn btn-ghost" href="index.html">Back home</a>
           </div>
