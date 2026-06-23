@@ -6,6 +6,8 @@
   <title>Manage Your Booking — Lumière Beauty & Nail Studio</title>
   <meta name="description" content="Look up, reschedule or cancel your Lumière appointment using your booking reference." />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#b0657a">
   <meta name="robots" content="noindex">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -65,7 +67,8 @@
           <div class="summary-line"><span>Name</span><strong>${esc(b.customer.name)}</strong></div>
           <div class="summary-line"><span>Total</span><strong>${money(b.price)}</strong></div>
         </div>
-        ${cancelled ? '<p class="muted">This booking is cancelled. Book again any time!</p>'
+        ${cancelled ? `<p class="muted">This booking is cancelled.</p>
+          <a class="btn btn-primary btn-sm" href="booking.html?service=${b.serviceId || ''}">Book again →</a>`
           : b.status === 'completed' ? `
           <div style="margin-bottom:1rem">
             ${b.review
@@ -89,11 +92,12 @@
       const res = await api.cancel(booking.id);
       if (!res.ok) {
         if (res.data && res.data.cutoff) {
-          const phone = (CFG.salon && CFG.salon.phone) || 'the salon';
+          const phone = (CFG.salon && CFG.salon.phone) || '';
+          const telHref = phone ? `tel:${phone.replace(/\D/g,'')}` : '#';
           document.getElementById('panel').querySelector('#cancel').insertAdjacentHTML('afterend',
             `<p style="color:var(--rose-deep);margin-top:.8rem;font-size:.9rem">
               Cancellations must be made at least 24 hours in advance.<br>
-              To cancel, please call us: <strong><a href="tel:${phone}" style="color:inherit">${phone}</a></strong>.
+              To cancel, please call us: <strong><a href="${telHref}" style="color:inherit">${esc(phone || 'the salon')}</a></strong>.
             </p>`);
         } else {
           toast(res.data.error || 'Could not cancel.');
@@ -132,6 +136,13 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       CFG = window.__CFG__ || (window.__CFG__ = await api.config());
+      const params = new URLSearchParams(location.search);
+      const preRef   = params.get('ref')   ? params.get('ref').trim().toUpperCase()  : '';
+      const prePhone = params.get('phone') ? params.get('phone').trim() : '';
+      if (preRef && prePhone) {
+        const res = await api.lookup(preRef, prePhone);
+        if (res.ok) { booking = res.data.booking; showBooking(); return; }
+      }
       lookupForm();
     });
   </script>
