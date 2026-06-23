@@ -2391,6 +2391,8 @@ async function handleAPI(req, res, url) {
     for (const row of Object.values(staffMap)) {
       row.commissionEarned = Math.round(row.serviceRevenue * row.commissionPct) / 100;
       row.totalEarnings = Math.round((row.commissionEarned + row.tipsEarned) * 100) / 100;
+      row.avgTicket = row.completedBookings > 0
+        ? Math.round((row.serviceRevenue / row.completedBookings) * 100) / 100 : 0;
     }
     const commissions = Object.values(staffMap).sort((a, b) => a.staffName.localeCompare(b.staffName));
     return sendJSON(res, 200, { commissions, from, to });
@@ -2837,6 +2839,24 @@ function processBirthdayBonuses() {
     process.stderr.write(`[birthday] ERROR: ${e.message}\n`);
   }
 }
+
+  // PATCH /api/admin/salon — update salon contact info, tagline, social links
+  if (req.method === 'PATCH' && url.pathname === '/api/admin/salon') {
+    const body = await readBody(req);
+    const ALLOWED = ['name', 'tagline', 'phone', 'email', 'address', 'instagram', 'facebook'];
+    const updates = {};
+    for (const k of ALLOWED) {
+      if (typeof body[k] === 'string') updates[k] = body[k].trim();
+    }
+    if (!updates.name || updates.name.length < 2) return sendJSON(res, 400, { error: 'Salon name is required.' });
+    return withLock(() => {
+      const fresh = loadDB();
+      Object.assign(fresh.salon, updates);
+      saveDB(fresh);
+      audit(req, 'admin.salon.update', updates);
+      return sendJSON(res, 200, { ok: true, salon: fresh.salon });
+    });
+  }
 
 server.listen(PORT, () => {
   console.log(`\n  Lumière Studio running →  http://localhost:${PORT}\n`);

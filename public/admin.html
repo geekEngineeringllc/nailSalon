@@ -88,6 +88,15 @@
           <p class="muted" style="font-size:.82rem;margin:0 0 .8rem">Retail products at or below their reorder threshold.</p>
           <div id="low-stock-list"></div>
         </div>
+        <!-- Staff performance summary -->
+        <div class="card" style="padding:1.4rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+            <h4 style="margin:0;font-size:.95rem">Artist performance</h4>
+            <button class="btn btn-ghost btn-sm" id="staff-perf-refresh" title="Refresh (current month)">↺</button>
+          </div>
+          <p class="muted" style="font-size:.82rem;margin:0 0 .8rem">Completed bookings and revenue this calendar month.</p>
+          <div id="staff-perf-list" style="font-size:.85rem"></div>
+        </div>
         <!-- Backup status -->
         <div class="card" style="padding:1.4rem">
           <h4 style="margin:0 0 .6rem;font-size:.95rem">Data backups</h4>
@@ -702,6 +711,7 @@
       window._products = prodData.products || [];
       renderProducts(window._products);
       loadWeekView();
+      loadStaffPerf();
       loadLowStock();
       loadBackups();
       loadRevenueChart();
@@ -1693,6 +1703,25 @@
       a.click();
     }
 
+    async function loadStaffPerf() {
+      const el = document.getElementById('staff-perf-list');
+      if (!el) return;
+      el.innerHTML = '<span class="muted">Loading…</span>';
+      const today = new Date(); today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+      const monthStart = today.toISOString().slice(0, 7) + '-01';
+      const monthEnd = today.toISOString().slice(0, 10);
+      const data = await api.adminCommissions(monthStart, monthEnd).catch(() => ({ commissions: [] }));
+      const rows = (data.commissions || []).filter(r => r.completedBookings > 0);
+      if (!rows.length) { el.innerHTML = '<span class="muted">No completed bookings this month.</span>'; return; }
+      el.innerHTML = rows.map(r => `<div style="display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;border-bottom:1px solid var(--line)">
+        <span style="font-weight:600">${esc(r.staffName)}</span>
+        <span style="text-align:right">
+          <span style="color:var(--muted);font-size:.78rem">${r.completedBookings} visit${r.completedBookings!==1?'s':''} · avg $${Number(r.avgTicket).toFixed(0)}</span>
+          <span style="font-weight:600;margin-left:.5rem">$${Number(r.serviceRevenue).toFixed(2)}</span>
+        </span>
+      </div>`).join('');
+    }
+
     async function loadLowStock() {
       const data = await api.lowStockProducts();
       const el = document.getElementById('low-stock-list');
@@ -2075,6 +2104,7 @@
         setTimeout(() => { msg.textContent = ''; }, 4000);
       });
       document.getElementById('audit-refresh').addEventListener('click', loadAuditLog);
+      document.getElementById('staff-perf-refresh').addEventListener('click', loadStaffPerf);
       document.getElementById('chart-days').addEventListener('change', () => loadRevenueChart());
       document.getElementById('week-prev').addEventListener('click', () => weekOffset(-1));
       document.getElementById('week-next').addEventListener('click', () => weekOffset(1));
