@@ -121,6 +121,31 @@
       </div>
     </section>
 
+    <!-- Visit us -->
+    <section class="container" id="visit-section">
+      <div class="section-head">
+        <p class="eyebrow">Find us</p>
+        <h2>Visit the studio</h2>
+      </div>
+      <div class="grid grid-2" style="max-width:860px;margin-inline:auto;gap:2rem;align-items:start">
+        <div>
+          <div class="card" style="padding:1.6rem">
+            <h3 style="margin:0 0 1rem;font-size:1.05rem">Contact & location</h3>
+            <p id="visit-address" class="muted" style="margin:0 0 .5rem;font-size:.95rem"></p>
+            <p id="visit-phone"   style="margin:0 0 .3rem;font-size:.95rem"></p>
+            <p id="visit-email"   style="margin:0 0 1.2rem;font-size:.95rem"></p>
+            <a class="btn btn-primary btn-sm" href="booking.html">Book an appointment</a>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="padding:1.6rem">
+            <h3 style="margin:0 0 1rem;font-size:1.05rem">Hours</h3>
+            <table id="visit-hours" style="width:100%;border-collapse:collapse;font-size:.9rem"></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- CTA band -->
     <section class="container">
       <div class="cta-band">
@@ -133,7 +158,7 @@
   </main>
 
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js"></script>
+  <script src="js/common.js?v=4"></script>
   <script>
     const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
     const GRADS = ['#c98a86','#5a3d4f','#c8a96a','#a85f5b','#9d7b8c','#d8a48f','#7a5c6e','#caa37a'];
@@ -206,6 +231,32 @@
       document.getElementById('gallery-mini').innerHTML = items.length
         ? items.map((item, i) => galleryTile(item, i)).join('')
         : Array.from({length:8}, (_,i) => `<a class="tile" href="gallery.html" style="background:linear-gradient(135deg,${GRADS[i]},${GRADS[(i+3)%GRADS.length]})">✨</a>`).join('');
+
+      // visit section — address, phone, email, hours table
+      const s = cfg.salon || {};
+      const fmtTime = t => { const [h, m] = (t||'').split(':'); const hr = +h; return (hr%12||12) + (m&&m!=='00' ? ':'+m : '') + (hr<12?'am':'pm'); };
+      const todayName = DAYS[new Date().getDay()];
+
+      const addrEl = document.getElementById('visit-address');
+      if (addrEl && s.address) addrEl.textContent = s.address;
+
+      const phoneEl = document.getElementById('visit-phone');
+      if (phoneEl && s.phone) phoneEl.innerHTML = `📞 <a href="tel:${s.phone.replace(/\D/g,'')}" style="color:inherit;text-decoration:none">${esc(s.phone)}</a>`;
+
+      const emailEl = document.getElementById('visit-email');
+      if (emailEl && s.email) emailEl.innerHTML = `✉️ <a href="mailto:${esc(s.email)}" style="color:var(--rose-deep);text-decoration:none">${esc(s.email)}</a>`;
+
+      const hoursEl = document.getElementById('visit-hours');
+      if (hoursEl && s.hours) {
+        hoursEl.innerHTML = s.hours.map(h => {
+          const isToday = h.day === todayName;
+          return `<tr style="${isToday ? 'font-weight:600' : ''}">
+            <td style="padding:.3rem 0;color:${isToday ? 'var(--rose-deep)' : 'var(--text-muted)'};width:110px">${h.day}</td>
+            <td style="padding:.3rem 0">${fmtTime(h.open)} – ${fmtTime(h.close)}</td>
+            ${isToday ? '<td style="padding:.3rem 0 .3rem .6rem"><span style="font-size:.72rem;background:#e8f5ee;color:#2f7a45;border-radius:4px;padding:.1rem .4rem;font-weight:600">Today</span></td>' : '<td></td>'}
+          </tr>`;
+        }).join('');
+      }
     });
   </script>
 </body>
