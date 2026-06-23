@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /api/
+Disallow: /login.html
+Disallow: /register.html
+Disallow: /account.html
+Disallow: /manage.html
+Disallow: /review.html

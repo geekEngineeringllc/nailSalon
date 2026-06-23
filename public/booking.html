@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book an Appointment — Lumière Beauty & Nail Studio</title>
+  <meta name="description" content="Book your nail, hair, skin or makeup appointment at Lumière in four quick steps." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Lumière Beauty & Nail Studio">
+  <meta property="og:title" content="Book an Appointment — Lumière Beauty & Nail Studio">
+  <meta property="og:description" content="Book your nail, hair, skin or makeup appointment at Lumière in four quick steps.">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <section class="container wizard">
+      <div class="section-head">
+        <p class="eyebrow">Book in 4 steps</p>
+        <h2>Reserve your visit</h2>
+      </div>
+
+      <div class="steps" id="steps">
+        <div class="step" data-s="1"><span class="num">1</span> Service</div><div class="bar"></div>
+        <div class="step" data-s="2"><span class="num">2</span> Artist</div><div class="bar"></div>
+        <div class="step" data-s="3"><span class="num">3</span> Date & time</div><div class="bar"></div>
+        <div class="step" data-s="4"><span class="num">4</span> Details</div>
+      </div>
+
+      <div class="panel" id="panel"></div>
+    </section>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/common.js"></script>
+  <script>
+    let CFG;
+    const state = { step: 1, serviceIds: [], staffId: null, date: null, time: null,
+                    customer: { name:'', phone:'', email:'', notes:'' },
+                    recurring: { on:false, cadence:'biweekly', count:4 },
+                    giftCardCode: '', giftCardInfo: null,
+                    usePackageId: null, _mePackages: [] };
+
+    const todayISO = () => {
+      const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0,10);
+    };
+
+    function setStepUI() {
+      document.querySelectorAll('.step').forEach(el => {
+        const n = Number(el.dataset.s);
+        el.classList.toggle('active', n === state.step);
+        el.classList.toggle('done', n < state.step);
+      });
+    }
+
+    function svcs() { return state.serviceIds.map(id => CFG.services.find(s => s.id === id)).filter(Boolean); }
+    function totalDuration() { return svcs().reduce((s, v) => s + v.duration, 0); }
+    function totalPrice() { return svcs().reduce((s, v) => s + v.price, 0); }
+
+    function render() {
+      setStepUI();
+      const panel = document.getElementById('panel');
+      if (state.step === 1) return renderService(panel);
+      if (state.step === 2) return renderStaff(panel);
+      if (state.step === 3) return renderTime(panel);
+      if (state.step === 4) return renderDetails(panel);
+    }
+
+    function navButtons(backStep, nextLabel, nextFn, nextEnabled) {
+      return `<div class="wizard-nav">
+        ${backStep ? `<button class="btn btn-ghost" onclick="go(${backStep})">← Back</button>` : '<span></span>'}
+        ${nextLabel ? `<button class="btn btn-primary" id="nextBtn" ${nextEnabled?'':'disabled style=\"opacity:.5;cursor:not-allowed\"'}>${nextLabel}</button>` : ''}
+      </div>`;
+    }
+
+    function renderService(panel) {
+      const byCat = {};
+      CFG.services.forEach(s => (byCat[s.category] = byCat[s.category] || []).push(s));
+      const selected = state.serviceIds;
+      const combined = svcs();
+      const dur = combined.reduce((s, v) => s + v.duration, 0);
+      const price = combined.reduce((s, v) => s + v.price, 0);
+      panel.innerHTML = `<h3>Choose your service(s)</h3>
+        <p class="muted" style="margin-top:-.4rem">Select up to 3 services for this visit.</p>
+        ${CFG.categories.map(c => `
+          <p class="eyebrow" style="margin-top:1.4rem">${c.name}</p>
+          <div class="option-grid">
+            ${(byCat[c.id]||[]).map(s => `
+              <div class="option ${selected.includes(s.id)?'selected':''}" data-id="${s.id}" tabindex="0" role="button" aria-pressed="${selected.includes(s.id)}">
+                <div class="o-name">${s.name}</div>
+                <div class="o-sub">${s.duration} min · ${money(s.price)}</div>
+              </div>`).join('')}
+          </div>`).join('')}
+        ${selected.length > 0 ? `
+          <div style="background:var(--bg-soft);border-radius:12px;padding:1rem;margin-top:1.4rem">
+            <div style="font-weight:600;margin-bottom:.4rem">Selected (${selected.length}/3)</div>
+            ${combined.map(s => `<div style="display:flex;justify-content:space-between;font-size:.9rem;margin:.2rem 0">
+              <span>${s.name}</span><span class="muted">${s.duration} min · ${money(s.price)}</span></div>`).join('')}
+            ${selected.length > 1 ? `<div style="border-top:1px solid var(--line);margin-top:.6rem;padding-top:.6rem;display:flex;justify-content:space-between;font-weight:600;font-size:.9rem">
+              <span>Total</span><span>${dur} min · ${money(price)}</span></div>` : ''}
+          </div>` : ''}
+        ${navButtons(null, 'Next: choose artist →', null, selected.length > 0)}`;
+      panel.querySelectorAll('.option').forEach(o => o.addEventListener('click', () => {
+        const id = o.dataset.id;
+        if (state.serviceIds.includes(id)) {
+          state.serviceIds = state.serviceIds.filter(x => x !== id);
+        } else if (state.serviceIds.length < 3) {
+          state.serviceIds = [...state.serviceIds, id];
+        }
+        state.staffId = null; state.time = null;
+        render();
+      }));
+      const nb = panel.querySelector('#nextBtn');
+      if (nb) nb.addEventListener('click', () => go(2));
+    }
+
+    function renderStaff(panel) {
+      const selected = svcs();
+      const label = selected.map(s => s.name).join(' + ');
+      // Pool = artists qualified for ALL selected services
+      const qualifiedIds = selected.reduce(
+        (pool, s) => pool.filter(id => s.staffIds.includes(id)),
+        selected[0].staffIds
+      );
+      const pool = qualifiedIds.map(id => CFG.staff.find(p => p.id === id)).filter(Boolean);
+      panel.innerHTML = `<h3>Choose your artist</h3>
+        <p class="muted" style="margin-top:-.4rem">For your <strong>${label}</strong>.</p>
+        <div class="option-grid" style="margin-top:1rem">
+          <div class="option ${state.staffId==='any'?'selected':''}" data-id="any" tabindex="0" role="button" aria-pressed="${state.staffId==='any'}">
+            <div class="o-name">✨ Any available</div>
+            <div class="o-sub">Soonest opening across the team</div>
+          </div>
+          ${pool.map(p => `
+            <div class="option ${state.staffId===p.id?'selected':''}" data-id="${p.id}" tabindex="0" role="button" aria-pressed="${state.staffId===p.id}">
+              <div class="o-name">${p.name}</div>
+              <div class="o-sub">${p.title}</div>
+            </div>`).join('')}
+        </div>
+        ${pool.length === 0 ? '<p class="muted" style="color:var(--rose-deep)">No artist can perform all selected services. Please adjust your selection.</p>' : ''}
+        ${navButtons(1, 'Next: pick a time →', null, !!state.staffId)}`;
+      panel.querySelectorAll('.option').forEach(o => o.addEventListener('click', () => {
+        state.staffId = o.dataset.id; state.time = null; render();
+      }));
+      const nb = panel.querySelector('#nextBtn');
+      if (nb) nb.addEventListener('click', () => go(3));
+    }
+
+    async function renderTime(panel) {
+      if (!state.date) state.date = todayISO();
+      panel.innerHTML = `<h3>Pick a date & time</h3>
+        <div class="field" style="max-width:240px">
+          <label>Date</label>
+          <input type="date" id="dateInput" value="${state.date}" min="${todayISO()}">
+        </div>
+        <div id="slotArea" aria-live="polite"><p class="muted">Loading times…</p></div>
+        ${navButtons(2, 'Next: your details →', null, !!state.time)}`;
+      const dateInput = panel.querySelector('#dateInput');
+      dateInput.addEventListener('change', () => { state.date = dateInput.value; state.time = null; loadSlots(); });
+      const nb = panel.querySelector('#nextBtn');
+      if (nb) nb.addEventListener('click', () => go(4));
+      loadSlots();
+    }
+
+    async function loadSlots() {
+      const area = document.getElementById('slotArea');
+      area.innerHTML = '<p class="muted">Loading times…</p>';
+      const res = await api.availability(state.serviceIds, state.staffId, state.date);
+      const opts = (res.options || []).filter(o => o.slots.length);
+      if (!opts.length) {
+        const c = state.customer;
+        area.innerHTML = `
+          <p class="muted" style="margin-bottom:1rem">No openings that day — try another date, or join the waitlist and we'll contact you if a spot opens up.</p>
+          <div id="wl-form" style="background:var(--bg-soft);border-radius:12px;padding:1.2rem">
+            <p class="eyebrow" style="margin:0 0 .8rem">Join the waitlist for ${state.date}</p>
+            <div class="field" style="margin-bottom:.6rem"><label>Full name *</label><input id="wl-name" value="${esc(c.name)}" placeholder="Jordan Avery"></div>
+            <div class="field" style="margin-bottom:.6rem"><label>Phone *</label><input id="wl-phone" value="${esc(c.phone)}" placeholder="(555) 123-4567"></div>
+            <div class="field" style="margin-bottom:.8rem"><label>Email (optional)</label><input id="wl-email" value="${esc(c.email)}" placeholder="you@email.com"></div>
+            <button class="btn btn-primary btn-sm" id="wl-submit">Join waitlist</button>
+            <div id="wl-msg" style="margin-top:.6rem;font-size:.85rem"></div>
+          </div>`;
+        area.querySelector('#wl-submit').addEventListener('click', async () => {
+          const name  = area.querySelector('#wl-name').value.trim();
+          const phone = area.querySelector('#wl-phone').value.trim();
+          const email = area.querySelector('#wl-email').value.trim();
+          const msg   = area.querySelector('#wl-msg');
+          if (!name || !phone) { msg.style.color = 'var(--rose-deep)'; msg.textContent = 'Name and phone are required.'; return; }
+          const btn = area.querySelector('#wl-submit');
+          btn.disabled = true; btn.textContent = 'Joining…';
+          const r = await api.joinWaitlist({
+            serviceId: state.serviceIds[0] || state.serviceIds,
+            staffId: state.staffId || 'any',
+            date: state.date,
+            name, phone, email: email || undefined
+          });
+          if (r.ok) {
+            area.querySelector('#wl-form').innerHTML = `<p style="color:var(--rose-deep);font-weight:600">You're on the waitlist! ✓</p><p class="muted" style="font-size:.88rem">We'll reach out at ${esc(phone)} if a spot opens on ${state.date}.</p>`;
+          } else {
+            btn.disabled = false; btn.textContent = 'Join waitlist';
+            msg.style.color = 'var(--rose-deep)'; msg.textContent = r.data.error || 'Something went wrong.';
+          }
+        });
+        return;
+      }
+      area.innerHTML = opts.map(o => `
+        <p class="eyebrow" style="margin-top:1.2rem">${o.staffName}</p>
+        <div class="slots">
+          ${o.slots.map(t => `<div class="slot ${state.time===t && state.staffId===o.staffId?'selected':''}"
+              data-time="${t}" data-staff="${o.staffId}" tabindex="0" role="button" aria-label="Book ${t} with ${o.staffName}">${t}</div>`).join('')}
+        </div>`).join('');
+      area.querySelectorAll('.slot').forEach(sl => sl.addEventListener('click', () => {
+        state.time = sl.dataset.time;
+        state.chosenStaff = sl.dataset.staff; // resolve "any" to the real artist
+        area.querySelectorAll('.slot').forEach(x => x.classList.remove('selected'));
+        sl.classList.add('selected');
+        const nb = document.querySelector('#nextBtn');
+        if (nb) { nb.disabled = false; nb.style.opacity = 1; nb.style.cursor = 'pointer'; }
+      }));
+    }
+
+    function renderDetails(panel) {
+      const selected = svcs();
+      const staffId = state.chosenStaff || state.staffId;
+      const staffName = (CFG.staff.find(p => p.id === staffId) || {}).name || 'Any artist';
+      const c = state.customer;
+      const dur = totalDuration(), price = totalPrice();
+      panel.innerHTML = `<h3>Your details</h3>
+        <div class="field"><label>Full name *</label><input id="f-name" value="${esc(c.name)}" placeholder="Jordan Avery"></div>
+        <div class="field"><label>Phone *</label><input id="f-phone" value="${esc(c.phone)}" placeholder="(555) 123-4567"></div>
+        <div class="field"><label>Email</label><input id="f-email" value="${esc(c.email)}" placeholder="you@email.com"></div>
+        <div class="field"><label>Notes for your artist</label><textarea id="f-notes" rows="3" placeholder="Almond shape, soft pink, allergic to acetone…">${esc(c.notes)}</textarea></div>
+        <div style="background:var(--bg-soft);border-radius:12px;padding:1.2rem;margin-top:1rem">
+          ${selected.length === 1
+            ? `<div class="summary-line"><span>Service</span><strong>${selected[0].name}</strong></div>`
+            : selected.map(s => `<div class="summary-line"><span>${s.name}</span><strong>${s.duration} min · ${money(s.price)}</strong></div>`).join('')}
+          <div class="summary-line"><span>Artist</span><strong>${staffName}</strong></div>
+          <div class="summary-line"><span>When</span><strong>${state.date} · ${state.time}</strong></div>
+          <div class="summary-line"><span>Duration</span><strong>${dur} min</strong></div>
+          <div class="summary-line"><span>Total</span><strong>${money(price)}</strong></div>
+        </div>
+        ${selected.some(s => s.depositRequired) ? `
+          <div style="background:#fff3cd;border-radius:10px;padding:.9rem 1.2rem;margin-top:1rem;font-size:.9rem">
+            <strong>Deposit required</strong> — A deposit will be collected at your appointment to secure this booking.
+          </div>` : ''}
+        <div style="background:var(--bg-soft);border-radius:12px;padding:1rem 1.2rem;margin-top:1rem">
+          <label style="font-weight:600;display:block;margin-bottom:.4rem">Have a gift card?</label>
+          <div style="display:flex;gap:.5rem">
+            <input id="f-giftcode" style="flex:1;padding:.65rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:.95rem" placeholder="LUM-GIFT-XXXX-XXXX" value="${esc(state.giftCardCode)}">
+            <button class="btn btn-ghost btn-sm" id="gc-apply" style="white-space:nowrap">Apply</button>
+          </div>
+          <div id="gc-msg" style="margin-top:.4rem;font-size:.85rem"></div>
+        </div>
+        ${(() => {
+          if (state.serviceIds.length !== 1) return '';
+          const eligible = state._mePackages.filter(p => p.serviceId === state.serviceIds[0]);
+          if (!eligible.length) return '';
+          return `<div style="background:var(--bg-soft);border-radius:12px;padding:1rem 1.2rem;margin-top:1rem">
+            <label style="font-weight:600;display:block;margin-bottom:.6rem">Use a prepaid package?</label>
+            <select id="pkg-sel" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit">
+              <option value="">— Pay normally —</option>
+              ${eligible.map(p => `<option value="${p.id}" ${state.usePackageId===p.id?'selected':''}>${esc(p.name)} (${p.remaining} session${p.remaining!==1?'s':''} left)</option>`).join('')}
+            </select>
+            <div class="muted" style="font-size:.82rem;margin-top:.4rem">Selecting a package makes this visit <strong>$0</strong> at checkout.</div>
+          </div>`;
+        })()}
+        <div style="background:var(--bg-soft);border-radius:12px;padding:1rem 1.2rem;margin-top:1rem">
+          <label style="display:flex;gap:.6rem;align-items:center;font-weight:600;cursor:pointer">
+            <input type="checkbox" id="rec-on" ${state.recurring.on?'checked':''}> Make this a recurring visit
+          </label>
+          <div id="rec-opts" style="${state.recurring.on?'display:flex':'display:none'};margin-top:.8rem;gap:1rem;flex-wrap:wrap">
+            <div class="field" style="margin:0;flex:1;min-width:160px"><label>Repeat</label>
+              <select id="rec-cadence" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px">
+                <option value="weekly">Every week</option>
+                <option value="biweekly">Every 2 weeks</option>
+                <option value="every4weeks">Every 4 weeks</option>
+              </select></div>
+            <div class="field" style="margin:0;width:140px"><label>How many</label>
+              <select id="rec-count" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px">
+                ${[2,3,4,5,6,8,10,12].map(n=>`<option value="${n}">${n} visits</option>`).join('')}
+              </select></div>
+          </div>
+          <p class="muted" style="font-size:.8rem;margin:.6rem 0 0">Same artist (${esc(staffName)}) and time on each date. We'll flag any date that's unavailable.</p>
+        </div>
+        ${navButtons(3, 'Confirm booking ✓', null, true)}`;
+      const nb = panel.querySelector('#nextBtn');
+      nb.addEventListener('click', submitBooking);
+      ['name','phone','email','notes'].forEach(k => {
+        panel.querySelector('#f-'+k).addEventListener('input', e => state.customer[k] = e.target.value);
+      });
+      const gcInput = panel.querySelector('#f-giftcode');
+      const gcMsg = panel.querySelector('#gc-msg');
+      gcInput.addEventListener('input', e => { state.giftCardCode = e.target.value; state.giftCardInfo = null; gcMsg.textContent = ''; });
+      panel.querySelector('#gc-apply').addEventListener('click', async () => {
+        const code = state.giftCardCode.trim();
+        if (!code) return;
+        gcMsg.textContent = 'Checking…'; gcMsg.style.color = 'var(--muted)';
+        const res = await api.giftCardLookup(code);
+        if (!res.ok) {
+          gcMsg.textContent = res.data.error || 'Gift card not found.';
+          gcMsg.style.color = 'var(--rose-deep)';
+          state.giftCardInfo = null;
+        } else if (res.data.paymentStatus !== 'paid') {
+          gcMsg.textContent = 'That gift card has not been paid for yet.';
+          gcMsg.style.color = 'var(--rose-deep)';
+          state.giftCardInfo = null;
+        } else if (res.data.status === 'void' || res.data.balance <= 0) {
+          gcMsg.textContent = 'That gift card has no remaining balance.';
+          gcMsg.style.color = 'var(--rose-deep)';
+          state.giftCardInfo = null;
+        } else {
+          state.giftCardInfo = res.data;
+          const saves = Math.min(res.data.balance, totalPrice());
+          gcMsg.innerHTML = `✓ Gift card accepted — ${money(saves)} will be applied at checkout.`;
+          gcMsg.style.color = '#2f7a45';
+        }
+      });
+      const pkgSel = panel.querySelector('#pkg-sel');
+      if (pkgSel) pkgSel.addEventListener('change', e => { state.usePackageId = e.target.value || null; });
+      const recOn = panel.querySelector('#rec-on');
+      const recOpts = panel.querySelector('#rec-opts');
+      const recCadence = panel.querySelector('#rec-cadence');
+      const recCount = panel.querySelector('#rec-count');
+      recCadence.value = state.recurring.cadence;
+      recCount.value = String(state.recurring.count);
+      recOn.addEventListener('change', () => {
+        state.recurring.on = recOn.checked;
+        recOpts.style.display = recOn.checked ? 'flex' : 'none';
+      });
+      recCadence.addEventListener('change', e => state.recurring.cadence = e.target.value);
+      recCount.addEventListener('change', e => state.recurring.count = Number(e.target.value));
+    }
+
+    async function submitBooking() {
+      const c = state.customer;
+      if (!c.name.trim() || !c.phone.trim()) { toast('Please add your name and phone.'); return; }
+      const nb = document.querySelector('#nextBtn');
+      nb.disabled = true; nb.textContent = 'Booking…';
+      const staffId = state.chosenStaff || state.staffId;
+
+      if (state.recurring.on) {
+        const res = await api.bookRecurring({
+          services: state.serviceIds, staffId, date: state.date, time: state.time,
+          customer: c, cadence: state.recurring.cadence, count: state.recurring.count
+        });
+        if (!res.ok) {
+          toast(res.data.error || 'Could not book the series — please try again.');
+          nb.disabled = false; nb.textContent = 'Confirm booking ✓';
+          return;
+        }
+        renderSeriesSuccess(res.data);
+        return;
+      }
+
+      const bookPayload = { services: state.serviceIds, staffId, date: state.date, time: state.time, customer: c };
+      if (state.giftCardCode.trim()) bookPayload.giftCardCode = state.giftCardCode.trim();
+      if (state.usePackageId) bookPayload.usePackageId = state.usePackageId;
+      const res = await api.book(bookPayload);
+      if (!res.ok) {
+        toast(res.data.error || 'Could not book — please try again.');
+        nb.disabled = false; nb.textContent = 'Confirm booking ✓';
+        if (res.status === 409) go(3); // slot taken — back to time picker
+        return;
+      }
+      renderSuccess(res.data.booking);
+    }
+
+    function renderSeriesSuccess(d) {
+      document.querySelectorAll('.step').forEach(el => el.classList.add('done'));
+      const first = d.booked[0];
+      document.getElementById('panel').innerHTML = `
+        <div class="success">
+          <div class="check">✓</div>
+          <h2>You're booked, ${esc(first.customer.name.split(' ')[0])}!</h2>
+          <p class="muted">We reserved ${d.booked.length} visit${d.booked.length>1?'s':''} with ${esc(first.staffName)}. A reminder is sent before each one.</p>
+          <div style="background:var(--bg-soft);border-radius:12px;padding:1.2rem;margin:1.4rem auto 0;max-width:460px;text-align:left">
+            ${d.booked.map(b => `<div class="summary-line"><span>${b.date} · ${b.time}</span><strong>${b.ref}</strong></div>`).join('')}
+          </div>
+          ${d.skipped && d.skipped.length ? `<div style="background:#fff3cd;border-radius:10px;padding:.8rem 1.2rem;font-size:.85rem;margin:1rem auto 0;max-width:460px;text-align:left">
+            <strong>Heads up</strong> — we couldn't book ${d.skipped.length} date${d.skipped.length>1?'s':''} (${d.skipped.map(s=>s.date).join(', ')}). Book those individually if you'd like.</div>` : ''}
+          <div style="margin-top:1.8rem;display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap">
+            <a class="btn btn-primary" href="booking.html">Book another</a>
+            <a class="btn btn-ghost" href="index.html">Back home</a>
+          </div>
+        </div>`;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      focusPanelHeading(document.getElementById('panel'));
+    }
+
+    function renderSuccess(b) {
+      document.querySelectorAll('.step').forEach(el => el.classList.add('done'));
+      document.getElementById('panel').innerHTML = `
+        <div class="success">
+          <div class="check">✓</div>
+          <h2>You're booked, ${esc(b.customer.name.split(' ')[0])}!</h2>
+          <p class="muted">We've reserved your spot. A reminder will be sent before your visit.</p>
+          ${b.depositStatus === 'pending' ? `<p style="background:#fff3cd;border-radius:10px;padding:.7rem 1.2rem;font-size:.9rem;margin:.6rem auto;max-width:420px"><strong>Deposit required</strong> — your artist will collect a deposit when you arrive.</p>` : ''}
+          <div class="ref-box">${b.ref}</div>
+          <div style="background:var(--bg-soft);border-radius:12px;padding:1.2rem;margin:1.6rem auto 0;max-width:420px;text-align:left">
+            <div class="summary-line"><span>Service</span><strong>${esc(b.serviceName)}</strong></div>
+            <div class="summary-line"><span>Artist</span><strong>${esc(b.staffName)}</strong></div>
+            <div class="summary-line"><span>When</span><strong>${b.date} · ${b.time}</strong></div>
+            ${b.packageRedemption ? `<div class="summary-line"><span>List price</span><strong>${money(b.listPrice)}</strong></div>
+            <div class="summary-line"><span>Package (${esc(b.packageRedemption.packageName)})</span><strong style="color:#2f7a45">Prepaid</strong></div>` : ''}
+            ${b.giftCardApplied ? `${!b.packageRedemption ? `<div class="summary-line"><span>List price</span><strong>${money(b.listPrice)}</strong></div>` : ''}
+            <div class="summary-line"><span>Gift card (${esc(b.giftCardApplied.code)})</span><strong style="color:#2f7a45">− ${money(b.giftCardApplied.amount)}</strong></div>` : ''}
+            <div class="summary-line"><span>Due at salon</span><strong>${money(b.price)}</strong></div>
+          </div>
+          <div style="margin-top:1.8rem;display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap">
+            <a class="btn btn-primary" href="booking.html">Book another</a>
+            <a class="btn btn-ghost" href="index.html">Back home</a>
+          </div>
+        </div>`;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      focusPanelHeading(document.getElementById('panel'));
+    }
+
+    function go(step) {
+      // guard forward navigation
+      if (step >= 2 && state.serviceIds.length === 0) return;
+      if (step >= 3 && !state.staffId) return;
+      if (step >= 4 && !state.time) return;
+      state.step = step; render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      focusPanelHeading(document.getElementById('panel'));
+    }
+    window.go = go;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      CFG = window.__CFG__ || (window.__CFG__ = await api.config());
+      const pre = new URLSearchParams(location.search).get('service');
+      if (pre && CFG.services.some(s => s.id === pre)) { state.serviceIds = [pre]; }
+      // Pre-fill contact details for logged-in customers; cache their packages.
+      const me = await api.me();
+      if (me.ok) {
+        state.customer.name = me.data.customer.name || '';
+        state.customer.phone = me.data.customer.phone || '';
+        state.customer.email = me.data.customer.email || '';
+        state._mePackages = (me.data.customer.packages || []).filter(p => p.paymentStatus === 'paid' && p.remaining > 0);
+      }
+      render();
+    });
+  </script>
+</body>
+</html>

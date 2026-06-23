@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unsubscribe — Lumière Beauty & Nail Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <section class="container wizard" style="max-width:480px;text-align:center">
+      <div id="content" style="padding:3rem 0">
+        <p class="muted">Processing…</p>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = new URLSearchParams(location.search).get('token');
+      const el = document.getElementById('content');
+      if (!token) {
+        el.innerHTML = '<h2>Invalid link</h2><p class="muted">No unsubscribe token was found. Please use the link from your email.</p>';
+        return;
+      }
+      try {
+        const r = await fetch('/api/marketing/optout?token=' + encodeURIComponent(token));
+        const d = await r.json();
+        if (r.ok) {
+          el.innerHTML = `
+            <p class="eyebrow">Done</p>
+            <h2>You've been unsubscribed</h2>
+            <p class="muted">You won't receive marketing emails from Lumière. Your appointment reminders are not affected.</p>
+            <a class="btn btn-ghost btn-sm" href="/" style="margin-top:1rem">Return to site</a>`;
+        } else {
+          el.innerHTML = `<h2>Something went wrong</h2><p class="muted">${d.error || 'Please try again or contact us.'}</p>`;
+        }
+      } catch {
+        el.innerHTML = '<h2>Something went wrong</h2><p class="muted">Please try again or contact us.</p>';
+      }
+    });
+  </script>
+</body>
+</html>

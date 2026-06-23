@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leave a Review — Lumière Beauty & Nail Studio</title>
+  <meta name="description" content="Share your experience at Lumière Beauty & Nail Studio." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .star-row { display:flex; gap:.4rem; margin:.8rem 0; }
+    .star-btn { font-size:2rem; background:none; border:none; cursor:pointer; color:#ddd; padding:0; line-height:1; transition:color .15s; }
+    .star-btn.active, .star-btn:hover { color:#c6960a; }
+    .review-card { max-width:480px; margin:2rem auto; }
+  </style>
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <section class="container">
+      <div class="section-head">
+        <p class="eyebrow">Your experience</p>
+        <h2>Leave a review</h2>
+      </div>
+      <div class="review-card card" id="panel">
+        <p class="muted">Loading…</p>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/common.js"></script>
+  <script>
+    const ref = new URLSearchParams(location.search).get('ref') || '';
+    let selectedRating = 0;
+
+    function stars(active) {
+      return [1,2,3,4,5].map(n =>
+        `<button class="star-btn ${n <= active ? 'active' : ''}" data-v="${n}" aria-label="${n} star${n>1?'s':''}">★</button>`
+      ).join('');
+    }
+
+    function renderForm(booking) {
+      const panel = document.getElementById('panel');
+      panel.innerHTML = `
+        <div class="summary-line"><span>Service</span><strong>${esc(booking.serviceName || booking.ref)}</strong></div>
+        <div class="summary-line"><span>Artist</span><strong>${esc(booking.staffName || '')}</strong></div>
+        <div class="summary-line"><span>Visit</span><strong>${booking.date} · ${booking.time}</strong></div>
+        <hr style="border:none;border-top:1px solid var(--line);margin:1.2rem 0">
+        <label style="font-weight:600;display:block;margin-bottom:.2rem">Your rating *</label>
+        <div class="star-row" id="starRow">${stars(0)}</div>
+        <div class="field" style="margin-top:1rem">
+          <label>Your comment <span class="muted">(optional)</span></label>
+          <textarea id="comment" rows="4" maxlength="500" placeholder="Tell us about your experience…" style="resize:vertical"></textarea>
+        </div>
+        <button class="btn btn-primary" id="submitBtn" disabled style="opacity:.5;cursor:not-allowed;width:100%;margin-top:1rem">Submit review</button>`;
+
+      document.getElementById('starRow').addEventListener('click', (e) => {
+        const btn = e.target.closest('.star-btn');
+        if (!btn) return;
+        selectedRating = Number(btn.dataset.v);
+        document.getElementById('starRow').innerHTML = stars(selectedRating);
+        const sb = document.getElementById('submitBtn');
+        sb.disabled = false; sb.style.opacity = 1; sb.style.cursor = 'pointer';
+      });
+
+      document.getElementById('submitBtn').addEventListener('click', async () => {
+        const comment = document.getElementById('comment').value.trim();
+        if (!selectedRating) { toast('Please pick a star rating.'); return; }
+        const sb = document.getElementById('submitBtn');
+        sb.disabled = true; sb.textContent = 'Submitting…';
+        const res = await api.submitReview(ref, selectedRating, comment);
+        if (!res.ok) {
+          toast(res.data.error || 'Could not submit. Please try again.');
+          sb.disabled = false; sb.textContent = 'Submit review';
+          return;
+        }
+        renderSuccess(selectedRating);
+      });
+    }
+
+    function renderSuccess(rating) {
+      document.getElementById('panel').innerHTML = `
+        <div style="text-align:center;padding:1.5rem 0">
+          <div class="check" style="font-size:2rem;margin-bottom:.8rem">✓</div>
+          <h3 style="margin:0 0 .4rem">Thank you!</h3>
+          <p class="muted">Your ${'★'.repeat(rating)}${'☆'.repeat(5-rating)} review has been saved. We really appreciate your feedback.</p>
+          <a class="btn btn-primary" href="index.html" style="margin-top:1.2rem;display:inline-block">Back to Lumière</a>
+        </div>`;
+    }
+
+    function renderError(msg) {
+      document.getElementById('panel').innerHTML = `
+        <p style="color:var(--rose-deep);font-weight:600">${esc(msg)}</p>
+        <a class="btn btn-ghost" href="index.html">Back home</a>`;
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!ref) { renderError('No booking reference provided.'); return; }
+      // Resolve booking via lookup-by-ref only (no phone needed here — ref is the token)
+      const res = await fetch('/api/bookings/lookup-by-ref?ref=' + encodeURIComponent(ref));
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        renderError(d.error || 'Booking not found.');
+        return;
+      }
+      const { booking } = await res.json();
+      if (booking.status !== 'completed') {
+        renderError('Reviews can only be submitted after your visit is marked completed.');
+        return;
+      }
+      if (booking.review) {
+        renderSuccess(booking.review.rating);
+        return;
+      }
+      renderForm(booking);
+    });
+  </script>
+</body>
+</html>

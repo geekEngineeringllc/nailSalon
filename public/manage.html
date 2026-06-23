@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Your Booking — Lumière Beauty & Nail Studio</title>
+  <meta name="description" content="Look up, reschedule or cancel your Lumière appointment using your booking reference." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <section class="container wizard">
+      <div class="section-head">
+        <p class="eyebrow">Self-service</p>
+        <h2>Manage your booking</h2>
+        <p class="muted">Enter the reference from your confirmation plus the phone you booked with.</p>
+      </div>
+      <div class="panel" id="panel"></div>
+    </section>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/common.js"></script>
+  <script>
+    let CFG, booking = null;
+    const todayISO = () => { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+
+    function lookupForm(err) {
+      document.getElementById('panel').innerHTML = `
+        <h3>Find your appointment</h3>
+        ${err ? `<p style="color:var(--rose-deep);font-size:.9rem">${err}</p>` : ''}
+        <div class="field"><label>Booking reference *</label><input id="ref" placeholder="LUM-3620" style="text-transform:uppercase"></div>
+        <div class="field"><label>Phone number *</label><input id="phone" placeholder="(555) 123-4567"></div>
+        <button class="btn btn-primary" id="find">Find my booking</button>
+        <p class="muted" style="font-size:.85rem;margin-top:1rem">Tip: try a booking you just made, or visit the
+          <a href="admin.html" style="color:var(--rose-deep)">admin page</a> to see references.</p>`;
+      document.getElementById('find').addEventListener('click', doLookup);
+    }
+
+    async function doLookup() {
+      const ref = document.getElementById('ref').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      if (!ref || !phone) { toast('Enter your reference and phone.'); return; }
+      const res = await api.lookup(ref, phone);
+      if (!res.ok) { lookupForm(res.data.error); return; }
+      booking = res.data.booking; showBooking();
+    }
+
+    function showBooking() {
+      const b = booking;
+      const cancelled = b.status === 'cancelled';
+      document.getElementById('panel').innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
+          <h3 style="margin:0">Booking ${b.ref}</h3>
+          <span class="status ${b.status}">${b.status}</span>
+        </div>
+        <div style="background:var(--bg-soft);border-radius:12px;padding:1.2rem;margin:1.2rem 0">
+          <div class="summary-line"><span>Service</span><strong>${esc(b.serviceName)}</strong></div>
+          <div class="summary-line"><span>Artist</span><strong>${esc(b.staffName)}</strong></div>
+          <div class="summary-line"><span>When</span><strong>${b.date} · ${b.time}</strong></div>
+          <div class="summary-line"><span>Name</span><strong>${esc(b.customer.name)}</strong></div>
+          <div class="summary-line"><span>Total</span><strong>${money(b.price)}</strong></div>
+        </div>
+        ${cancelled ? '<p class="muted">This booking is cancelled. Book again any time!</p>'
+          : b.status === 'completed' ? `
+          <div style="margin-bottom:1rem">
+            ${b.review
+              ? `<p class="muted">You left a ${'★'.repeat(b.review.rating)}${'☆'.repeat(5-b.review.rating)} review — thank you!</p>`
+              : `<a class="btn btn-primary" href="review.html?ref=${encodeURIComponent(b.ref)}">Leave a review ★</a>`}
+          </div>` : `
+          <div style="display:flex;gap:.8rem;flex-wrap:wrap">
+            <button class="btn btn-primary" id="resched">Reschedule</button>
+            <button class="btn btn-ghost" id="cancel">Cancel booking</button>
+          </div>
+          <div id="reschedArea" style="margin-top:1.4rem"></div>`}
+        <div style="margin-top:1.4rem"><a href="manage.html" style="color:var(--rose-deep);font-size:.9rem">← Look up a different booking</a></div>`;
+      if (cancelled || b.status === 'completed') return;
+      document.getElementById('cancel').addEventListener('click', doCancel);
+      document.getElementById('resched').addEventListener('click', showReschedule);
+    }
+
+    async function doCancel() {
+      if (!confirm('Cancel this appointment?')) return;
+      const res = await api.cancel(booking.id);
+      if (!res.ok) {
+        if (res.data && res.data.cutoff) {
+          const phone = (CFG.salon && CFG.salon.phone) || 'the salon';
+          document.getElementById('panel').querySelector('#cancel').insertAdjacentHTML('afterend',
+            `<p style="color:var(--rose-deep);margin-top:.8rem;font-size:.9rem">
+              Cancellations must be made at least 24 hours in advance.<br>
+              To cancel, please call us: <strong><a href="tel:${phone}" style="color:inherit">${phone}</a></strong>.
+            </p>`);
+        } else {
+          toast(res.data.error || 'Could not cancel.');
+        }
+        return;
+      }
+      booking.status = 'cancelled';
+      toast('Your booking has been cancelled.'); showBooking();
+    }
+
+    function showReschedule() {
+      const area = document.getElementById('reschedArea');
+      area.innerHTML = `
+        <div class="field" style="max-width:240px"><label>New date</label>
+          <input type="date" id="rDate" value="${booking.date}" min="${todayISO()}"></div>
+        <div id="rSlots"><p class="muted">Loading times…</p></div>`;
+      document.getElementById('rDate').addEventListener('change', loadResched);
+      loadResched();
+    }
+
+    async function loadResched() {
+      const date = document.getElementById('rDate').value;
+      const area = document.getElementById('rSlots');
+      area.innerHTML = '<p class="muted">Loading times…</p>';
+      const res = await api.availability(booking.serviceId, booking.staffId, date);
+      const opt = (res.options || []).find(o => o.staffId === booking.staffId) || { slots: [] };
+      if (!opt.slots.length) { area.innerHTML = '<p class="muted">No openings that day — try another date.</p>'; return; }
+      area.innerHTML = `<div class="slots" aria-live="polite">${opt.slots.map(t =>
+        `<div class="slot" data-t="${t}" tabindex="0" role="button" aria-label="Move to ${t}">${t}</div>`).join('')}</div>`;
+      area.querySelectorAll('.slot').forEach(sl => sl.addEventListener('click', async () => {
+        const res2 = await api.reschedule(booking.id, date, sl.dataset.t);
+        if (!res2.ok) { toast(res2.data.error || 'Could not reschedule.'); loadResched(); return; }
+        booking = res2.data.booking; toast('Booking moved! A new reminder is set.'); showBooking();
+      }));
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      CFG = window.__CFG__ || (window.__CFG__ = await api.config());
+      lookupForm();
+    });
+  </script>
+</body>
+</html>

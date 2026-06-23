@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My account — Lumière Beauty & Nail Studio</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <section class="container" id="content" style="min-height:50vh"></section>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/common.js"></script>
+  <script>
+    const todayISO = () => { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+    function bookingCard(b, allowManage) {
+      return `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div>
+          <div style="font-family:var(--font-display);font-size:1.2rem">${esc(b.serviceName)}</div>
+          <div class="muted" style="font-size:.9rem">${b.date} · ${b.time} · with ${esc(b.staffName)}</div>
+          <div style="font-size:.8rem;margin-top:.3rem"><span class="status ${b.status}">${b.status}</span> · ${b.ref}</div>
+        </div>
+        ${allowManage ? `<a class="btn btn-ghost btn-sm" href="manage.html">Manage</a>` : `<div class="price">${money(b.price)}</div>`}
+      </div>`;
+    }
+    function packageCard(p) {
+      const pct = Math.round((p.remaining / p.total) * 100);
+      const paid = p.paymentStatus === 'paid';
+      return `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div style="font-family:var(--font-display);font-size:1.1rem">${esc(p.name)}</div>
+          <div class="muted" style="font-size:.85rem">${esc(p.serviceId)} · ${p.remaining} of ${p.total} sessions left</div>
+          <div style="margin-top:.5rem;height:6px;background:var(--bg-soft);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--rose),var(--rose-deep))"></div>
+          </div>
+          ${!paid ? '<div style="font-size:.78rem;margin-top:.4rem;color:#a9772a">Payment pending — see the desk to complete purchase</div>' : ''}
+        </div>
+        <div style="text-align:right">
+          <div class="price">${money(p.price)}</div>
+          ${paid && p.remaining > 0 ? `<a class="btn btn-ghost btn-sm" href="booking.html" style="margin-top:.4rem">Use a session →</a>` : ''}
+        </div>
+      </div>`;
+    }
+    function render(me, cfg, refData) {
+      const c = me.customer;
+      const today = todayISO();
+      const upcoming = me.bookings.filter(b => b.status !== 'cancelled' && (b.date > today || (b.date === today)));
+      const past = me.bookings.filter(b => !(b.date > today || b.date === today) || b.status === 'cancelled');
+      const myPkgs = c.packages || [];
+      const availPkgs = (cfg && cfg.packages || []).filter(p => p.active !== false);
+      document.getElementById('content').innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin:2rem 0">
+          <div>
+            <p class="eyebrow">My account</p>
+            <h2 style="margin:0">Hi, ${esc(c.name.split(' ')[0])}</h2>
+            <p class="muted">${esc(c.phone)}${c.email ? ' · ' + esc(c.email) : ''}</p>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="logout">Log out</button>
+        </div>
+
+        <div class="grid grid-3" style="margin-bottom:2.5rem">
+          <div class="stat"><div class="big">${c.points || 0}</div><div class="lbl">Reward points</div></div>
+          <div class="stat"><div class="big">${upcoming.length}</div><div class="lbl">Upcoming visits</div></div>
+          <div class="stat"><div class="big">${me.bookings.length}</div><div class="lbl">Total visits</div></div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3>Upcoming</h3><a class="btn btn-primary btn-sm" href="booking.html">+ Book again</a>
+        </div>
+        <div class="grid" style="gap:1rem;margin-bottom:2.5rem">
+          ${upcoming.length ? upcoming.map(b => bookingCard(b, true)).join('') : '<p class="muted">No upcoming visits. <a href="booking.html" style="color:var(--rose-deep)">Book one →</a></p>'}
+        </div>
+
+        <h3>Past visits</h3>
+        <div class="grid" style="gap:1rem;margin-bottom:2.5rem">
+          ${past.length ? past.map(b => bookingCard(b, false)).join('') : '<p class="muted">No past visits yet.</p>'}
+        </div>
+
+        ${refData && refData.referralCode ? `
+        <h3>Refer a friend</h3>
+        <div class="card" style="margin-bottom:2.5rem">
+          <p class="muted" style="font-size:.9rem;margin-top:0">Share your code and earn <strong>200 bonus points</strong> when a friend completes their first visit. They get <strong>100 bonus points</strong> too.</p>
+          <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+            <code style="background:var(--bg-soft);padding:.5rem 1rem;border-radius:8px;font-size:1.1rem;letter-spacing:.1em">${esc(refData.referralCode)}</code>
+            <button class="btn btn-ghost btn-sm" id="copyRef">Copy code</button>
+          </div>
+          ${refData.totalReferred > 0 ? `<p class="muted" style="font-size:.85rem;margin-bottom:0;margin-top:.8rem">${refData.claimedReferrals} of ${refData.totalReferred} referral${refData.totalReferred!==1?'s':''} redeemed · ${refData.pendingReferrals} pending</p>` : ''}
+        </div>` : ''}
+
+        ${myPkgs.length ? `
+        <h3>My packages</h3>
+        <div class="grid" style="gap:1rem;margin-bottom:2.5rem">
+          ${myPkgs.map(p => packageCard(p)).join('')}
+        </div>` : ''}
+
+        ${availPkgs.length ? `
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3>Available packages</h3>
+        </div>
+        <div class="grid" style="gap:1rem;margin-bottom:2.5rem">
+          ${availPkgs.map(p => `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+            <div>
+              <div style="font-family:var(--font-display);font-size:1.1rem">${esc(p.name)}</div>
+              <div class="muted" style="font-size:.85rem">${p.sessions} sessions · ${esc(p.serviceId)}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="price">${money(p.price)}</div>
+              <div class="muted" style="font-size:.78rem">Pay at salon</div>
+            </div>
+          </div>`).join('')}
+        </div>` : ''}
+
+        ${(() => {
+          const mem = c.membership;
+          const STATUS_COLOR = { active: '#2f7a45', pending_payment: '#a9772a', cancelled: '#b0657a' };
+          const STATUS_LBL = { active: 'Active', pending_payment: 'Pending payment — see the desk', cancelled: 'Cancelled' };
+          if (mem) {
+            return `<h3>My membership</h3>
+            <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:2.5rem">
+              <div>
+                <div style="font-family:var(--font-display);font-size:1.15rem">${esc(mem.planName)}</div>
+                <div class="muted" style="font-size:.85rem">${mem.discountPct}% off all services · ${money(mem.monthlyPrice)}/mo</div>
+                ${mem.renewalDate ? '<div class="muted" style="font-size:.82rem">Renews ' + esc(mem.renewalDate) + '</div>' : ''}
+              </div>
+              <div><span style="font-size:.85rem;font-weight:600;color:${STATUS_COLOR[mem.status] || 'inherit'}">${STATUS_LBL[mem.status] || mem.status}</span></div>
+            </div>`;
+          }
+          const availPlans = (cfg && cfg.membershipPlans || []).filter(p => p.active !== false);
+          if (!availPlans.length) return '';
+          return `<h3>Membership plans</h3>
+          <p class="muted" style="margin-top:-.5rem;font-size:.9rem">Join a plan and save on every visit. Request sign-up at the desk or tap below — we'll activate it when payment is collected.</p>
+          <div class="grid" style="gap:1rem;margin-bottom:2.5rem" id="memPlanCards">
+            ${availPlans.map(p => `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+              <div>
+                <div style="font-family:var(--font-display);font-size:1.1rem">${esc(p.name)}</div>
+                <div class="muted" style="font-size:.85rem">${p.discountPct}% off every service · ${esc(p.description || '')}</div>
+              </div>
+              <div style="text-align:right">
+                <div class="price">${money(p.monthlyPrice)}<span style="font-size:.7rem;font-weight:400">/mo</span></div>
+                <button class="btn btn-ghost btn-sm" style="margin-top:.4rem" data-plan-id="${p.id}">Join →</button>
+              </div>
+            </div>`).join('')}
+          </div>`;
+        })()}
+
+        <h3 style="margin-top:2rem">Communication preferences</h3>
+        <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:2.5rem">
+          <div>
+            <div style="font-weight:600">Marketing emails &amp; offers</div>
+            <div class="muted" style="font-size:.88rem">${c.marketingOptOut ? 'You are not receiving marketing messages.' : 'You are receiving marketing messages.'}</div>
+          </div>
+          ${c.marketingOptOut
+            ? `<button class="btn btn-ghost btn-sm" id="mktOptin">Re-subscribe</button>`
+            : `<button class="btn btn-ghost btn-sm" id="mktOptout">Unsubscribe</button>`}
+        </div>`;
+      document.getElementById('logout').addEventListener('click', async () => {
+        await api.logout(); toast('Logged out.'); setTimeout(() => location.assign('index.html'), 400);
+      });
+      const copyBtn = document.getElementById('copyRef');
+      if (copyBtn) copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(copyBtn.closest('.card').querySelector('code').textContent).then(() => toast('Code copied!')).catch(() => toast('Select and copy the code manually.'));
+      });
+      const mktOptoutBtn = document.getElementById('mktOptout');
+      if (mktOptoutBtn) mktOptoutBtn.addEventListener('click', async () => {
+        const r = await api.marketingOptout();
+        if (r.ok) { toast('Unsubscribed from marketing messages.'); location.reload(); }
+        else toast(r.data.error || 'Something went wrong.');
+      });
+      const mktOptinBtn = document.getElementById('mktOptin');
+      if (mktOptinBtn) mktOptinBtn.addEventListener('click', async () => {
+        const r = await api.marketingOptin();
+        if (r.ok) { toast('You\'re re-subscribed to marketing messages.'); location.reload(); }
+        else toast(r.data.error || 'Something went wrong.');
+      });
+      document.querySelectorAll('[data-plan-id]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true; btn.textContent = 'Joining…';
+          const r = await api.subscribeMembership(btn.dataset.planId);
+          if (r.ok) { toast('You\'re enrolled! Payment pending — see us at the desk.'); location.reload(); }
+          else { btn.disabled = false; btn.textContent = 'Join →'; toast(r.data.error || 'Something went wrong.'); }
+        });
+      });
+    }
+    document.addEventListener('DOMContentLoaded', async () => {
+      const [meRes, cfg] = await Promise.all([api.me(), api.config()]);
+      if (!meRes.ok) { location.assign('login.html'); return; }
+      const refData = await fetch('/api/referral').then(r => r.json()).catch(() => null);
+      render(meRes.data, cfg, refData);
+    });
+  </script>
+</body>
+</html>

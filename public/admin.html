@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Owner Dashboard — Lumière Beauty & Nail Studio</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <section class="container">
+      <div class="section-head" style="text-align:left;margin-bottom:2rem">
+        <p class="eyebrow">Owner dashboard</p>
+        <h2>Today at Lumière</h2>
+        <p class="muted">Live view of bookings, revenue and staff load. (Demo — no login wall for easy review.)</p>
+      </div>
+
+      <div class="stat-grid" id="stats"></div>
+
+      <div class="grid grid-3" style="margin-bottom:2.5rem">
+        <div class="card"><h3 style="font-size:1rem">By category</h3><div id="byCat"></div></div>
+        <div class="card"><h3 style="font-size:1rem">By artist</h3><div id="byStaff"></div></div>
+        <div class="card"><h3 style="font-size:1rem">Quick actions</h3>
+          <p class="muted" style="font-size:.88rem">Bookings persist to <code>data/db.json</code>.</p>
+          <button class="btn btn-ghost btn-sm" onclick="openBookForm()">+ New booking</button>
+          <button class="btn btn-ghost btn-sm" onclick="load()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <div class="grid grid-3" id="analytics" style="margin-bottom:2.5rem"></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
+        <h3 style="margin:0">All appointments</h3>
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" id="groupBtn">+ Group / bridal party</button>
+          <button class="btn btn-primary btn-sm" id="walkInBtn">+ Walk-in / phone booking</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin:.8rem 0">
+        <input id="bQ" placeholder="Search ref, name, phone, service…" style="flex:1;min-width:180px;padding:.45rem .7rem;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:.88rem">
+        <select id="bStatus" style="padding:.45rem .7rem;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:.88rem">
+          <option value="">All statuses</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="completed">Completed</option>
+          <option value="no-show">No-show</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <select id="bStaff" style="padding:.45rem .7rem;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:.88rem">
+          <option value="">All artists</option>
+        </select>
+        <input type="date" id="bDate" style="padding:.45rem .7rem;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:.88rem">
+        <button class="btn btn-ghost btn-sm" onclick="clearBFilters()">Clear</button>
+      </div>
+      <div id="bookForm" style="display:none"></div>
+      <div id="groupForm" style="display:none"></div>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Ref</th><th>When</th><th>Service</th><th>Artist</th><th>Customer</th><th>Total</th><th>Status</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div id="bPager" style="display:flex;justify-content:space-between;align-items:center;padding:.6rem 0;font-size:.88rem;color:var(--muted)"></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
+        <h3 style="margin:0">Notifications & reminders</h3>
+        <button class="btn btn-ghost btn-sm" id="sendNow">▶ Send due now</button>
+      </div>
+      <p class="muted" style="margin-top:.3rem;font-size:.9rem">Confirmation and reminder emails are sent via SMTP (set <code>SMTP_HOST</code>, <code>SMTP_FROM</code>, <code>SMTP_USER</code>, <code>SMTP_PASS</code> env vars). Scheduler runs every 60 s automatically.</p>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Type</th><th>To</th><th>Channel</th><th>Message</th><th>When</th><th>Status</th></tr></thead>
+          <tbody id="notifs"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
+        <h3 style="margin:0">Gift cards</h3>
+        <button class="btn btn-primary btn-sm" id="addGc">+ Issue gift card</button>
+      </div>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Issue prepaid gift cards sold at the counter. Mark paid when collected. Customers enter the code at booking to apply the balance.</p>
+      <div id="gcForm" style="display:none;background:var(--bg-soft);border-radius:12px;padding:1.2rem;margin-bottom:1rem"></div>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Code</th><th>Issued to</th><th>Amount</th><th>Balance</th><th>Payment</th><th>Status</th><th></th></tr></thead>
+          <tbody id="gcRows"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
+        <h3 style="margin:0">Packages</h3>
+        <button class="btn btn-primary btn-sm" id="addPkg">+ New package</button>
+      </div>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Prepaid bundles customers purchase at the counter — each session is redeemed at booking. Mark purchases as paid once collected.</p>
+      <div id="pkgForm" style="display:none;background:var(--bg-soft);border-radius:12px;padding:1.2rem;margin-bottom:1rem"></div>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Package</th><th>Service</th><th>Sessions</th><th>Price</th><th></th></tr></thead>
+          <tbody id="pkgRows"></tbody>
+        </table>
+      </div>
+      <h4 style="margin-top:1.5rem;margin-bottom:.3rem;font-size:1rem">Customer purchases</h4>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Customer</th><th>Package</th><th>Sessions left</th><th>Price</th><th>Payment</th><th></th></tr></thead>
+          <tbody id="cpRows"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
+        <h3 style="margin:0">Membership plans</h3>
+        <button class="btn btn-primary btn-sm" id="addMemPlan">+ New plan</button>
+      </div>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Monthly subscriptions with a % discount on all services. Mark payment collected each month to keep the membership active.</p>
+      <div id="memPlanForm" style="display:none;background:var(--bg-soft);border-radius:12px;padding:1.2rem;margin-bottom:1rem"></div>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Plan</th><th>Monthly price</th><th>Discount</th><th>Status</th><th></th></tr></thead>
+          <tbody id="memPlanRows"></tbody>
+        </table>
+      </div>
+      <h4 style="margin-top:1.5rem;margin-bottom:.3rem;font-size:1rem">Active &amp; pending members</h4>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Customer</th><th>Plan</th><th>Discount</th><th>Renewal</th><th>Status</th><th></th></tr></thead>
+          <tbody id="memRows"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
+        <h3 style="margin:0">Marketing broadcasts</h3>
+      </div>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Send a one-off email or SMS to all opted-in customers. Use <code>{name}</code> for a personalised greeting. Customers can unsubscribe via the link added automatically to each email.</p>
+      <div id="bcForm" style="background:var(--bg-soft);border-radius:12px;padding:1.2rem;margin-bottom:1rem">
+        <div class="field"><label>Subject</label><input id="bc-subject" placeholder="Summer special — book this week"></div>
+        <div class="field"><label>Message</label><textarea id="bc-message" rows="4" placeholder="Hi {name}, we have a special offer just for you…" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;resize:vertical"></textarea></div>
+        <div class="field"><label>Channel</label>
+          <select id="bc-channel" style="padding:.65rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit">
+            <option value="email">Email only</option>
+            <option value="sms">SMS only</option>
+            <option value="both">Email + SMS</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm" id="bc-send">Send broadcast</button>
+        <span id="bc-msg" style="margin-left:.8rem;font-size:.88rem"></span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Sent</th><th>Subject</th><th>Channel</th><th>Recipients</th></tr></thead>
+          <tbody id="bcRows"></tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top:2.5rem;margin-bottom:.3rem">Referrals</h3>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Customers who signed up using a referral code. Referrer earns 200 pts and referee earns 100 pts when the first visit is completed.</p>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Referee</th><th>Referred by</th><th>Their code</th><th>Signed up</th><th>Bonus status</th></tr></thead>
+          <tbody id="refRows"></tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top:2.5rem;margin-bottom:.3rem">Customer reviews</h3>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Reviews submitted via the post-visit review link (ref-gated, no login required).</p>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>When</th><th>Service</th><th>Artist</th><th>Customer</th><th>Rating</th><th>Comment</th></tr></thead>
+          <tbody id="reviewRows"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
+        <h3 style="margin:0">Waitlist</h3>
+      </div>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Customers who joined the waitlist for a specific date and service. When a booking is cancelled the first matching customer is notified automatically. Dismiss entries once resolved.</p>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Date</th><th>Service</th><th>Staff pref.</th><th>Customer</th><th>Contact</th><th>Status</th><th></th></tr></thead>
+          <tbody id="wlRows"></tbody>
+        </table>
+      </div>
+
+      <!-- Retail store + inventory -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
+        <h3 style="margin:0">Retail products</h3>
+        <button class="btn btn-primary btn-sm" id="addProduct">+ Add product</button>
+      </div>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Track retail inventory (polishes, skincare, tools). Record sales at the desk to keep stock counts accurate. Items at or below their low-stock threshold are highlighted.</p>
+      <div id="productForm" style="display:none;background:var(--bg-soft);border-radius:12px;padding:1.2rem;margin-bottom:1rem"></div>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Product</th><th>Category</th><th>SKU</th><th>Price</th><th>Stock</th><th>Threshold</th><th></th></tr></thead>
+          <tbody id="productRows"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2rem;flex-wrap:wrap;gap:1rem">
+        <h3 style="margin:0">Record a retail sale</h3>
+      </div>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Select the product sold and enter the quantity to log a sale and decrement stock.</p>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem">
+        <div>
+          <label class="form-label" style="font-size:.82rem">Product</label>
+          <select id="sale-product" class="form-input" style="width:220px"><option value="">— choose —</option></select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:.82rem">Qty</label>
+          <input id="sale-qty" type="number" class="form-input" min="1" value="1" style="width:70px" />
+        </div>
+        <div>
+          <label class="form-label" style="font-size:.82rem">Staff</label>
+          <select id="sale-staff" class="form-input" style="width:160px"><option value="">— optional —</option></select>
+        </div>
+        <button class="btn btn-primary btn-sm" id="sale-submit">Record sale</button>
+        <span id="sale-msg" style="font-size:.88rem"></span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>When</th><th>Product</th><th>Qty</th><th>Unit</th><th>Total</th><th>Staff</th></tr></thead>
+          <tbody id="saleRows"></tbody>
+        </table>
+      </div>
+
+      <!-- Tips + Commission -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
+        <h3 style="margin:0">Tips &amp; commission</h3>
+      </div>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Record tips on completed bookings. Commission is calculated from each artist's service revenue × their commission rate (set on the Staff tab). Filter by date range to generate a payroll period.</p>
+
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem">
+        <div>
+          <label class="form-label" style="font-size:.82rem">From</label>
+          <input id="comm-from" type="date" class="form-input" style="width:145px" />
+        </div>
+        <div>
+          <label class="form-label" style="font-size:.82rem">To</label>
+          <input id="comm-to" type="date" class="form-input" style="width:145px" />
+        </div>
+        <button class="btn btn-ghost btn-sm" id="comm-filter">Filter</button>
+        <button class="btn btn-ghost btn-sm" id="comm-clear" style="color:var(--muted)">Clear</button>
+      </div>
+
+      <h4 style="margin:0 0 .4rem;font-size:.95rem">Commission by artist</h4>
+      <div style="overflow-x:auto;margin-bottom:1.5rem">
+        <table class="bookings">
+          <thead><tr><th>Artist</th><th>Rate</th><th>Bookings</th><th>Revenue</th><th>Commission</th><th>Tips</th><th>Total earnings</th></tr></thead>
+          <tbody id="commRows"></tbody>
+        </table>
+      </div>
+
+      <h4 style="margin:0 0 .4rem;font-size:.95rem">Tips log</h4>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Date</th><th>Ref</th><th>Service</th><th>Artist</th><th>Price</th><th>Tip</th><th></th></tr></thead>
+          <tbody id="tipRows"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
+        <h3 style="margin:0">Service menu</h3>
+        <button class="btn btn-primary btn-sm" id="addSvc">+ Add service</button>
+      </div>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Add, edit or remove services. Changes appear on the public menu immediately. Past bookings keep their original price.</p>
+      <div id="svcForm" style="display:none"></div>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Service</th><th>Category</th><th>Duration</th><th>Price</th><th>Resource</th><th>Artists</th><th></th></tr></thead>
+          <tbody id="svcRows"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
+        <h3 style="margin:0">Resources</h3>
+        <button class="btn btn-primary btn-sm" id="addRes">+ Add resource</button>
+      </div>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Physical capacity such as pedicure chairs or treatment rooms. Assign one to a service to cap concurrent bookings across all artists.</p>
+      <div id="resForm" style="display:none"></div>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Resource</th><th>Capacity</th><th>Used by</th><th></th></tr></thead>
+          <tbody id="resRows"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
+        <h3 style="margin:0">Team</h3>
+        <button class="btn btn-primary btn-sm" id="addStaff">+ Add artist</button>
+      </div>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Onboard or update artists. You can't remove an artist who is the only one assigned to a service — reassign it first.</p>
+      <div id="staffForm" style="display:none"></div>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Artist</th><th>Title</th><th>Specialties</th><th></th></tr></thead>
+          <tbody id="staffRows"></tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top:2.5rem">Block off time</h3>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">One-off blocks (lunch, cleaning, a private event). For weekly breaks or vacations, use an artist's <em>Schedule</em> instead.</p>
+      <div class="panel" style="margin-bottom:1rem">
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end">
+          <div class="field" style="margin:0"><label>Artist</label><select id="bo-staff" style="padding:.8rem 1rem;border:1.5px solid var(--line);border-radius:10px"></select></div>
+          <div class="field" style="margin:0"><label>Date</label><input type="date" id="bo-date"></div>
+          <div class="field" style="margin:0;width:120px"><label>From</label><input type="time" id="bo-start" value="12:00"></div>
+          <div class="field" style="margin:0;width:120px"><label>To</label><input type="time" id="bo-end" value="13:00"></div>
+          <div class="field" style="margin:0;flex:1;min-width:140px"><label>Reason</label><input id="bo-reason" placeholder="Lunch"></div>
+          <button class="btn btn-primary" id="bo-add">Add block</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Artist</th><th>Date</th><th>Time</th><th>Reason</th><th></th></tr></thead>
+          <tbody id="boRows"></tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top:2.5rem">Gallery</h3>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Photos and emoji tiles shown on the public gallery page. Add an <em>Image URL</em> to show a real photo; leave blank to show the emoji tile.</p>
+      <div style="overflow-x:auto;margin-bottom:1rem">
+        <table class="bookings" id="galleryTable">
+          <thead><tr><th>Category</th><th>Title</th><th>Emoji</th><th>Image URL</th><th>Caption</th><th>Order</th><th></th></tr></thead>
+          <tbody id="galleryRows"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-primary btn-sm" id="addGalleryItem">+ Add item</button>
+      <div class="panel" id="galleryForm" style="display:none;margin-top:1.2rem;max-width:640px">
+        <h4 style="margin:0 0 1rem" id="galleryFormTitle">New gallery item</h4>
+        <input type="hidden" id="gal-id">
+        <div class="grid grid-2" style="gap:.8rem;margin-bottom:.8rem">
+          <div class="field" style="margin:0"><label>Category</label><select id="gal-category"></select></div>
+          <div class="field" style="margin:0"><label>Title</label><input id="gal-title" placeholder="Chrome ombré"></div>
+        </div>
+        <div class="grid grid-2" style="gap:.8rem;margin-bottom:.8rem">
+          <div class="field" style="margin:0"><label>Emoji (fallback)</label><input id="gal-emoji" placeholder="💅" maxlength="8"></div>
+          <div class="field" style="margin:0"><label>Sort order</label><input type="number" id="gal-sort" min="1" value="99"></div>
+        </div>
+        <div class="field" style="margin-bottom:.8rem"><label>Image URL (optional)</label><input type="url" id="gal-imageUrl" placeholder="https://…"></div>
+        <div class="field" style="margin-bottom:1rem"><label>Caption</label><input id="gal-caption" placeholder="Short description for the tile tooltip"></div>
+        <div style="display:flex;gap:.6rem">
+          <button class="btn btn-primary" id="gal-save">Save item</button>
+          <button class="btn btn-ghost" id="gal-cancel">Cancel</button>
+        </div>
+        <p id="gal-msg" class="muted" style="font-size:.85rem;margin-top:.6rem"></p>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/common.js"></script>
+  <script>
+    function bars(obj, labels) {
+      const entries = Object.entries(obj);
+      if (!entries.length) return '<p class="muted" style="font-size:.85rem">No data yet.</p>';
+      const max = Math.max(...entries.map(([,v])=>v));
+      return entries.map(([k,v])=>`
+        <div style="margin:.5rem 0">
+          <div style="display:flex;justify-content:space-between;font-size:.85rem"><span>${labels[k]||k}</span><strong>${v}</strong></div>
+          <div style="height:8px;background:var(--bg-soft);border-radius:6px;overflow:hidden">
+            <div style="height:100%;width:${(v/max)*100}%;background:linear-gradient(90deg,var(--rose),var(--rose-deep))"></div>
+          </div>
+        </div>`).join('');
+    }
+    let CFG;
+    let bFilters = { q: '', status: '', staffId: '', date: '' };
+    let bPage = 1;
+
+    async function loadBookings() {
+      const params = { page: bPage };
+      if (bFilters.q)       params.q       = bFilters.q;
+      if (bFilters.status)  params.status  = bFilters.status;
+      if (bFilters.staffId) params.staffId = bFilters.staffId;
+      if (bFilters.date)    params.date    = bFilters.date;
+      const data = await api.bookings(params);
+      renderBookingRows(data);
+    }
+
+    function renderBookingRows(data) {
+      const list  = data.bookings  || [];
+      const total = data.total     || 0;
+      const page  = data.page      || 1;
+      const pages = data.pages     || 1;
+      const ps    = data.pageSize  || 25;
+      document.getElementById('rows').innerHTML = list.length
+        ? list.map(b => `<tr>
+            <td><strong>${b.ref}</strong></td>
+            <td>${b.date}<br><span class="muted">${b.time}</span></td>
+            <td>${esc(b.serviceName)}</td>
+            <td>${esc(b.staffName)}</td>
+            <td>${esc(b.customer.name)}<br><span class="muted" style="font-size:.8rem">${esc(b.customer.phone)}</span></td>
+            <td>${money(b.price)}</td>
+            <td>
+              <span class="status ${b.status}">${b.status}</span>
+              ${b.depositStatus === 'pending' ? `<br><span class="status" style="background:#fff3cd;color:#856404;margin-top:.3rem">deposit pending</span>` : ''}
+              ${b.depositStatus === 'collected' ? `<br><span class="status" style="background:#e3f1e6;color:#2f7a45;margin-top:.3rem">deposit ✓</span>` : ''}
+              ${b.loyaltyPoints ? `<br><span class="status" style="background:#e8f0fe;color:#1a56c4;margin-top:.3rem">+${b.loyaltyPoints} pts</span>` : ''}
+              ${b.seriesId ? `<br><span class="status" style="background:#efe7fb;color:#6b41b5;margin-top:.3rem">recurring</span>` : ''}
+              ${b.groupId ? `<br><span class="status" style="background:#fbe7f2;color:#b5417e;margin-top:.3rem">${b.groupRole==='organizer'?'party host':'party'}</span>` : ''}
+            </td>
+            <td style="white-space:nowrap">
+              ${b.status==='confirmed' ? `
+                <button class="btn btn-ghost btn-sm" onclick="setStatus('${b.id}','completed')" title="Mark as completed">✓ Done</button>
+                <button class="btn btn-ghost btn-sm" style="margin-left:.3rem" onclick="setStatus('${b.id}','no-show')" title="Mark as no-show">✗ No-show</button>
+                ${b.depositStatus==='pending' ? `<button class="btn btn-ghost btn-sm" style="margin-left:.3rem" onclick="markDeposit('${b.id}')">$ Collected</button>` : ''}
+                <button class="btn btn-ghost btn-sm" style="margin-left:.3rem;color:var(--rose-deep)" onclick="cancelB('${b.id}')">Cancel</button>
+              ` : b.status==='completed' ? `
+                <button class="btn btn-ghost btn-sm" style="color:#2f7a45" onclick="editTip('${b.id}','${b.ref}',${b.tip||0})">${b.tip ? '✏ Tip $'+Number(b.tip).toFixed(2) : '+ Tip'}</button>
+              ` : ''}
+            </td>
+          </tr>`).join('')
+        : '<tr><td colspan="8" class="muted" style="text-align:center;padding:2rem">No bookings found.</td></tr>';
+      const pager = document.getElementById('bPager');
+      if (total === 0 && pages <= 1) { pager.innerHTML = ''; return; }
+      const from = total === 0 ? 0 : (page - 1) * ps + 1;
+      const to   = Math.min(page * ps, total);
+      pager.innerHTML = `
+        <span>Showing ${from}–${to} of ${total} booking${total !== 1 ? 's' : ''}</span>
+        <div style="display:flex;gap:.4rem;align-items:center">
+          <button class="btn btn-ghost btn-sm" onclick="goPage(${page - 1})" ${page <= 1 ? 'disabled' : ''}>← Prev</button>
+          <span style="padding:.3rem .6rem;background:var(--bg-soft);border-radius:6px">${page} / ${pages}</span>
+          <button class="btn btn-ghost btn-sm" onclick="goPage(${page + 1})" ${page >= pages ? 'disabled' : ''}>Next →</button>
+        </div>`;
+    }
+
+    function goPage(n) { bPage = n; loadBookings(); }
+    function clearBFilters() {
+      bFilters = { q: '', status: '', staffId: '', date: '' };
+      bPage = 1;
+      document.getElementById('bQ').value = '';
+      document.getElementById('bStatus').value = '';
+      document.getElementById('bStaff').value = '';
+      document.getElementById('bDate').value = '';
+      loadBookings();
+    }
+    function setupBookingFilters() {
+      let timer;
+      document.getElementById('bQ').addEventListener('input', e => {
+        clearTimeout(timer);
+        timer = setTimeout(() => { bFilters.q = e.target.value.trim(); bPage = 1; loadBookings(); }, 300);
+      });
+      document.getElementById('bStatus').addEventListener('change', e => { bFilters.status = e.target.value; bPage = 1; loadBookings(); });
+      document.getElementById('bStaff').addEventListener('change', e => { bFilters.staffId = e.target.value; bPage = 1; loadBookings(); });
+      document.getElementById('bDate').addEventListener('change', e => { bFilters.date = e.target.value; bPage = 1; loadBookings(); });
+    }
+
+    function renderAnalytics(stats) {
+      const el = document.getElementById('analytics');
+      if (!el) return;
+      const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const rEntries = Object.entries(stats.revenueByMonth || {}).sort();
+      const rMax = Math.max(1, ...rEntries.map(([,v]) => v));
+      const revHtml = rEntries.map(([k, v]) => {
+        const [y, m] = k.split('-');
+        const pct = Math.round(v / rMax * 100);
+        return '<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem;font-size:.82rem">' +
+          '<div style="width:56px;color:var(--muted);text-align:right;flex-shrink:0">' + MN[+m-1] + ' \'' + y.slice(2) + '</div>' +
+          '<div style="flex:1;background:var(--bg-soft);border-radius:4px;height:10px;overflow:hidden">' +
+            '<div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg,var(--rose),var(--rose-deep))"></div>' +
+          '</div>' +
+          '<div style="width:52px;text-align:right;font-weight:500">' + money(v) + '</div>' +
+          '</div>';
+      }).join('');
+      const wEntries = Object.entries(stats.bookingsByWeek || {}).sort();
+      const wMax = Math.max(1, ...wEntries.map(([,v]) => v));
+      const wBars = wEntries.map(([k, v]) => {
+        const d = new Date(k + 'T00:00:00');
+        const h = Math.round(v / wMax * 100);
+        return '<div style="flex:1;height:' + h + '%;background:linear-gradient(0deg,var(--rose),var(--rose-deep));border-radius:3px 3px 0 0;min-height:' + (v > 0 ? 2 : 0) + 'px" title="' + MN[d.getMonth()] + ' ' + d.getDate() + ': ' + v + ' booking' + (v !== 1 ? 's' : '') + '"></div>';
+      }).join('');
+      const wLabelFirst = wEntries.length ? (d => MN[d.getMonth()] + ' ' + d.getDate())(new Date(wEntries[0][0] + 'T00:00:00')) : '';
+      const wLabelLast  = wEntries.length ? (d => MN[d.getMonth()] + ' ' + d.getDate())(new Date(wEntries[wEntries.length-1][0] + 'T00:00:00')) : '';
+      const svcRows = (stats.topServices || []).map((s, i, arr) =>
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:.6rem;padding:.35rem 0' + (i < arr.length - 1 ? ';border-bottom:1px solid var(--line)' : '') + '">' +
+          '<div style="font-size:.88rem;font-weight:500">' + esc(s.name) + '</div>' +
+          '<div style="text-align:right;flex-shrink:0">' +
+            '<span style="font-size:.78rem;background:var(--bg-soft);padding:.15rem .45rem;border-radius:12px">' + s.count + ' booking' + (s.count !== 1 ? 's' : '') + '</span>' +
+            '<span style="font-size:.78rem;color:var(--muted);margin-left:.3rem">' + money(s.revenue) + '</span>' +
+          '</div></div>'
+      ).join('');
+      el.innerHTML =
+        '<div class="card"><h3 style="font-size:1rem;margin-bottom:.8rem">Revenue by month</h3>' + revHtml + '</div>' +
+        '<div class="card"><h3 style="font-size:1rem;margin-bottom:.8rem">Bookings per week</h3>' +
+          '<div style="display:flex;align-items:flex-end;gap:3px;height:64px">' + wBars + '</div>' +
+          '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-top:.3rem">' +
+            '<span>' + wLabelFirst + '</span><span>' + wLabelLast + '</span>' +
+          '</div>' +
+          '<p class="muted" style="font-size:.78rem;margin-top:.6rem;margin-bottom:0">Last 8 weeks · excl. cancelled</p></div>' +
+        '<div class="card"><h3 style="font-size:1rem;margin-bottom:.8rem">Top services</h3>' +
+          (svcRows || '<p class="muted" style="font-size:.85rem">No active bookings yet.</p>') +
+          '<p class="muted" style="font-size:.78rem;margin-top:.6rem;margin-bottom:0">Active bookings · confirmed &amp; completed</p></div>';
+    }
+
+    async function load() {
+      const commFrom = document.getElementById('comm-from') ? document.getElementById('comm-from').value : '';
+      const commTo = document.getElementById('comm-to') ? document.getElementById('comm-to').value : '';
+      const [stats, cfg, notifs, blocks, gcData, cpData, rvData, wlData, memData, refData, bcData, prodData, salesData, tipsData, commData, gallData] = await Promise.all([api.stats(), api.config(), api.notifications(), api.blockoffs(), api.adminGiftCards(), api.adminCustomerPackages(), api.adminReviews(), api.adminWaitlist(), api.adminMembers(), api.adminReferrals(), api.adminBroadcasts(), api.adminProducts(), api.adminSales(), api.adminTips(), api.adminCommissions(commFrom, commTo), api.galleryItems()]);
+      CFG = cfg;
+      const catLabels = Object.fromEntries(CFG.categories.map(c=>[c.id,c.name]));
+      document.getElementById('stats').innerHTML = `
+        <div class="stat"><div class="big">${stats.activeBookings}</div><div class="lbl">Active bookings</div></div>
+        <div class="stat"><div class="big">${money(stats.projectedRevenue)}</div><div class="lbl">Projected revenue</div></div>
+        <div class="stat"><div class="big">${money(stats.actualRevenue)}</div><div class="lbl">Actual revenue</div></div>
+        <div class="stat"><div class="big">${stats.cancelled}</div><div class="lbl">Cancelled</div></div>
+        <div class="stat"><div class="big">${stats.totalBookings}</div><div class="lbl">All-time bookings</div></div>
+        <div class="stat"><div class="big">${stats.totalPointsIssued || 0}</div><div class="lbl">Loyalty pts issued</div></div>
+        <div class="stat"><div class="big">${stats.avgRating != null ? stats.avgRating + ' ★' : '—'}</div><div class="lbl">Avg rating (${stats.totalReviews || 0} reviews)</div></div>`;
+      document.getElementById('byCat').innerHTML = bars(stats.byCategory, catLabels);
+      document.getElementById('byStaff').innerHTML = bars(stats.byStaff, {});
+      renderAnalytics(stats);
+      // Populate artist filter (preserve current selection)
+      const bStaffSel = document.getElementById('bStaff');
+      const prevStaff = bStaffSel.value;
+      bStaffSel.innerHTML = '<option value="">All artists</option>' + CFG.staff.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+      bStaffSel.value = prevStaff;
+      await loadBookings();
+
+      const fmt = (iso) => { const d = new Date(iso); return isNaN(d) ? iso : d.toLocaleString(); };
+      const statusStyle = (s) => s === 'sent' ? 'confirmed' : s === 'failed' ? 'cancelled' : '';
+      const statusInline = (s) => s === 'scheduled' ? 'background:#fcf0dd;color:#a9772a' : s === 'failed' ? '' : '';
+      document.getElementById('notifs').innerHTML = notifs.notifications.length
+        ? notifs.notifications.map(n => `<tr>
+            <td style="text-transform:capitalize">${n.type}</td>
+            <td>${esc(n.toName || n.to)}<br><span class="muted" style="font-size:.8rem">${esc(n.to)}</span></td>
+            <td>${n.channel}</td>
+            <td style="max-width:280px;font-size:.82rem" class="muted">${esc((n.message||'').slice(0,120))}${n.message&&n.message.length>120?'…':''}</td>
+            <td style="font-size:.85rem">${fmt(n.scheduledFor)}</td>
+            <td><span class="status ${statusStyle(n.status)}" style="${statusInline(n.status)}">${n.status}</span></td>
+          </tr>`).join('')
+        : '<tr><td colspan="6" class="muted" style="text-align:center;padding:2rem">No notifications yet.</td></tr>';
+
+      renderServices();
+      renderResources();
+      renderStaff();
+      renderBlockoffs(blocks.blockoffs);
+      renderGiftCards(gcData.giftCards);
+      renderPackages(cfg.packages || [], cpData.packages || []);
+      renderMembershipPlans(cfg.membershipPlans || []);
+      renderMembers(memData.members || []);
+      renderReferrals(refData.referrals || []);
+      renderBroadcasts(bcData.broadcasts || []);
+      renderReviews(rvData.reviews || []);
+      renderWaitlist(wlData.waitlist || []);
+      renderGallery(gallData.gallery || []);
+      window._products = prodData.products || [];
+      renderProducts(window._products);
+      renderSales(salesData.sales || []);
+      renderCommissions(commData.commissions || []);
+      renderTips(tipsData.tips || []);
+      // populate sale product dropdown
+      const saleProductSel = document.getElementById('sale-product');
+      if (saleProductSel) {
+        saleProductSel.innerHTML = '<option value="">— choose —</option>' +
+          (prodData.products || []).filter(p => p.stock > 0).map(p =>
+            `<option value="${p.id}">${esc(p.name)} (${p.stock} in stock · $${Number(p.price).toFixed(2)})</option>`).join('');
+      }
+      // populate sale staff dropdown
+      const saleStaffSel = document.getElementById('sale-staff');
+      if (saleStaffSel) {
+        saleStaffSel.innerHTML = '<option value="">— optional —</option>' +
+          (cfg.staff || []).map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+      }
+    }
+    async function cancelB(id) {
+      await api.adminCancel(id); toast('Booking cancelled.'); load();
+    }
+    async function setStatus(id, status) {
+      const res = await api.setBookingStatus(id, status);
+      if (!res.ok) { toast(res.data.error || 'Could not update.'); return; }
+      const pts = res.data.booking && res.data.booking.loyaltyPoints;
+      toast(status === 'completed'
+        ? (pts ? `Marked as completed — ${pts} loyalty points awarded.` : 'Marked as completed.')
+        : 'Marked as no-show.');
+      load();
+    }
+    async function markDeposit(id) {
+      const res = await api.collectDeposit(id);
+      if (!res.ok) { toast(res.data.error || 'Could not update.'); return; }
+      toast('Deposit marked as collected.'); load();
+    }
+
+    // ---- Walk-in / phone booking (admin) ----
+    let bkState = {};
+    function todayStr() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
+    function openBookForm() {
+      const f = document.getElementById('bookForm');
+      f.style.display = 'block'; bkState = {};
+      f.innerHTML = `<div class="panel" style="margin:1rem 0">
+        <h3 style="margin-top:0">New walk-in / phone booking</h3>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap">
+          <div class="field" style="flex:1;min-width:200px"><label>Service *</label>
+            <select id="bk-svc" onchange="onBkSvc()" style="width:100%;padding:.8rem 1rem;border:1.5px solid var(--line);border-radius:10px">
+              ${CFG.services.map(s=>`<option value="${s.id}">${esc(s.name)} · ${s.duration}m · ${money(s.price)}</option>`).join('')}</select></div>
+          <div class="field" style="flex:1;min-width:160px"><label>Artist *</label>
+            <select id="bk-staff" style="width:100%;padding:.8rem 1rem;border:1.5px solid var(--line);border-radius:10px"></select></div>
+          <div class="field" style="width:170px"><label>Date *</label><input type="date" id="bk-date" min="${todayStr()}" value="${todayStr()}"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="bk-find">Find available times</button>
+        <div id="bk-slots" aria-live="polite" style="margin:1rem 0"></div>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap">
+          <div class="field" style="flex:1;min-width:160px"><label>Customer name *</label><input id="bk-name" placeholder="Walk-in name"></div>
+          <div class="field" style="flex:1;min-width:160px"><label>Phone *</label><input id="bk-phone" placeholder="(555) 123-4567"></div>
+        </div>
+        <div class="field"><label>Notes</label><input id="bk-notes" placeholder="Optional"></div>
+        <div class="wizard-nav">
+          <button class="btn btn-ghost" onclick="closeBookForm()">Cancel</button>
+          <button class="btn btn-primary" id="bk-book" disabled style="opacity:.5;cursor:not-allowed">Book</button>
+        </div>
+      </div>`;
+      onBkSvc();
+      document.getElementById('bk-find').addEventListener('click', bkFindTimes);
+      document.getElementById('bk-book').addEventListener('click', bkBook);
+      f.scrollIntoView({ behavior:'smooth', block:'center' });
+    }
+    function closeBookForm() { const f=document.getElementById('bookForm'); f.style.display='none'; f.innerHTML=''; bkState={}; }
+    function onBkSvc() {
+      const svc = CFG.services.find(s => s.id === document.getElementById('bk-svc').value);
+      document.getElementById('bk-staff').innerHTML = '<option value="any">Any available</option>' +
+        svc.staffIds.map(id => { const p = CFG.staff.find(x => x.id === id); return `<option value="${id}">${esc(p?p.name:id)}</option>`; }).join('');
+      document.getElementById('bk-slots').innerHTML = ''; bkState = {};
+      const bb = document.getElementById('bk-book'); if (bb) { bb.disabled = true; bb.style.opacity = .5; bb.style.cursor = 'not-allowed'; }
+    }
+    async function bkFindTimes() {
+      const svc = document.getElementById('bk-svc').value, staff = document.getElementById('bk-staff').value, date = document.getElementById('bk-date').value;
+      if (!date) { toast('Pick a date.'); return; }
+      const area = document.getElementById('bk-slots'); area.innerHTML = '<p class="muted">Loading…</p>';
+      const res = await api.availability(svc, staff, date);
+      const opts = (res.options || []).filter(o => o.slots.length);
+      if (!opts.length) { area.innerHTML = '<p class="muted">No times available that day.</p>'; return; }
+      area.innerHTML = opts.map(o => `<p class="eyebrow" style="margin:.6rem 0 .3rem">${esc(o.staffName)}</p>
+        <div class="slots">${o.slots.map(t => `<div class="slot" data-t="${t}" data-staff="${o.staffId}" tabindex="0" role="button">${t}</div>`).join('')}</div>`).join('');
+      area.querySelectorAll('.slot').forEach(sl => sl.addEventListener('click', () => {
+        area.querySelectorAll('.slot').forEach(x => x.classList.remove('selected'));
+        sl.classList.add('selected'); bkState = { time: sl.dataset.t, staffId: sl.dataset.staff };
+        const bb = document.getElementById('bk-book'); bb.disabled = false; bb.style.opacity = 1; bb.style.cursor = 'pointer';
+      }));
+    }
+    async function bkBook() {
+      if (!bkState.time) { toast('Pick a time.'); return; }
+      const name = document.getElementById('bk-name').value.trim(), phone = document.getElementById('bk-phone').value.trim();
+      if (!name || !phone) { toast('Add the customer name and phone.'); return; }
+      const res = await api.book({ serviceId: document.getElementById('bk-svc').value, staffId: bkState.staffId, date: document.getElementById('bk-date').value, time: bkState.time, customer: { name, phone, notes: document.getElementById('bk-notes').value } });
+      if (!res.ok) { toast(res.data.error || 'Could not book.'); if (res.status === 409) bkFindTimes(); return; }
+      toast('Booked ' + res.data.booking.ref); closeBookForm(); load();
+    }
+
+    // ---- Group / bridal party booking (admin) ----
+    let groupGuestN = 0;
+    function openGroupForm() {
+      const f = document.getElementById('groupForm');
+      f.style.display = 'block'; groupGuestN = 0;
+      f.innerHTML = `<div class="panel" style="margin:1rem 0">
+        <h3 style="margin-top:0">Group / bridal party</h3>
+        <p class="muted" style="font-size:.88rem;margin-top:-.4rem">One organizer, one date. Each guest is placed in the soonest opening at or after the start time. Booked all-or-nothing.</p>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap">
+          <div class="field" style="flex:1;min-width:160px"><label>Organizer name *</label><input id="gp-name" placeholder="Party host"></div>
+          <div class="field" style="flex:1;min-width:160px"><label>Contact phone *</label><input id="gp-phone" placeholder="(555) 123-4567"></div>
+          <div class="field" style="flex:1;min-width:160px"><label>Email</label><input id="gp-email" placeholder="optional"></div>
+        </div>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap">
+          <div class="field" style="width:170px"><label>Date *</label><input type="date" id="gp-date" min="${todayStr()}" value="${todayStr()}"></div>
+          <div class="field" style="width:150px"><label>Start from *</label><input type="time" id="gp-time" value="10:00" step="900"></div>
+        </div>
+        <label style="font-weight:600;display:block;margin:.4rem 0">Guests</label>
+        <div id="gp-guests"></div>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="addGuest()">+ Add guest</button>
+        <div class="wizard-nav">
+          <button class="btn btn-ghost" onclick="closeGroupForm()">Cancel</button>
+          <button class="btn btn-primary" id="gp-book">Book the party</button>
+        </div>
+      </div>`;
+      addGuest(); addGuest(); // start with two
+      document.getElementById('gp-book').addEventListener('click', groupBook);
+      f.scrollIntoView({ behavior:'smooth', block:'center' });
+    }
+    function closeGroupForm() { const f=document.getElementById('groupForm'); f.style.display='none'; f.innerHTML=''; }
+    function addGuest() {
+      const n = ++groupGuestN;
+      const div = document.createElement('div');
+      div.className = 'gp-guest'; div.dataset.n = n;
+      div.style = 'display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end;margin:.4rem 0;padding:.6rem;background:var(--bg-soft);border-radius:10px';
+      div.innerHTML = `
+        <div class="field" style="margin:0;flex:1;min-width:130px"><label style="font-size:.78rem">Guest name *</label><input class="gp-gname" placeholder="Guest ${n}"></div>
+        <div class="field" style="margin:0;flex:1;min-width:150px"><label style="font-size:.78rem">Service *</label>
+          <select class="gp-gsvc" onchange="onGuestSvc(this)" style="width:100%;padding:.7rem;border:1.5px solid var(--line);border-radius:10px">
+            ${CFG.services.map(s=>`<option value="${s.id}">${esc(s.name)} · ${s.duration}m</option>`).join('')}</select></div>
+        <div class="field" style="margin:0;flex:1;min-width:130px"><label style="font-size:.78rem">Artist</label>
+          <select class="gp-gstaff" style="width:100%;padding:.7rem;border:1.5px solid var(--line);border-radius:10px"></select></div>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="this.closest('.gp-guest').remove()">✕</button>`;
+      document.getElementById('gp-guests').appendChild(div);
+      onGuestSvc(div.querySelector('.gp-gsvc'));
+    }
+    function onGuestSvc(selEl) {
+      const svc = CFG.services.find(s => s.id === selEl.value);
+      const staffSel = selEl.closest('.gp-guest').querySelector('.gp-gstaff');
+      staffSel.innerHTML = '<option value="any">Any available</option>' +
+        svc.staffIds.map(id => { const p = CFG.staff.find(x => x.id === id); return `<option value="${id}">${esc(p?p.name:id)}</option>`; }).join('');
+    }
+    async function groupBook() {
+      const members = Array.from(document.querySelectorAll('#gp-guests .gp-guest')).map(g => ({
+        name: g.querySelector('.gp-gname').value.trim(),
+        serviceId: g.querySelector('.gp-gsvc').value,
+        staffId: g.querySelector('.gp-gstaff').value
+      })).filter(m => m.name);
+      if (members.length < 2) { toast('Add at least two named guests.'); return; }
+      const res = await api.bookGroup({
+        organizer: {
+          name: document.getElementById('gp-name').value.trim(),
+          phone: document.getElementById('gp-phone').value.trim(),
+          email: document.getElementById('gp-email').value.trim()
+        },
+        date: document.getElementById('gp-date').value,
+        time: document.getElementById('gp-time').value,
+        members
+      });
+      if (!res.ok) { toast(res.data.error || 'Could not book the party.'); return; }
+      toast(`Party booked — ${res.data.bookings.length} guests.`); closeGroupForm(); load();
+    }
+    window.openGroupForm = openGroupForm; window.closeGroupForm = closeGroupForm;
+    window.addGuest = addGuest; window.onGuestSvc = onGuestSvc;
+
+    // ---- Service menu CRUD ----
+    function renderServices() {
+      const nameOf = (id) => (CFG.staff.find(p=>p.id===id)||{}).name || id;
+      const catName = (id) => (CFG.categories.find(c=>c.id===id)||{}).name || id;
+      const resName = (id) => { const r=(CFG.resources||[]).find(x=>x.id===id); return r ? r.name+' ('+r.capacity+')' : '—'; };
+      document.getElementById('svcRows').innerHTML = CFG.services.map(s => `<tr>
+        <td><strong>${esc(s.name)}</strong></td>
+        <td>${esc(catName(s.category))}</td>
+        <td>${s.duration} min</td>
+        <td>${money(s.price)}</td>
+        <td style="font-size:.82rem" class="muted">${esc(resName(s.resourceId))}</td>
+        <td style="font-size:.82rem" class="muted">${s.staffIds.map(id=>esc(nameOf(id))).join(', ')}</td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-ghost btn-sm" onclick="editSvc('${s.id}')">Edit</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteSvc('${s.id}','${esc(s.name)}')">Delete</button>
+        </td></tr>`).join('');
+    }
+
+    function openSvcForm(svc) {
+      const f = document.getElementById('svcForm');
+      const sel = svc || { name:'', category:CFG.categories[0].id, duration:30, price:30, description:'', staffIds:[], resourceId:'', depositRequired:false };
+      f.style.display = 'block';
+      f.innerHTML = `<div class="panel" style="margin:1rem 0">
+        <h3 style="margin-top:0">${svc ? 'Edit service' : 'New service'}</h3>
+        <div class="field"><label>Name *</label><input id="sv-name" value="${esc(sel.name)}" placeholder="Gel Manicure"></div>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap">
+          <div class="field" style="flex:1;min-width:160px"><label>Category *</label>
+            <select id="sv-cat" style="width:100%;padding:.8rem 1rem;border:1.5px solid var(--line);border-radius:10px">
+              ${CFG.categories.map(c=>`<option value="${c.id}" ${c.id===sel.category?'selected':''}>${esc(c.name)}</option>`).join('')}
+            </select></div>
+          <div class="field" style="width:130px"><label>Duration (min) *</label><input id="sv-dur" type="number" min="5" step="5" value="${sel.duration}"></div>
+          <div class="field" style="width:110px"><label>Price ($) *</label><input id="sv-price" type="number" min="0" step="1" value="${sel.price}"></div>
+        </div>
+        <div class="field"><label>Description</label><textarea id="sv-desc" rows="2" placeholder="Short description shown on the menu.">${esc(sel.description)}</textarea></div>
+        <div class="field"><label>Shared resource (optional)</label>
+          <select id="sv-resource" style="width:100%;padding:.8rem 1rem;border:1.5px solid var(--line);border-radius:10px">
+            <option value="">None</option>
+            ${(CFG.resources||[]).map(r=>`<option value="${r.id}" ${r.id===sel.resourceId?'selected':''}>${esc(r.name)} (capacity ${r.capacity})</option>`).join('')}
+          </select>
+          <p class="muted" style="font-size:.78rem;margin:.3rem 0 0">Caps how many of this service can run at once across all artists (e.g. pedicure chairs).</p>
+        </div>
+        <div class="field"><label>Artists *</label>
+          <div style="display:flex;gap:.8rem;flex-wrap:wrap;margin-top:.3rem">
+            ${CFG.staff.map(p=>`<label style="display:flex;gap:.4rem;align-items:center;font-weight:400">
+              <input type="checkbox" class="sv-staff" value="${p.id}" ${sel.staffIds.includes(p.id)?'checked':''}> ${esc(p.name)}</label>`).join('')}
+          </div></div>
+        <div class="field"><label style="display:flex;gap:.5rem;align-items:center;font-weight:400;cursor:pointer">
+          <input type="checkbox" id="sv-deposit" ${sel.depositRequired?'checked':''}> Deposit required (collected at salon)
+        </label></div>
+        <div class="wizard-nav">
+          <button class="btn btn-ghost" onclick="closeSvcForm()">Cancel</button>
+          <button class="btn btn-primary" id="sv-save">${svc ? 'Save changes' : 'Add service'}</button>
+        </div>
+      </div>`;
+      f.dataset.id = svc ? svc.id : '';
+      document.getElementById('sv-save').addEventListener('click', saveSvc);
+      f.scrollIntoView({ behavior:'smooth', block:'center' });
+    }
+    function closeSvcForm() { const f=document.getElementById('svcForm'); f.style.display='none'; f.innerHTML=''; }
+
+    async function saveSvc() {
+      const f = document.getElementById('svcForm');
+      const service = {
+        id: f.dataset.id || undefined,
+        name: document.getElementById('sv-name').value,
+        category: document.getElementById('sv-cat').value,
+        duration: Number(document.getElementById('sv-dur').value),
+        price: Number(document.getElementById('sv-price').value),
+        description: document.getElementById('sv-desc').value,
+        staffIds: Array.from(document.querySelectorAll('.sv-staff:checked')).map(c=>c.value),
+        resourceId: document.getElementById('sv-resource').value || null,
+        depositRequired: document.getElementById('sv-deposit').checked
+      };
+      const res = await api.saveService(service);
+      if (!res.ok) { toast(res.data.error || 'Could not save.'); return; }
+      toast(f.dataset.id ? 'Service updated.' : 'Service added.');
+      closeSvcForm(); load();
+    }
+    function editSvc(id) { openSvcForm(CFG.services.find(s=>s.id===id)); }
+    async function deleteSvc(id, name) {
+      if (!confirm(`Delete "${name}"? This removes it from the menu (past bookings are kept).`)) return;
+      const res = await api.deleteService(id);
+      if (!res.ok) { toast(res.data.error || 'Could not delete.'); return; }
+      toast('Service deleted.'); load();
+    }
+
+    // ---- Team CRUD ----
+    function renderStaff() {
+      document.getElementById('staffRows').innerHTML = CFG.staff.map(p => `<tr>
+        <td><strong>${esc(p.name)}</strong></td>
+        <td>${esc(p.title || '')}</td>
+        <td style="font-size:.82rem" class="muted">${(p.specialties||[]).map(esc).join(', ')}</td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-ghost btn-sm" onclick="editStaff('${p.id}')">Edit</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteStaff('${p.id}','${esc(p.name)}')">Delete</button>
+        </td></tr>`).join('');
+    }
+    const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    function openStaffForm(st) {
+      const f = document.getElementById('staffForm');
+      const sel = st || { name:'', title:'', bio:'', specialties:[], hours:{}, timeOff:[], breaks:[] };
+      const hoursRow = (d) => {
+        const hv = (sel.hours||{})[d]; // undefined=default, null=off, {start,end}=custom
+        const mode = hv === undefined ? 'default' : (hv === null ? 'off' : 'custom');
+        const show = mode === 'custom' ? '' : 'display:none';
+        return `<div class="hrow" data-day="${d}" style="display:flex;gap:.5rem;align-items:center;margin:.3rem 0">
+          <span style="width:38px;font-weight:600">${d}</span>
+          <select class="h-mode" onchange="onHmode(this)" style="padding:.4rem;border:1.5px solid var(--line);border-radius:8px">
+            <option value="default" ${mode==='default'?'selected':''}>Salon default</option>
+            <option value="custom" ${mode==='custom'?'selected':''}>Custom</option>
+            <option value="off" ${mode==='off'?'selected':''}>Day off</option>
+          </select>
+          <input type="time" class="h-start" value="${hv&&hv.start||'09:00'}" style="${show}">
+          <span class="h-dash" style="${show}">–</span>
+          <input type="time" class="h-end" value="${hv&&hv.end||'17:00'}" style="${show}">
+        </div>`;
+      };
+      f.style.display = 'block';
+      f.innerHTML = `<div class="panel" style="margin:1rem 0">
+        <h3 style="margin-top:0">${st ? 'Edit artist' : 'New artist'}</h3>
+        <div class="field"><label>Name *</label><input id="st-name" value="${esc(sel.name)}" placeholder="Ava Bennett"></div>
+        <div class="field"><label>Title</label><input id="st-title" value="${esc(sel.title)}" placeholder="Senior Nail & Makeup Artist"></div>
+        <div class="field"><label>Bio</label><textarea id="st-bio" rows="2" placeholder="A sentence about this artist.">${esc(sel.bio)}</textarea></div>
+        <div class="field"><label>Specialties (comma-separated)</label><input id="st-spec" value="${esc((sel.specialties||[]).join(', '))}" placeholder="Acrylics, Nail Art, Glam Makeup"></div>
+
+        <details style="margin:.5rem 0 1rem"><summary style="cursor:pointer;font-weight:600">Schedule (optional)</summary>
+          <div style="margin-top:1rem">
+            <label style="font-weight:600">Weekly hours</label>
+            <p class="muted" style="font-size:.8rem;margin:.2rem 0 .6rem">Leave on “Salon default” unless this artist works different hours.</p>
+            <div id="hoursGrid">${DAYS.map(hoursRow).join('')}</div>
+
+            <label style="font-weight:600;display:block;margin-top:1rem">Time off / vacation</label>
+            <div id="timeOffList"></div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="addTimeOff()">+ Add time off</button>
+
+            <label style="font-weight:600;display:block;margin-top:1rem">Recurring weekly breaks</label>
+            <div id="breakList"></div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="addBreak()">+ Add break</button>
+          </div>
+        </details>
+
+        <div class="wizard-nav">
+          <button class="btn btn-ghost" onclick="closeStaffForm()">Cancel</button>
+          <button class="btn btn-primary" id="st-save">${st ? 'Save changes' : 'Add artist'}</button>
+        </div>
+      </div>`;
+      f.dataset.id = st ? st.id : '';
+      (sel.timeOff||[]).forEach(r => addTimeOff(r.from, r.to));
+      (sel.breaks||[]).forEach(b => addBreak(b.day, b.start, b.end));
+      document.getElementById('st-save').addEventListener('click', saveStaff);
+      f.scrollIntoView({ behavior:'smooth', block:'center' });
+    }
+    function onHmode(selEl) {
+      const row = selEl.closest('.hrow'); const show = selEl.value === 'custom';
+      row.querySelectorAll('.h-start, .h-end, .h-dash').forEach(e => e.style.display = show ? '' : 'none');
+    }
+    function addTimeOff(from, to) {
+      const div = document.createElement('div'); div.className = 'dyn-row';
+      div.style = 'display:flex;gap:.5rem;align-items:center;margin:.3rem 0';
+      div.innerHTML = `<input type="date" class="to-from" value="${from||''}"><span>→</span>
+        <input type="date" class="to-to" value="${to||''}">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="removeRow(this)">✕</button>`;
+      document.getElementById('timeOffList').appendChild(div);
+    }
+    function addBreak(day, start, end) {
+      const div = document.createElement('div'); div.className = 'dyn-row';
+      div.style = 'display:flex;gap:.5rem;align-items:center;margin:.3rem 0';
+      div.innerHTML = `<select class="br-day" style="padding:.4rem;border:1.5px solid var(--line);border-radius:8px">
+          ${DAYS.map(d => `<option ${d===day?'selected':''}>${d}</option>`).join('')}</select>
+        <input type="time" class="br-start" value="${start||'12:00'}"><span>–</span>
+        <input type="time" class="br-end" value="${end||'13:00'}">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="removeRow(this)">✕</button>`;
+      document.getElementById('breakList').appendChild(div);
+    }
+    function removeRow(btn) { btn.closest('.dyn-row').remove(); }
+    function closeStaffForm() { const f=document.getElementById('staffForm'); f.style.display='none'; f.innerHTML=''; }
+    async function saveStaff() {
+      const f = document.getElementById('staffForm');
+      // gather weekly hours (default = omit, off = null, custom = {start,end})
+      const hours = {};
+      document.querySelectorAll('#hoursGrid .hrow').forEach(row => {
+        const day = row.dataset.day, mode = row.querySelector('.h-mode').value;
+        if (mode === 'off') hours[day] = null;
+        else if (mode === 'custom') hours[day] = { start: row.querySelector('.h-start').value, end: row.querySelector('.h-end').value };
+      });
+      const timeOff = Array.from(document.querySelectorAll('#timeOffList .dyn-row'))
+        .map(r => ({ from: r.querySelector('.to-from').value, to: r.querySelector('.to-to').value }))
+        .filter(r => r.from && r.to);
+      const breaks = Array.from(document.querySelectorAll('#breakList .dyn-row'))
+        .map(r => ({ day: r.querySelector('.br-day').value, start: r.querySelector('.br-start').value, end: r.querySelector('.br-end').value }));
+      const staff = {
+        id: f.dataset.id || undefined,
+        name: document.getElementById('st-name').value,
+        title: document.getElementById('st-title').value,
+        bio: document.getElementById('st-bio').value,
+        specialties: document.getElementById('st-spec').value.split(',').map(s=>s.trim()).filter(Boolean),
+        hours, timeOff, breaks
+      };
+      const res = await api.saveStaff(staff);
+      if (!res.ok) { toast(res.data.error || 'Could not save.'); return; }
+      toast(f.dataset.id ? 'Artist updated.' : 'Artist added.');
+      closeStaffForm(); load();
+    }
+    function editStaff(id) { openStaffForm(CFG.staff.find(p=>p.id===id)); }
+    async function deleteStaff(id, name) {
+      if (!confirm('Remove ' + name + ' from the team?')) return;
+      const res = await api.deleteStaff(id);
+      if (!res.ok) { toast(res.data.error || 'Could not delete.'); return; }
+      toast('Artist removed.'); load();
+    }
+
+    window.cancelB = cancelB; window.setStatus = setStatus; window.markDeposit = markDeposit; window.load = load;
+    window.editSvc = editSvc; window.deleteSvc = deleteSvc; window.closeSvcForm = closeSvcForm;
+    // ---- Resources CRUD ----
+    function renderResources() {
+      const usedBy = (id) => CFG.services.filter(s => s.resourceId === id).map(s => s.name);
+      document.getElementById('resRows').innerHTML = (CFG.resources || []).length
+        ? CFG.resources.map(r => {
+            const u = usedBy(r.id);
+            return `<tr>
+              <td><strong>${esc(r.name)}</strong></td>
+              <td>${r.capacity}</td>
+              <td style="font-size:.82rem" class="muted">${u.length ? u.map(esc).join(', ') : '—'}</td>
+              <td style="white-space:nowrap">
+                <button class="btn btn-ghost btn-sm" onclick="editRes('${r.id}')">Edit</button>
+                <button class="btn btn-ghost btn-sm" onclick="deleteRes('${r.id}','${esc(r.name)}')">Delete</button>
+              </td></tr>`;
+          }).join('')
+        : '<tr><td colspan="4" class="muted" style="text-align:center;padding:1.5rem">No resources yet.</td></tr>';
+    }
+    function openResForm(r) {
+      const f = document.getElementById('resForm');
+      const sel = r || { name:'', capacity:1 };
+      f.style.display = 'block';
+      f.innerHTML = `<div class="panel" style="margin:1rem 0">
+        <h3 style="margin-top:0">${r ? 'Edit resource' : 'New resource'}</h3>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
+          <div class="field" style="flex:1;min-width:180px;margin:0"><label>Name *</label><input id="rs-name" value="${esc(sel.name)}" placeholder="Pedicure chairs"></div>
+          <div class="field" style="width:130px;margin:0"><label>Capacity *</label><input id="rs-cap" type="number" min="1" step="1" value="${sel.capacity}"></div>
+        </div>
+        <div class="wizard-nav">
+          <button class="btn btn-ghost" onclick="closeResForm()">Cancel</button>
+          <button class="btn btn-primary" id="rs-save">${r ? 'Save changes' : 'Add resource'}</button>
+        </div>
+      </div>`;
+      f.dataset.id = r ? r.id : '';
+      document.getElementById('rs-save').addEventListener('click', saveRes);
+      f.scrollIntoView({ behavior:'smooth', block:'center' });
+    }
+    function closeResForm() { const f=document.getElementById('resForm'); f.style.display='none'; f.innerHTML=''; }
+    async function saveRes() {
+      const f = document.getElementById('resForm');
+      const resource = { id: f.dataset.id || undefined, name: document.getElementById('rs-name').value, capacity: Number(document.getElementById('rs-cap').value) };
+      const res = await api.saveResource(resource);
+      if (!res.ok) { toast(res.data.error || 'Could not save.'); return; }
+      toast(f.dataset.id ? 'Resource updated.' : 'Resource added.'); closeResForm(); load();
+    }
+    function editRes(id) { openResForm((CFG.resources||[]).find(r => r.id === id)); }
+    async function deleteRes(id, name) {
+      if (!confirm('Delete resource "' + name + '"?')) return;
+      const res = await api.deleteResource(id);
+      if (!res.ok) { toast(res.data.error || 'Could not delete.'); return; }
+      toast('Resource deleted.'); load();
+    }
+
+    // ---- Block-offs ----
+    function renderBlockoffs(items) {
+      const sel = document.getElementById('bo-staff');
+      sel.innerHTML = CFG.staff.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+      document.getElementById('boRows').innerHTML = (items && items.length)
+        ? items.map(b => `<tr>
+            <td>${esc(b.staffName)}</td><td>${b.date}</td><td>${b.start}–${b.end}</td>
+            <td class="muted">${esc(b.reason || '')}</td>
+            <td><button class="btn btn-ghost btn-sm" onclick="deleteBlockoff('${b.id}')">Remove</button></td>
+          </tr>`).join('')
+        : '<tr><td colspan="5" class="muted" style="text-align:center;padding:1.5rem">No blocks yet.</td></tr>';
+    }
+    async function addBlockoff() {
+      const blockoff = {
+        staffId: document.getElementById('bo-staff').value,
+        date: document.getElementById('bo-date').value,
+        start: document.getElementById('bo-start').value,
+        end: document.getElementById('bo-end').value,
+        reason: document.getElementById('bo-reason').value
+      };
+      const res = await api.saveBlockoff(blockoff);
+      if (!res.ok) { toast(res.data.error || 'Could not add block.'); return; }
+      toast('Time blocked off.'); document.getElementById('bo-reason').value = ''; load();
+    }
+    async function deleteBlockoff(id) { await api.deleteBlockoff(id); toast('Block removed.'); load(); }
+
+    // ---- Gift cards ----
+    let _gcList = [];
+    function renderGiftCards(cards) {
+      _gcList = cards || [];
+      document.getElementById('gcRows').innerHTML = _gcList.length
+        ? _gcList.map(c => {
+            const paidBadge = c.paymentStatus === 'paid'
+              ? '<span class="status confirmed" style="font-size:.75rem">paid</span>'
+              : '<span class="status" style="background:#fff3cd;color:#856404;font-size:.75rem">pending</span>';
+            const statusBadge = c.status === 'void'
+              ? '<span class="status cancelled" style="font-size:.75rem">void</span>'
+              : c.status === 'depleted'
+              ? '<span class="status" style="background:#eee;color:#666;font-size:.75rem">depleted</span>'
+              : '<span class="status confirmed" style="font-size:.75rem">active</span>';
+            return `<tr>
+              <td><code style="font-size:.82rem">${esc(c.code)}</code></td>
+              <td class="muted" style="font-size:.85rem">${esc(c.issuedTo || '—')}</td>
+              <td>${money(c.amount)}</td>
+              <td><strong>${money(c.balance)}</strong></td>
+              <td>${paidBadge}</td>
+              <td>${statusBadge}</td>
+              <td style="white-space:nowrap">
+                ${c.paymentStatus !== 'paid' ? `<button class="btn btn-ghost btn-sm" onclick="gcMarkPaid('${c.id}')">$ Mark paid</button>` : ''}
+                ${c.status === 'active' ? `<button class="btn btn-ghost btn-sm" style="color:var(--rose-deep);margin-left:.3rem" onclick="gcVoid('${c.id}')">Void</button>` : ''}
+              </td></tr>`;
+          }).join('')
+        : '<tr><td colspan="7" class="muted" style="text-align:center;padding:1.5rem">No gift cards yet. Issue one to get started.</td></tr>';
+    }
+    function openGcForm() {
+      const f = document.getElementById('gcForm');
+      f.style.display = 'block';
+      f.innerHTML = `<h3 style="margin-top:0">Issue a gift card</h3>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
+          <div class="field" style="width:140px;margin:0"><label>Amount ($) *</label><input id="gc-amt" type="number" min="1" step="1" placeholder="50"></div>
+          <div class="field" style="flex:1;min-width:180px;margin:0"><label>Issued to (optional)</label><input id="gc-to" placeholder="Customer name or phone"></div>
+          <div class="field" style="flex:2;min-width:200px;margin:0"><label>Note (optional)</label><input id="gc-note" placeholder="Birthday promo, contest prize…"></div>
+        </div>
+        <div class="wizard-nav" style="margin-top:1rem">
+          <button class="btn btn-ghost" onclick="closeGcForm()">Cancel</button>
+          <button class="btn btn-primary" id="gc-save">Issue card</button>
+        </div>`;
+      document.getElementById('gc-save').addEventListener('click', saveGc);
+      f.scrollIntoView({ behavior:'smooth', block:'center' });
+    }
+    function closeGcForm() { const f=document.getElementById('gcForm'); f.style.display='none'; f.innerHTML=''; }
+    async function saveGc() {
+      const amount = Number(document.getElementById('gc-amt').value);
+      const issuedTo = document.getElementById('gc-to').value.trim();
+      const note = document.getElementById('gc-note').value.trim();
+      const res = await api.issueGiftCard(amount, issuedTo, note);
+      if (!res.ok) { toast(res.data.error || 'Could not issue card.'); return; }
+      toast(`Gift card ${res.data.giftCard.code} issued.`); closeGcForm(); load();
+    }
+    async function gcMarkPaid(id) {
+      const res = await api.markGiftCardPaid(id);
+      if (!res.ok) { toast(res.data.error || 'Could not mark paid.'); return; }
+      toast('Gift card marked as paid — now redeemable.'); load();
+    }
+    async function gcVoid(id) {
+      if (!confirm('Void this gift card? The remaining balance will be lost.')) return;
+      const res = await api.voidGiftCard(id);
+      if (!res.ok) { toast(res.data.error || 'Could not void.'); return; }
+      toast('Gift card voided.'); load();
+    }
+    window.gcMarkPaid = gcMarkPaid; window.gcVoid = gcVoid; window.closeGcForm = closeGcForm;
+
+    // ---- Packages ----
+    let _pkgCatalog = [], _pkgCpList = [];
+    function renderPackages(catalog, purchases) {
+      _pkgCatalog = catalog || [];
+      _pkgCpList = purchases || [];
+      document.getElementById('pkgRows').innerHTML = _pkgCatalog.length
+        ? _pkgCatalog.map(p => `<tr>
+            <td><strong>${esc(p.name)}</strong></td>
+            <td class="muted" style="font-size:.85rem">${esc(p.serviceId)}</td>
+            <td>${p.sessions}</td>
+            <td>${money(p.price)}</td>
+            <td style="white-space:nowrap">
+              <button class="btn btn-ghost btn-sm" onclick="openPkgForm('${p.id}')">Edit</button>
+              <button class="btn btn-ghost btn-sm" style="color:var(--rose-deep);margin-left:.3rem" onclick="deletePkg('${p.id}')">Delete</button>
+            </td></tr>`).join('')
+        : '<tr><td colspan="5" class="muted" style="text-align:center;padding:1.5rem">No packages yet. Create one to offer prepaid bundles.</td></tr>';
+      document.getElementById('cpRows').innerHTML = _pkgCpList.length
+        ? _pkgCpList.map(p => {
+            const paidBadge = p.paymentStatus === 'paid'
+              ? '<span class="status confirmed" style="font-size:.75rem">paid</span>'
+              : '<span class="status" style="background:#fff3cd;color:#856404;font-size:.75rem">pending</span>';
+            return `<tr>
+              <td>${esc(p.customerName)}<br><span class="muted" style="font-size:.8rem">${esc(p.customerPhone)}</span></td>
+              <td>${esc(p.name)}</td>
+              <td><strong>${p.remaining}</strong> / ${p.total}</td>
+              <td>${money(p.price)}</td>
+              <td>${paidBadge}</td>
+              <td>${p.paymentStatus !== 'paid' ? `<button class="btn btn-ghost btn-sm" onclick="cpMarkPaid('${p.customerId}','${p.id}')">$ Mark paid</button>` : ''}</td>
+            </tr>`;
+          }).join('')
+        : '<tr><td colspan="6" class="muted" style="text-align:center;padding:1.5rem">No package purchases yet.</td></tr>';
+    }
+    function openPkgForm(id) {
+      const existing = id ? _pkgCatalog.find(p => p.id === id) : null;
+      const f = document.getElementById('pkgForm');
+      f.style.display = 'block';
+      const svcOptions = (CFG.services || []).map(s => `<option value="${s.id}" ${existing && existing.serviceId === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+      f.innerHTML = `<h3 style="margin-top:0">${existing ? 'Edit package' : 'New package'}</h3>
+        <input type="hidden" id="pkg-id" value="${existing ? existing.id : ''}">
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
+          <div class="field" style="flex:2;min-width:180px;margin:0"><label>Name *</label><input id="pkg-name" value="${esc(existing ? existing.name : '')}" placeholder="5-Visit Mani Bundle"></div>
+          <div class="field" style="flex:2;min-width:180px;margin:0"><label>Service *</label><select id="pkg-svc" style="width:100%;padding:.8rem 1rem;border:1.5px solid var(--line);border-radius:10px">${svcOptions}</select></div>
+          <div class="field" style="width:130px;margin:0"><label>Sessions (2–50) *</label><input id="pkg-sessions" type="number" min="2" max="50" step="1" value="${existing ? existing.sessions : 5}"></div>
+          <div class="field" style="width:130px;margin:0"><label>Price ($) *</label><input id="pkg-price" type="number" min="0" step="1" value="${existing ? existing.price : ''}"></div>
+        </div>
+        <div class="wizard-nav" style="margin-top:1rem">
+          <button class="btn btn-ghost" onclick="closePkgForm()">Cancel</button>
+          <button class="btn btn-primary" id="pkg-save">${existing ? 'Save changes' : 'Create package'}</button>
+        </div>`;
+      document.getElementById('pkg-save').addEventListener('click', savePkg);
+      f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    function closePkgForm() { const f = document.getElementById('pkgForm'); f.style.display = 'none'; f.innerHTML = ''; }
+    async function savePkg() {
+      const pkg = {
+        id: document.getElementById('pkg-id').value || undefined,
+        name: document.getElementById('pkg-name').value.trim(),
+        serviceId: document.getElementById('pkg-svc').value,
+        sessions: Number(document.getElementById('pkg-sessions').value),
+        price: Number(document.getElementById('pkg-price').value)
+      };
+      if (!pkg.id) delete pkg.id;
+      const res = await api.savePackage(pkg);
+      if (!res.ok) { toast(res.data.error || 'Could not save package.'); return; }
+      toast(pkg.id ? 'Package updated.' : 'Package created.'); closePkgForm(); load();
+    }
+    async function deletePkg(id) {
+      if (!confirm('Delete this package from the catalog? Customers who already purchased it keep their sessions.')) return;
+      const res = await api.deletePackage(id);
+      if (!res.ok) { toast(res.data.error || 'Could not delete.'); return; }
+      toast('Package deleted from catalog.'); load();
+    }
+    async function cpMarkPaid(customerId, customerPackageId) {
+      const res = await api.markPackagePaid(customerId, customerPackageId);
+      if (!res.ok) { toast(res.data.error || 'Could not mark paid.'); return; }
+      toast('Package marked as paid — now redeemable.'); load();
+    }
+    window.openPkgForm = openPkgForm; window.closePkgForm = closePkgForm; window.deletePkg = deletePkg; window.cpMarkPaid = cpMarkPaid;
+
+    // ---- Reviews ----
+    const STARS = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
+    function renderReviews(reviews) {
+      document.getElementById('reviewRows').innerHTML = reviews.length
+        ? reviews.map(r => `<tr>
+            <td style="font-size:.82rem;white-space:nowrap">${r.submittedAt ? r.submittedAt.slice(0,10) : '—'}</td>
+            <td style="font-size:.85rem">${esc(r.serviceName)}</td>
+            <td style="font-size:.85rem">${esc(r.staffName)}</td>
+            <td style="font-size:.82rem">${esc(r.customerName)}<br><span class="muted">${esc(r.customerPhone)}</span></td>
+            <td style="color:#c6960a;letter-spacing:1px;white-space:nowrap">${STARS(r.rating)} <span style="color:var(--text);font-size:.82rem">${r.rating}/5</span></td>
+            <td style="font-size:.85rem;max-width:280px" class="muted">${r.comment ? esc(r.comment) : '<em>No comment</em>'}</td>
+          </tr>`).join('')
+        : '<tr><td colspan="6" class="muted" style="text-align:center;padding:1.5rem">No reviews yet.</td></tr>';
+    }
+
+    let _memPlans = [];
+    function renderMembershipPlans(plans) {
+      _memPlans = plans;
+      document.getElementById('memPlanRows').innerHTML = plans.length
+        ? plans.map(p => `<tr>
+            <td><strong>${esc(p.name)}</strong>${p.description ? '<br><span class="muted" style="font-size:.82rem">'+esc(p.description)+'</span>' : ''}</td>
+            <td>${money(p.monthlyPrice)}/mo</td>
+            <td>${p.discountPct}% off all services</td>
+            <td><span class="status ${p.active !== false ? 'confirmed' : 'cancelled'}">${p.active !== false ? 'Active' : 'Inactive'}</span></td>
+            <td style="white-space:nowrap">
+              <button class="btn btn-ghost btn-sm" onclick="openMemPlanForm('${p.id}')">Edit</button>
+              <button class="btn btn-ghost btn-sm" style="color:var(--rose-deep);margin-left:.3rem" onclick="deleteMemPlan('${p.id}')">Delete</button>
+            </td>
+          </tr>`).join('')
+        : '<tr><td colspan="5" class="muted" style="text-align:center;padding:1.5rem">No plans yet.</td></tr>';
+    }
+    function renderMembers(members) {
+      const STATUS_CLS = { active: 'confirmed', pending_payment: '', cancelled: 'cancelled' };
+      const STATUS_LBL = { active: 'Active', pending_payment: 'Pending payment', cancelled: 'Cancelled' };
+      document.getElementById('memRows').innerHTML = members.length
+        ? members.map(m => `<tr>
+            <td>${esc(m.name)}<br><span class="muted" style="font-size:.8rem">${esc(m.phone)}</span></td>
+            <td>${esc(m.membership.planName)}</td>
+            <td>${m.membership.discountPct}% off</td>
+            <td style="font-size:.85rem">${m.membership.renewalDate || '—'}</td>
+            <td><span class="status ${STATUS_CLS[m.membership.status] || ''}">${STATUS_LBL[m.membership.status] || m.membership.status}</span></td>
+            <td style="white-space:nowrap">
+              ${m.membership.status !== 'cancelled' ? `<button class="btn btn-ghost btn-sm" onclick="memMarkPaid('${m.id}')">$ Mark paid</button>` : ''}
+              ${m.membership.status !== 'cancelled' ? `<button class="btn btn-ghost btn-sm" style="color:var(--rose-deep);margin-left:.3rem" onclick="memCancel('${m.id}')">Cancel</button>` : ''}
+            </td>
+          </tr>`).join('')
+        : '<tr><td colspan="6" class="muted" style="text-align:center;padding:1.5rem">No members yet.</td></tr>';
+    }
+    function openMemPlanForm(id) {
+      const p = id ? _memPlans.find(x => x.id === id) : null;
+      const f = document.getElementById('memPlanForm');
+      f.style.display = 'block';
+      f.innerHTML = `
+        <h4 style="margin:0 0 1rem">${p ? 'Edit' : 'New'} membership plan</h4>
+        <div class="field"><label>Name *</label><input id="mp-name" value="${esc(p ? p.name : '')}"></div>
+        <div class="field"><label>Description</label><input id="mp-desc" value="${esc(p ? (p.description||'') : '')}"></div>
+        <div class="field"><label>Monthly price ($) *</label><input id="mp-price" type="number" min="0" step="0.01" value="${p ? p.monthlyPrice : ''}"></div>
+        <div class="field"><label>Discount % off all services *</label><input id="mp-disc" type="number" min="1" max="100" step="1" value="${p ? p.discountPct : ''}"></div>
+        <div class="field"><label><input type="checkbox" id="mp-active" ${(!p || p.active !== false) ? 'checked' : ''}> Active (visible for sign-up)</label></div>
+        <div style="display:flex;gap:.6rem;margin-top:1rem">
+          <button class="btn btn-primary btn-sm" onclick="saveMemPlan('${p ? p.id : ''}')">Save</button>
+          <button class="btn btn-ghost btn-sm" onclick="closeMemPlanForm()">Cancel</button>
+        </div>`;
+    }
+    function closeMemPlanForm() { document.getElementById('memPlanForm').style.display = 'none'; }
+    async function saveMemPlan(id) {
+      const plan = {
+        name: document.getElementById('mp-name').value.trim(),
+        description: document.getElementById('mp-desc').value.trim(),
+        monthlyPrice: parseFloat(document.getElementById('mp-price').value) || 0,
+        discountPct: parseInt(document.getElementById('mp-disc').value, 10) || 0,
+        active: document.getElementById('mp-active').checked
+      };
+      if (id) plan.id = id;
+      const r = await api.saveMembershipPlan(plan);
+      if (!r.ok) { toast('Error: ' + (r.data.error || 'Save failed.')); return; }
+      toast(id ? 'Plan updated.' : 'Plan created.'); closeMemPlanForm(); load();
+    }
+    async function deleteMemPlan(id) {
+      if (!confirm('Delete this membership plan?')) return;
+      const r = await api.deleteMembershipPlan(id);
+      if (!r.ok) { toast('Error: ' + (r.data.error || 'Delete failed.')); return; }
+      toast('Plan deleted.'); load();
+    }
+    async function memMarkPaid(customerId) {
+      const r = await api.markMembershipPaid(customerId);
+      if (!r.ok) { toast('Error: ' + (r.data.error || 'Failed.')); return; }
+      toast('Membership marked paid — active for another month.'); load();
+    }
+    async function memCancel(customerId) {
+      if (!confirm('Cancel this membership?')) return;
+      const r = await api.cancelMembership(customerId);
+      if (!r.ok) { toast('Error: ' + (r.data.error || 'Failed.')); return; }
+      toast('Membership cancelled.'); load();
+    }
+    window.openMemPlanForm = openMemPlanForm; window.closeMemPlanForm = closeMemPlanForm;
+    window.deleteMemPlan = deleteMemPlan; window.memMarkPaid = memMarkPaid; window.memCancel = memCancel;
+
+    function renderBroadcasts(broadcasts) {
+      const fmt = (iso) => iso ? new Date(iso).toLocaleString() : '—';
+      document.getElementById('bcRows').innerHTML = broadcasts.length
+        ? broadcasts.map(b => `<tr>
+            <td style="font-size:.82rem;white-space:nowrap">${fmt(b.sentAt)}</td>
+            <td>${esc(b.subject)}<br><span class="muted" style="font-size:.8rem">${esc(b.message.slice(0, 60))}${b.message.length > 60 ? '…' : ''}</span></td>
+            <td style="text-transform:capitalize">${b.channel}</td>
+            <td>${b.recipientCount}</td>
+          </tr>`).join('')
+        : '<tr><td colspan="4" class="muted" style="text-align:center;padding:1.5rem">No broadcasts sent yet.</td></tr>';
+    }
+
+    function renderReferrals(referrals) {
+      document.getElementById('refRows').innerHTML = referrals.length
+        ? referrals.map(r => `<tr>
+            <td>${esc(r.referee.name)}<br><span class="muted" style="font-size:.8rem">${esc(r.referee.phone)}</span></td>
+            <td>${r.referrer ? esc(r.referrer.name) : '<span class="muted">Unknown</span>'}<br>${r.referrer ? '<span class="muted" style="font-size:.8rem">'+esc(r.referrer.phone)+'</span>' : ''}</td>
+            <td><code style="font-size:.82rem">${r.referrer ? esc(r.referrer.referralCode || '—') : '—'}</code></td>
+            <td style="font-size:.82rem">${r.createdAt ? r.createdAt.slice(0,10) : '—'}</td>
+            <td><span class="status ${r.referralClaimed ? 'confirmed' : ''}">${r.referralClaimed ? 'Bonus paid' : 'Pending first visit'}</span></td>
+          </tr>`).join('')
+        : '<tr><td colspan="5" class="muted" style="text-align:center;padding:1.5rem">No referrals yet.</td></tr>';
+    }
+
+    function renderWaitlist(entries) {
+      const STATUS_LABEL = { waiting: 'Waiting', notified: 'Notified' };
+      const STATUS_CLS   = { waiting: 'status', notified: 'status confirmed' };
+      document.getElementById('wlRows').innerHTML = entries.length
+        ? entries.map(w => `<tr>
+            <td style="white-space:nowrap">${w.date}</td>
+            <td style="font-size:.85rem">${esc(w.serviceId)}</td>
+            <td style="font-size:.85rem">${w.staffId === 'any' ? '<span class="muted">Any</span>' : esc(w.staffId)}</td>
+            <td style="font-size:.85rem">${esc(w.customer.name)}</td>
+            <td style="font-size:.82rem">${esc(w.customer.phone)}${w.customer.email ? '<br><span class="muted">'+esc(w.customer.email)+'</span>' : ''}</td>
+            <td><span class="${STATUS_CLS[w.status] || 'status'}">${STATUS_LABEL[w.status] || w.status}</span>${w.notifiedAt ? '<br><span class="muted" style="font-size:.78rem">'+w.notifiedAt.slice(0,10)+'</span>' : ''}</td>
+            <td><button class="btn btn-ghost btn-sm" style="color:var(--rose-deep)" onclick="dismissWL('${w.id}')">Dismiss</button></td>
+          </tr>`).join('')
+        : '<tr><td colspan="7" class="muted" style="text-align:center;padding:1.5rem">No waitlist entries.</td></tr>';
+    }
+    async function dismissWL(id) {
+      const r = await api.dismissWaitlist(id);
+      if (!r.ok) { toast('Error: ' + (r.data.error || 'Failed.')); return; }
+      toast('Entry dismissed.'); load();
+    }
+    window.dismissWL = dismissWL;
+
+    // --- Retail products ---
+    function renderProducts(products) {
+      document.getElementById('productRows').innerHTML = products.length
+        ? products.map(p => `<tr style="${p.lowStock ? 'background:rgba(185,70,70,.06)' : ''}">
+            <td><strong>${esc(p.name)}</strong>${p.description ? '<br><span class="muted" style="font-size:.8rem">'+esc(p.description)+'</span>' : ''}${p.lowStock ? ' <span style="font-size:.72rem;color:#b94646;font-weight:600">LOW STOCK</span>' : ''}</td>
+            <td style="font-size:.85rem">${esc(p.category || '—')}</td>
+            <td style="font-size:.82rem;font-family:monospace">${esc(p.sku || '—')}</td>
+            <td class="price">$${Number(p.price).toFixed(2)}</td>
+            <td style="font-weight:600;color:${p.lowStock ? '#b94646' : 'inherit'}">${p.stock}</td>
+            <td class="muted" style="font-size:.82rem">${p.lowStockThreshold ?? 5}</td>
+            <td style="white-space:nowrap">
+              <button class="btn btn-ghost btn-sm" onclick="openProductForm('${p.id}')">Edit</button>
+              <button class="btn btn-ghost btn-sm" style="color:var(--rose-deep)" onclick="deleteProduct('${p.id}')">Delete</button>
+            </td>
+          </tr>`).join('')
+        : '<tr><td colspan="7" class="muted" style="text-align:center;padding:1.5rem">No products added yet.</td></tr>';
+    }
+
+    function renderSales(sales) {
+      const fmt = (iso) => iso ? new Date(iso).toLocaleString() : '—';
+      document.getElementById('saleRows').innerHTML = sales.length
+        ? sales.map(s => `<tr>
+            <td style="font-size:.82rem;white-space:nowrap">${fmt(s.soldAt)}</td>
+            <td>${esc(s.productName)}</td>
+            <td>${s.quantity}</td>
+            <td class="price">$${Number(s.unitPrice).toFixed(2)}</td>
+            <td class="price">$${Number(s.total).toFixed(2)}</td>
+            <td class="muted" style="font-size:.82rem">${s.staffId ? esc(s.staffId) : '—'}</td>
+          </tr>`).join('')
+        : '<tr><td colspan="6" class="muted" style="text-align:center;padding:1.5rem">No retail sales recorded yet.</td></tr>';
+    }
+
+    let _editProductId = null;
+    function openProductForm(id) {
+      _editProductId = id || null;
+      const container = document.getElementById('productForm');
+      let p = id ? (window._products || []).find(x => x.id === id) : null;
+      container.style.display = 'block';
+      container.innerHTML = `
+        <h4 style="margin:0 0 1rem">${id ? 'Edit product' : 'New product'}</h4>
+        <div style="display:flex;gap:.8rem;flex-wrap:wrap">
+          <div><label class="form-label" style="font-size:.82rem">Name *</label><input id="pf-name" class="form-input" value="${p ? esc(p.name) : ''}" placeholder="OPI Nail Lacquer" style="width:220px"></div>
+          <div><label class="form-label" style="font-size:.82rem">Category</label><input id="pf-cat" class="form-input" value="${p ? esc(p.category || '') : ''}" placeholder="Polish" style="width:140px"></div>
+          <div><label class="form-label" style="font-size:.82rem">SKU</label><input id="pf-sku" class="form-input" value="${p ? esc(p.sku || '') : ''}" placeholder="OPI-001" style="width:120px"></div>
+          <div><label class="form-label" style="font-size:.82rem">Price ($)</label><input id="pf-price" type="number" min="0" step="0.01" class="form-input" value="${p ? p.price : ''}" style="width:90px"></div>
+          <div><label class="form-label" style="font-size:.82rem">Stock</label><input id="pf-stock" type="number" min="0" class="form-input" value="${p ? p.stock : '0'}" style="width:80px"></div>
+          <div><label class="form-label" style="font-size:.82rem">Low-stock alert at</label><input id="pf-threshold" type="number" min="0" class="form-input" value="${p ? (p.lowStockThreshold ?? 5) : '5'}" style="width:80px"></div>
+        </div>
+        <div style="margin-top:.6rem"><label class="form-label" style="font-size:.82rem">Description</label><input id="pf-desc" class="form-input" value="${p ? esc(p.description || '') : ''}" placeholder="Optional short description" style="width:100%;max-width:520px"></div>
+        <div style="margin-top:.8rem;display:flex;gap:.6rem">
+          <button class="btn btn-primary btn-sm" onclick="saveProduct()">Save</button>
+          <button class="btn btn-ghost btn-sm" onclick="closeProductForm()">Cancel</button>
+          <span id="pf-msg" style="font-size:.88rem;align-self:center"></span>
+        </div>`;
+    }
+    function closeProductForm() {
+      _editProductId = null;
+      document.getElementById('productForm').style.display = 'none';
+    }
+    async function saveProduct() {
+      const product = {
+        id: _editProductId || undefined,
+        name: document.getElementById('pf-name').value.trim(),
+        category: document.getElementById('pf-cat').value.trim(),
+        sku: document.getElementById('pf-sku').value.trim(),
+        price: parseFloat(document.getElementById('pf-price').value) || 0,
+        stock: parseInt(document.getElementById('pf-stock').value) || 0,
+        lowStockThreshold: parseInt(document.getElementById('pf-threshold').value) || 5,
+        description: document.getElementById('pf-desc').value.trim()
+      };
+      const r = await api.saveProduct(product);
+      if (!r.ok) { document.getElementById('pf-msg').textContent = r.data.error || 'Error.'; return; }
+      toast(_editProductId ? 'Product updated.' : 'Product added.');
+      closeProductForm(); load();
+    }
+    async function deleteProduct(id) {
+      if (!confirm('Delete this product?')) return;
+      const r = await api.deleteProduct(id);
+      if (!r.ok) { toast('Error: ' + (r.data.error || 'Failed.')); return; }
+      toast('Product deleted.'); load();
+    }
+    window.openProductForm = openProductForm; window.closeProductForm = closeProductForm;
+    window.saveProduct = saveProduct; window.deleteProduct = deleteProduct;
+
+    // --- Tips + Commission ---
+    function renderCommissions(commissions) {
+      document.getElementById('commRows').innerHTML = commissions.length
+        ? commissions.map(c => `<tr>
+            <td><strong>${esc(c.staffName)}</strong></td>
+            <td>${c.commissionPct}%</td>
+            <td>${c.completedBookings}</td>
+            <td class="price">$${c.serviceRevenue.toFixed(2)}</td>
+            <td class="price">$${c.commissionEarned.toFixed(2)}</td>
+            <td class="price">$${c.tipsEarned.toFixed(2)}</td>
+            <td class="price" style="font-weight:600">$${c.totalEarnings.toFixed(2)}</td>
+          </tr>`).join('')
+        : '<tr><td colspan="7" class="muted" style="text-align:center;padding:1.5rem">No completed bookings in range.</td></tr>';
+    }
+
+    function renderTips(tips) {
+      document.getElementById('tipRows').innerHTML = tips.length
+        ? tips.map(t => `<tr>
+            <td style="white-space:nowrap">${t.date}</td>
+            <td style="font-size:.82rem;font-family:monospace">${esc(t.ref)}</td>
+            <td style="font-size:.85rem">${esc(t.serviceName)}</td>
+            <td style="font-size:.85rem">${esc(t.staffName)}</td>
+            <td class="price">$${Number(t.price).toFixed(2)}</td>
+            <td class="price" style="color:#2f7a45;font-weight:600">$${Number(t.tip).toFixed(2)}</td>
+            <td><button class="btn btn-ghost btn-sm" onclick="editTip('${t.id}','${t.ref}',${t.tip})">Edit tip</button></td>
+          </tr>`).join('')
+        : '<tr><td colspan="7" class="muted" style="text-align:center;padding:1.5rem">No tips recorded yet. Use the booking table above to add a tip to a completed booking.</td></tr>';
+    }
+
+    async function editTip(id, ref, current) {
+      const input = prompt(`Tip amount for ${ref} (current: $${Number(current).toFixed(2)}):`, Number(current).toFixed(2));
+      if (input === null) return;
+      const amount = parseFloat(input);
+      if (!Number.isFinite(amount) || amount < 0) { toast('Invalid amount.'); return; }
+      const r = await api.recordTip(id, amount);
+      if (!r.ok) { toast('Error: ' + (r.data.error || 'Failed.')); return; }
+      toast(`Tip updated to $${amount.toFixed(2)}.`); load();
+    }
+    window.editTip = editTip;
+
+    window.editStaff = editStaff; window.deleteStaff = deleteStaff; window.closeStaffForm = closeStaffForm;
+    window.onHmode = onHmode; window.addTimeOff = addTimeOff; window.addBreak = addBreak; window.removeRow = removeRow;
+    window.deleteBlockoff = deleteBlockoff;
+    function renderGallery(items) {
+      const tbody = document.getElementById('galleryRows');
+      tbody.innerHTML = items.length
+        ? items.map(g => `<tr>
+            <td>${esc(g.category)}</td>
+            <td>${esc(g.title)}</td>
+            <td>${esc(g.emoji || '')}</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.8rem">${g.imageUrl ? `<a href="${esc(g.imageUrl)}" target="_blank" rel="noopener">${esc(g.imageUrl.slice(0,40))}${g.imageUrl.length>40?'…':''}</a>` : '<span class="muted">—</span>'}</td>
+            <td style="max-width:200px;font-size:.85rem">${esc((g.caption||'').slice(0,60))}${(g.caption||'').length>60?'…':''}</td>
+            <td>${g.sortOrder}</td>
+            <td style="white-space:nowrap">
+              <button class="btn btn-ghost btn-sm" onclick="editGalleryItem(${JSON.stringify(JSON.stringify(g))})">Edit</button>
+              <button class="btn btn-ghost btn-sm" style="color:var(--rose-deep)" onclick="deleteGalleryItem('${g.id}')">Delete</button>
+            </td>
+          </tr>`).join('')
+        : '<tr><td colspan="7" class="muted" style="text-align:center;padding:1.5rem">No gallery items yet — add one below.</td></tr>';
+    }
+    function openGalleryForm(item) {
+      const form = document.getElementById('galleryForm');
+      document.getElementById('galleryFormTitle').textContent = item ? 'Edit gallery item' : 'New gallery item';
+      document.getElementById('gal-id').value = item ? item.id : '';
+      document.getElementById('gal-title').value = item ? item.title : '';
+      document.getElementById('gal-emoji').value = item ? (item.emoji || '') : '';
+      document.getElementById('gal-imageUrl').value = item ? (item.imageUrl || '') : '';
+      document.getElementById('gal-caption').value = item ? (item.caption || '') : '';
+      document.getElementById('gal-sort').value = item ? (item.sortOrder || 99) : 99;
+      const catSel = document.getElementById('gal-category');
+      if (CFG && CFG.categories) {
+        catSel.innerHTML = CFG.categories.map(c => `<option value="${c.id}"${item && item.category===c.id?' selected':''}>${c.name}</option>`).join('');
+      }
+      document.getElementById('gal-msg').textContent = '';
+      form.style.display = '';
+    }
+    function closeGalleryForm() { document.getElementById('galleryForm').style.display = 'none'; }
+    function editGalleryItem(jsonStr) { openGalleryForm(JSON.parse(jsonStr)); }
+    async function deleteGalleryItem(id) {
+      if (!confirm('Delete this gallery item?')) return;
+      const r = await api.deleteGalleryItem(id);
+      if (!r.ok) { toast(r.data.error || 'Could not delete.'); return; }
+      toast('Gallery item deleted.'); load();
+    }
+    window.editGalleryItem = editGalleryItem; window.deleteGalleryItem = deleteGalleryItem;
+    window.editRes = editRes; window.deleteRes = deleteRes; window.closeResForm = closeResForm;
+    window.onBkSvc = onBkSvc; window.closeBookForm = closeBookForm; window.openBookForm = openBookForm;
+    window.goPage = goPage; window.clearBFilters = clearBFilters;
+    document.addEventListener('DOMContentLoaded', () => {
+      setupBookingFilters();
+      load();
+      document.getElementById('addProduct').addEventListener('click', () => openProductForm(null));
+      document.getElementById('comm-filter').addEventListener('click', () => load());
+      document.getElementById('comm-clear').addEventListener('click', () => {
+        document.getElementById('comm-from').value = '';
+        document.getElementById('comm-to').value = '';
+        load();
+      });
+      document.getElementById('sale-submit').addEventListener('click', async () => {
+        const productId = document.getElementById('sale-product').value;
+        const quantity = parseInt(document.getElementById('sale-qty').value) || 1;
+        const staffId = document.getElementById('sale-staff').value || null;
+        const msg = document.getElementById('sale-msg');
+        if (!productId) { msg.textContent = 'Please select a product.'; return; }
+        const r = await api.recordSale({ productId, quantity, staffId });
+        if (!r.ok) { msg.textContent = r.data.error || 'Error.'; return; }
+        msg.textContent = `Sale recorded — $${Number(r.data.sale.total).toFixed(2)} · ${r.data.product.stock} left in stock.`;
+        setTimeout(() => { msg.textContent = ''; }, 4000);
+        load();
+      });
+      document.getElementById('addSvc').addEventListener('click', () => openSvcForm(null));
+      document.getElementById('sendNow').addEventListener('click', async () => {
+        const r = await fetch('/api/admin/notifications/send', { method: 'POST' });
+        const d = await r.json();
+        toast(d.message || 'Triggered.'); setTimeout(load, 1500);
+      });
+      document.getElementById('addStaff').addEventListener('click', () => openStaffForm(null));
+      document.getElementById('addRes').addEventListener('click', () => openResForm(null));
+      document.getElementById('addGc').addEventListener('click', openGcForm);
+      document.getElementById('addPkg').addEventListener('click', () => openPkgForm(null));
+      document.getElementById('addMemPlan').addEventListener('click', () => openMemPlanForm(null));
+      document.getElementById('bc-send').addEventListener('click', async () => {
+        const btn = document.getElementById('bc-send');
+        const msg = document.getElementById('bc-msg');
+        const subject = document.getElementById('bc-subject').value.trim();
+        const message = document.getElementById('bc-message').value.trim();
+        const channel = document.getElementById('bc-channel').value;
+        if (!message) { msg.style.color = 'var(--rose-deep)'; msg.textContent = 'Message is required.'; return; }
+        btn.disabled = true; btn.textContent = 'Sending…'; msg.textContent = '';
+        const r = await api.sendBroadcast({ subject, message, channel });
+        btn.disabled = false; btn.textContent = 'Send broadcast';
+        if (r.ok) {
+          msg.style.color = 'var(--rose-deep)'; msg.textContent = `Sent to ${r.data.queued} recipient${r.data.queued !== 1 ? 's' : ''}.`;
+          document.getElementById('bc-subject').value = '';
+          document.getElementById('bc-message').value = '';
+          load();
+        } else {
+          msg.style.color = 'var(--rose-deep)'; msg.textContent = r.data.error || 'Send failed.';
+        }
+      });
+      document.getElementById('bo-add').addEventListener('click', addBlockoff);
+      document.getElementById('walkInBtn').addEventListener('click', openBookForm);
+      document.getElementById('groupBtn').addEventListener('click', openGroupForm);
+      document.getElementById('addGalleryItem').addEventListener('click', () => openGalleryForm(null));
+      document.getElementById('gal-cancel').addEventListener('click', closeGalleryForm);
+      document.getElementById('gal-save').addEventListener('click', async () => {
+        const msg = document.getElementById('gal-msg');
+        const item = {
+          id: document.getElementById('gal-id').value || undefined,
+          category: document.getElementById('gal-category').value,
+          title: document.getElementById('gal-title').value.trim(),
+          emoji: document.getElementById('gal-emoji').value.trim(),
+          imageUrl: document.getElementById('gal-imageUrl').value.trim(),
+          caption: document.getElementById('gal-caption').value.trim(),
+          sortOrder: parseInt(document.getElementById('gal-sort').value) || 99,
+        };
+        if (!item.title) { msg.style.color='var(--rose-deep)'; msg.textContent='Title is required.'; return; }
+        const r = await api.saveGalleryItem(item);
+        if (!r.ok) { msg.style.color='var(--rose-deep)'; msg.textContent = r.data.error || 'Could not save.'; return; }
+        toast(item.id ? 'Gallery item updated.' : 'Gallery item added.');
+        closeGalleryForm(); load();
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log in — Lumière Beauty & Nail Studio</title>
+  <meta name="description" content="Log in to your Lumière account to manage appointments and rewards." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <section class="container wizard" style="max-width:480px">
+      <div class="section-head">
+        <p class="eyebrow">Welcome back</p>
+        <h2>Log in</h2>
+        <p class="muted">We'll text you a one-time code — no password needed.</p>
+      </div>
+      <div class="panel" id="panel"></div>
+    </section>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/common.js"></script>
+  <script>
+    let phone = '';
+    function phoneStep(err) {
+      document.getElementById('panel').innerHTML = `
+        <h3>Your phone number</h3>
+        ${err ? `<p style="color:var(--rose-deep);font-size:.9rem">${esc(err)}</p>` : ''}
+        <div class="field"><label>Phone *</label><input id="phone" value="${esc(phone)}" placeholder="(555) 123-4567"></div>
+        <button class="btn btn-primary" id="send">Send me a code</button>
+        <p class="muted" style="font-size:.85rem;margin-top:1rem">New here? <a href="register.html" style="color:var(--rose-deep)">Create an account</a>.</p>`;
+      document.getElementById('send').addEventListener('click', sendCode);
+    }
+    async function sendCode() {
+      phone = document.getElementById('phone').value.trim();
+      if (!phone) { toast('Enter your phone number.'); return; }
+      const res = await api.requestOtp(phone);
+      if (!res.ok) { phoneStep(res.data.error); return; }
+      codeStep(res.data.devCode);
+    }
+    function codeStep(devCode) {
+      document.getElementById('panel').innerHTML = `
+        <h3>Enter your code</h3>
+        <p class="muted">Sent to ${esc(phone)}. <a href="#" id="change" style="color:var(--rose-deep)">Change</a></p>
+        ${devCode ? `<p style="background:var(--bg-soft);padding:.6rem 1rem;border-radius:10px;font-size:.85rem">Demo mode — your code is <strong>${devCode}</strong></p>` : ''}
+        <div class="field"><label>6-digit code *</label><input id="code" inputmode="numeric" maxlength="6" placeholder="123456"></div>
+        <button class="btn btn-primary" id="verify">Log in</button>
+        <button class="btn btn-ghost btn-sm" id="resend" style="margin-left:.6rem">Resend</button>`;
+      document.getElementById('verify').addEventListener('click', doLogin);
+      document.getElementById('resend').addEventListener('click', sendCode);
+      document.getElementById('change').addEventListener('click', (e) => { e.preventDefault(); phoneStep(); });
+      document.getElementById('code').focus();
+    }
+    async function doLogin() {
+      const code = document.getElementById('code').value.trim();
+      if (!code) { toast('Enter the code.'); return; }
+      const res = await api.login(phone, code);
+      if (!res.ok) { toast(res.data.error || 'Could not log in.'); return; }
+      toast('Welcome back, ' + res.data.customer.name.split(' ')[0] + '!');
+      setTimeout(() => location.assign('account.html'), 500);
+    }
+    document.addEventListener('DOMContentLoaded', async () => {
+      const me = await api.me();
+      if (me.ok) { location.assign('account.html'); return; }
+      phoneStep();
+    });
+  </script>
+</body>
+</html>

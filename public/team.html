@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Our Team — Lumière Beauty & Nail Studio</title>
+  <meta name="description" content="Meet the nail, hair, skin and makeup artists at Lumière. Book directly with your favorite." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Lumière Beauty & Nail Studio">
+  <meta property="og:title" content="Our Team — Lumière Beauty & Nail Studio">
+  <meta property="og:description" content="Meet the nail, hair, skin and makeup artists at Lumière. Book directly with your favorite.">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <section class="container">
+      <div class="section-head">
+        <p class="eyebrow">The artists</p>
+        <h2>Meet the team</h2>
+        <p class="muted">Every artist at Lumière is a specialist. Read their story, then book the hands you trust.</p>
+      </div>
+      <div class="grid grid-4" id="team"></div>
+    </section>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const CFG = window.__CFG__ || (window.__CFG__ = await api.config());
+      document.getElementById('team').innerHTML = CFG.staff.map(p => {
+        const svcs = CFG.services.filter(s => s.staffIds.includes(p.id)).slice(0,3).map(s=>s.name);
+        return `<div class="card team-card">
+          <div class="avatar">${p.name.split(' ').map(w=>w[0]).join('')}</div>
+          <h3>${p.name}</h3>
+          <p class="muted" style="font-size:.85rem;margin-bottom:.6rem">${p.title}</p>
+          <p style="font-size:.9rem">${p.bio}</p>
+          <div class="tags">${p.specialties.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+          <a class="btn btn-ghost btn-sm" style="margin-top:1rem" href="booking.html">Book with ${p.name.split(' ')[0]}</a>
+        </div>`;
+      }).join('');
+    });
+  </script>
+</body>
+</html>

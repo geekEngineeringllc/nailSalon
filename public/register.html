@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create account — Lumière Beauty & Nail Studio</title>
+  <meta name="description" content="Create a Lumière account to track appointments, rewards and your favorite looks." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <section class="container wizard" style="max-width:480px">
+      <div class="section-head">
+        <p class="eyebrow">Join Lumière</p>
+        <h2>Create your account</h2>
+        <p class="muted">Track appointments and earn rewards. We'll text a code to confirm — no password.</p>
+      </div>
+      <div class="panel" id="panel"></div>
+    </section>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/common.js"></script>
+  <script>
+    const reg = { name: '', phone: '', email: '', referralCode: '' };
+    function detailsStep(err) {
+      document.getElementById('panel').innerHTML = `
+        <h3>Your details</h3>
+        ${err ? `<p style="color:var(--rose-deep);font-size:.9rem">${esc(err)}</p>` : ''}
+        <div class="field"><label>Full name *</label><input id="r-name" value="${esc(reg.name)}" placeholder="Jordan Avery"></div>
+        <div class="field"><label>Phone *</label><input id="r-phone" value="${esc(reg.phone)}" placeholder="(555) 123-4567"></div>
+        <div class="field"><label>Email</label><input id="r-email" value="${esc(reg.email)}" placeholder="you@email.com"></div>
+        <div class="field"><label>Referral code <span class="muted" style="font-weight:400;font-size:.85rem">(optional)</span></label><input id="r-ref" value="${esc(reg.referralCode)}" placeholder="LUM-XXXXXX"></div>
+        <button class="btn btn-primary" id="send">Send verification code</button>
+        <p class="muted" style="font-size:.85rem;margin-top:1rem">Already have an account? <a href="login.html" style="color:var(--rose-deep)">Log in</a>.</p>`;
+      document.getElementById('send').addEventListener('click', sendCode);
+    }
+    async function sendCode() {
+      reg.name = document.getElementById('r-name').value.trim();
+      reg.phone = document.getElementById('r-phone').value.trim();
+      reg.email = document.getElementById('r-email').value.trim();
+      reg.referralCode = document.getElementById('r-ref').value.trim();
+      const res = await api.register(reg);
+      if (!res.ok) { detailsStep(res.data.error); return; }
+      codeStep(res.data.devCode);
+    }
+    function codeStep(devCode) {
+      document.getElementById('panel').innerHTML = `
+        <h3>Confirm your number</h3>
+        <p class="muted">Code sent to ${esc(reg.phone)}. <a href="#" id="change" style="color:var(--rose-deep)">Change</a></p>
+        ${devCode ? `<p style="background:var(--bg-soft);padding:.6rem 1rem;border-radius:10px;font-size:.85rem">Demo mode — your code is <strong>${devCode}</strong></p>` : ''}
+        <div class="field"><label>6-digit code *</label><input id="code" inputmode="numeric" maxlength="6" placeholder="123456"></div>
+        <button class="btn btn-primary" id="verify">Verify & finish</button>
+        <button class="btn btn-ghost btn-sm" id="resend" style="margin-left:.6rem">Resend</button>`;
+      document.getElementById('verify').addEventListener('click', doVerify);
+      document.getElementById('resend').addEventListener('click', sendCode);
+      document.getElementById('change').addEventListener('click', (e) => { e.preventDefault(); detailsStep(); });
+      document.getElementById('code').focus();
+    }
+    async function doVerify() {
+      const code = document.getElementById('code').value.trim();
+      if (!code) { toast('Enter the code.'); return; }
+      const res = await api.verify(reg.phone, code);
+      if (!res.ok) { toast(res.data.error || 'Could not verify.'); return; }
+      const linked = res.data.linkedBookings;
+      toast(linked ? `Account ready — we found ${linked} past booking${linked>1?'s':''}!` : 'Account created!');
+      setTimeout(() => location.assign('account.html'), 700);
+    }
+    document.addEventListener('DOMContentLoaded', async () => {
+      const me = await api.me();
+      if (me.ok) { location.assign('account.html'); return; }
+      detailsStep();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gallery — Lumière Beauty & Nail Studio</title>
+  <meta name="description" content="A look at recent nail art, hair color, makeup and skin work from the Lumière studio." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Lumière Beauty & Nail Studio">
+  <meta property="og:title" content="Gallery — Lumière Beauty & Nail Studio">
+  <meta property="og:description" content="A look at recent nail art, hair color, makeup and skin work from the Lumière studio.">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <section class="container">
+      <div class="section-head">
+        <p class="eyebrow">Our work</p>
+        <h2>The Lumière gallery</h2>
+        <p class="muted">A taste of what our artists create every day. Filter by category, then book the look you love.</p>
+      </div>
+      <div class="filters" id="filters"></div>
+      <div class="gallery" id="gallery"></div>
+      <div class="center" style="margin-top:2.4rem"><a class="btn btn-primary" href="booking.html">Book your look</a></div>
+    </section>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/common.js"></script>
+  <script>
+    const GRADS = ['#c98a86','#5a3d4f','#c8a96a','#a85f5b','#9d7b8c','#d8a48f','#7a5c6e','#caa37a'];
+    let ITEMS = [], current = 'all';
+    function tileHtml(item, idx) {
+      if (item.imageUrl) {
+        return `<div class="tile" style="padding:0;overflow:hidden" title="${esc(item.caption || item.title)}">
+          <img src="${esc(item.imageUrl)}" alt="${esc(item.title)}" loading="lazy"
+               style="width:100%;height:100%;object-fit:cover">
+          <span style="position:absolute;bottom:0;left:0;right:0;padding:.5rem .7rem;
+                       background:linear-gradient(transparent,rgba(0,0,0,.55));
+                       font-size:.78rem;font-family:var(--font-body);font-weight:500;color:#fff">
+            ${esc(item.title)}
+          </span>
+        </div>`;
+      }
+      return `<div class="tile" style="background:linear-gradient(135deg,${GRADS[idx%GRADS.length]},${GRADS[(idx+3)%GRADS.length]});flex-direction:column;gap:.4rem;position:relative" title="${esc(item.caption || item.title)}">
+        <span style="font-size:2rem">${esc(item.emoji || '🖼️')}</span>
+        <span style="font-size:.8rem;font-family:var(--font-body);font-weight:500;opacity:.95">${esc(item.title)}</span>
+      </div>`;
+    }
+    function render() {
+      const el = document.getElementById('gallery');
+      const filtered = ITEMS.filter(i => current === 'all' || i.category === current);
+      el.innerHTML = filtered.length
+        ? filtered.map((item, idx) => `<div style="position:relative">${tileHtml(item, idx)}</div>`).join('')
+        : `<p class="muted" style="text-align:center;padding:2rem;grid-column:1/-1">No items in this category yet.</p>`;
+    }
+    document.addEventListener('DOMContentLoaded', async () => {
+      const [CFG, gData] = await Promise.all([
+        window.__CFG__ || api.config().then(c => (window.__CFG__ = c)),
+        fetch('/api/gallery').then(r => r.json()),
+      ]);
+      ITEMS = gData.gallery || [];
+      const cats = [{id:'all',name:'All'}, ...CFG.categories];
+      document.getElementById('filters').innerHTML = cats.map(c=>
+        `<button class="chip ${c.id==='all'?'active':''}" data-cat="${c.id}">${c.name}</button>`).join('');
+      document.querySelectorAll('.chip').forEach(ch=>ch.addEventListener('click',()=>{
+        document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+        ch.classList.add('active'); current=ch.dataset.cat; render();
+      }));
+      render();
+    });
+  </script>
+</body>
+</html>

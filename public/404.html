@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page not found — Lumière Beauty & Nail Studio</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <style>
+    .not-found {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 56vh; text-align: center; padding: 3rem 1rem;
+    }
+    .not-found .code {
+      font-family: var(--font-display); font-size: clamp(5rem, 18vw, 9rem);
+      color: var(--rose); line-height: 1; margin-bottom: .5rem; opacity: .18;
+    }
+    .not-found h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); margin-bottom: .8rem; }
+    .not-found p { color: var(--muted); max-width: 34rem; margin-bottom: 2rem; }
+    .not-found .actions { display: flex; gap: .8rem; flex-wrap: wrap; justify-content: center; }
+  </style>
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <div class="not-found">
+      <div class="code">404</div>
+      <h1>We couldn't find that page</h1>
+      <p>The link may be broken or the page may have moved. Try one of these instead:</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="/">Home</a>
+        <a class="btn btn-ghost" href="services.html">Our services</a>
+        <a class="btn btn-ghost" href="booking.html">Book an appointment</a>
+      </div>
+    </div>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="/js/common.js"></script>
+</body>
+</html>
