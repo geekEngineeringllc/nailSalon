@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gift Cards — Lumière Beauty & Nail Studio</title>
+  <meta name="description" content="Check your Lumière gift card balance, or pick one up as a gift for someone special." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <section class="container">
+      <div class="section-head">
+        <p class="eyebrow">The perfect gift</p>
+        <h2>Gift cards</h2>
+        <p class="muted">Give the gift of beauty. Gift cards are available at the front desk and can be used toward any service or product at Lumière.</p>
+      </div>
+
+      <!-- How it works -->
+      <div class="grid grid-3" style="margin-bottom:3rem">
+        <div class="card">
+          <div class="icon">🎁</div>
+          <h3>Purchase in studio</h3>
+          <p class="muted" style="font-size:.9rem">Pick up any dollar amount at our front desk. We'll load the card and hand it right to you.</p>
+        </div>
+        <div class="card">
+          <div class="icon">💳</div>
+          <h3>Use when booking</h3>
+          <p class="muted" style="font-size:.9rem">Enter your gift card code at the payment step when booking online, or hand it to us at the visit.</p>
+        </div>
+        <div class="card">
+          <div class="icon">✨</div>
+          <h3>No expiry</h3>
+          <p class="muted" style="font-size:.9rem">Lumière gift cards never expire. The balance stays until it's used — no fees, no pressure.</p>
+        </div>
+      </div>
+
+      <!-- Balance check -->
+      <div class="panel" style="max-width:500px;margin-inline:auto">
+        <h3 style="margin:0 0 .2rem">Check your balance</h3>
+        <p class="muted" style="font-size:.9rem;margin-top:0 0 1rem">Enter the code printed on your card (format: LUM-GIFT-XXXX-XXXX).</p>
+        <div class="field" style="margin-top:1rem">
+          <label>Gift card code *</label>
+          <input id="gc-code" placeholder="LUM-GIFT-XXXX-XXXX" autocomplete="off" style="text-transform:uppercase;letter-spacing:.05em">
+        </div>
+        <button class="btn btn-primary" id="gc-check">Check balance</button>
+        <div id="gc-result" style="margin-top:1.2rem"></div>
+      </div>
+
+      <div class="center" style="margin-top:3rem">
+        <p class="muted" style="font-size:.9rem;margin-bottom:1rem">Ready to treat yourself or someone you love?</p>
+        <a class="btn btn-primary" href="booking.html">Book an appointment</a>
+        <a class="btn btn-ghost" href="index.html" style="margin-left:.8rem">Back to Lumière</a>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/common.js?v=5"></script>
+  <script>
+    const resultEl = document.getElementById('gc-result');
+
+    function showResult(card) {
+      const isGood = card.status === 'active' && card.paymentStatus === 'paid' && card.balance > 0;
+      const statusColor = isGood ? '#2f7a45' : '#b0657a';
+      const statusText = card.status === 'void' ? 'Voided'
+        : card.paymentStatus !== 'paid' ? 'Payment pending'
+        : card.balance <= 0 ? 'Balance fully used'
+        : 'Active';
+      resultEl.innerHTML = `
+        <div class="card" style="border-left:4px solid ${statusColor}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.8rem">
+            <div>
+              <div style="font-family:var(--font-display);font-size:1.15rem">${esc(card.code)}</div>
+              <div class="muted" style="font-size:.85rem;margin-top:.2rem">
+                ${card.issuedTo ? 'Issued to ' + esc(card.issuedTo) + ' · ' : ''}
+                <span style="color:${statusColor};font-weight:600">${statusText}</span>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="price" style="font-size:1.8rem">${money(card.balance)}</div>
+              <div class="muted" style="font-size:.78rem">remaining balance</div>
+            </div>
+          </div>
+          ${isGood ? `<p class="muted" style="font-size:.85rem;margin-bottom:0;margin-top:.8rem">
+            Ready to use! Enter this code at the payment step when booking online, or hand it to us at the desk.
+            <a href="booking.html" style="color:var(--rose-deep)">Book now →</a>
+          </p>` : ''}
+        </div>`;
+    }
+
+    document.getElementById('gc-check').addEventListener('click', async () => {
+      const code = document.getElementById('gc-code').value.trim().toUpperCase();
+      if (!code) { toast('Enter your gift card code.'); return; }
+      const btn = document.getElementById('gc-check');
+      btn.disabled = true; btn.textContent = 'Checking…';
+      resultEl.innerHTML = '';
+      const r = await api.giftCardLookup(code);
+      btn.disabled = false; btn.textContent = 'Check balance';
+      if (!r.ok) {
+        resultEl.innerHTML = `<p style="color:var(--rose-deep);font-size:.9rem">${esc(r.data.error || 'Gift card not found.')}</p>`;
+        return;
+      }
+      showResult(r.data.giftCard);
+    });
+
+    document.getElementById('gc-code').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('gc-check').click();
+    });
+  </script>
+</body>
+</html>
