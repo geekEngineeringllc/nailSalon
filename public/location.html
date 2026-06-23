@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Location &amp; Hours — Lumière Beauty &amp; Nail Studio</title>
+  <meta name="description" content="Find Lumière Beauty & Nail Studio in Riverside. Address, hours, parking, phone and directions." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#b0657a">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Lumière Beauty &amp; Nail Studio">
+  <meta property="og:title" content="Location &amp; Hours — Lumière Beauty &amp; Nail Studio">
+  <meta property="og:description" content="Find us at 218 Maple Court in Riverside. View our hours, get directions, and book online.">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .loc-grid { display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start; }
+    @media(max-width:700px) { .loc-grid { grid-template-columns:1fr; } }
+    .map-frame { width:100%; height:360px; border:0; border-radius:16px; }
+    .hours-row { display:flex; justify-content:space-between; padding:.4rem 0; border-bottom:1px solid var(--line); font-size:.92rem; }
+    .hours-row:last-child { border-bottom:none; }
+    .hours-row.today { font-weight:600; color:var(--rose-deep); }
+    .contact-line { display:flex; align-items:center; gap:.7rem; padding:.5rem 0; font-size:.95rem; border-bottom:1px solid var(--line); }
+    .contact-line:last-child { border-bottom:none; }
+    .contact-icon { font-size:1.2rem; flex-shrink:0; }
+  </style>
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <section class="container">
+      <div class="section-head">
+        <p class="eyebrow">Find us</p>
+        <h2>Location &amp; hours</h2>
+        <p class="muted">We're conveniently located in Riverside with free parking right out front.</p>
+      </div>
+
+      <div class="loc-grid" style="margin-bottom:3rem">
+        <!-- Info panel -->
+        <div>
+          <div class="card" style="margin-bottom:1.4rem">
+            <h3 style="font-size:1rem;margin:0 0 1rem;font-family:var(--font-display);font-size:1.15rem">Contact &amp; address</h3>
+            <div id="contact-lines">
+              <div class="contact-line"><span class="contact-icon">📍</span><span id="loc-address" class="muted">Loading…</span></div>
+              <div class="contact-line"><span class="contact-icon">📞</span><span id="loc-phone" class="muted"></span></div>
+              <div class="contact-line"><span class="contact-icon">✉️</span><span id="loc-email" class="muted"></span></div>
+            </div>
+            <div style="margin-top:1.2rem;display:flex;gap:.6rem;flex-wrap:wrap">
+              <a id="directions-link" class="btn btn-primary btn-sm" href="#" target="_blank" rel="noopener">Get directions</a>
+              <a class="btn btn-ghost btn-sm" href="booking.html">Book now</a>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 style="font-size:1rem;margin:0 0 1rem;font-family:var(--font-display);font-size:1.15rem">Hours this week</h3>
+            <div id="hours-table"><p class="muted" style="font-size:.9rem">Loading hours…</p></div>
+            <p class="muted" style="font-size:.82rem;margin-top:.8rem;margin-bottom:0">Hours are subject to change on public holidays. Call ahead if unsure.</p>
+          </div>
+        </div>
+
+        <!-- Map -->
+        <div>
+          <iframe
+            id="map-frame"
+            class="map-frame"
+            title="Lumière Beauty &amp; Nail Studio location"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            src="https://maps.google.com/maps?q=218+Maple+Court+Riverside+CA&output=embed"
+            aria-label="Map showing salon location">
+          </iframe>
+          <p class="muted" style="font-size:.8rem;margin-top:.5rem;text-align:center">
+            Free parking available directly in front of the building.
+          </p>
+        </div>
+      </div>
+
+      <div class="center" style="margin-top:1rem;margin-bottom:3rem">
+        <a class="btn btn-primary" href="booking.html">Book an appointment</a>
+        <a class="btn btn-ghost" href="faq.html" style="margin-left:.8rem">FAQ</a>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/common.js?v=6"></script>
+  <script>
+    const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const cfg = await (window.__CFG__ || api.config().then(c => (window.__CFG__ = c)));
+      const s = cfg.salon || {};
+      const fmtTime = t => { const [h, m] = (t||'').split(':'); const hr = +h; return (hr%12||12) + (m&&m!=='00' ? ':'+m : '') + (hr<12?'am':'pm'); };
+      const todayName = DAYS[new Date().getDay()];
+
+      const addrEl = document.getElementById('loc-address');
+      if (s.address) {
+        addrEl.textContent = s.address;
+        // Update map src to use real address
+        const mapQ = encodeURIComponent(s.address);
+        document.getElementById('map-frame').src = `https://maps.google.com/maps?q=${mapQ}&output=embed`;
+        document.getElementById('directions-link').href = `https://maps.google.com/maps?q=${mapQ}`;
+      }
+
+      const phoneEl = document.getElementById('loc-phone');
+      if (s.phone) phoneEl.innerHTML = `<a href="tel:${s.phone.replace(/\D/g,'')}" style="color:inherit;text-decoration:none">${esc(s.phone)}</a>`;
+      else phoneEl.textContent = 'Call for info';
+
+      const emailEl = document.getElementById('loc-email');
+      if (s.email) emailEl.innerHTML = `<a href="mailto:${esc(s.email)}" style="color:var(--rose-deep);text-decoration:none">${esc(s.email)}</a>`;
+
+      if (s.hours && s.hours.length) {
+        document.getElementById('hours-table').innerHTML = s.hours.map(h => {
+          const isToday = h.day === todayName;
+          return `<div class="hours-row${isToday ? ' today' : ''}">
+            <span>${h.day}${isToday ? ' <span style="font-size:.72rem;background:#fbeef3;color:var(--rose-deep);border-radius:4px;padding:.1rem .35rem;margin-left:.3rem">Today</span>' : ''}</span>
+            <span>${fmtTime(h.open)} – ${fmtTime(h.close)}</span>
+          </div>`;
+        }).join('');
+      }
+
+      // LocalBusiness JSON-LD (dynamic so it picks up live salon data)
+      const ld = document.createElement('script');
+      ld.type = 'application/ld+json';
+      const hoursSpec = (s.hours || []).map(h => ({
+        '@type': 'OpeningHoursSpecification',
+        'dayOfWeek': h.day,
+        'opens': h.open,
+        'closes': h.close
+      }));
+      ld.textContent = JSON.stringify({
+        '@context': 'https://schema.org', '@type': 'BeautySalon',
+        'name': s.name || 'Lumière Beauty & Nail Studio',
+        'telephone': s.phone || '', 'email': s.email || '',
+        'address': { '@type': 'PostalAddress', 'streetAddress': s.address || '' },
+        'url': location.origin,
+        ...(hoursSpec.length ? { 'openingHoursSpecification': hoursSpec } : {})
+      });
+      document.head.appendChild(ld);
+    });
+  </script>
+</body>
+</html>
