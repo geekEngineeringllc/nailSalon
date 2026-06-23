@@ -442,8 +442,8 @@ async function renderChrome() {
         </div>
         <div>
           <h4>${t('footer.visit')}</h4>
-          <p style="font-size:.9rem">${s.address}</p>
-          <p style="font-size:.9rem">${s.phone}<br>${s.email}</p>
+          <p style="font-size:.9rem"><a href="location.html" style="color:inherit;text-decoration:none">${esc(s.address)}</a></p>
+          <p style="font-size:.9rem"><a href="tel:${(s.phone||'').replace(/\D/g,'')}" style="color:inherit;text-decoration:none">${esc(s.phone)}</a><br><a href="mailto:${esc(s.email)}" style="color:#b3a59c;text-decoration:none">${esc(s.email)}</a></p>
         </div>
         <div>
           <h4>${t('footer.hours')}</h4>
