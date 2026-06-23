@@ -281,3 +281,33 @@ table.bookings th { background: var(--bg-soft); font-weight: 600; }
   section { padding: 3.5rem 0; }
   .cta-band { padding: 2.2rem 1.4rem; }
 }
+
+/* ---- Print — daily appointment sheet ---- */
+@media print {
+  /* Hide everything except the print-sheet div inside the modal */
+  body > *:not(#daily-sheet-modal),
+  #admin-gate,
+  #daily-sheet-modal > div > div:first-child { display: none !important; }
+
+  #daily-sheet-modal {
+    position: static !important;
+    background: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  #daily-sheet-content {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+  /* The close/print button row inside the modal content */
+  #daily-sheet-content > div:first-child { display: none !important; }
+
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #ccc; padding: .35rem .6rem; font-size: 10pt; }
+  th { background: #f5f0eb !important; -webkit-print-color-adjust: exact; }
+  h2, h4 { font-family: Georgia, serif; }
+  .status { border: 1px solid #ccc; border-radius: 4px; padding: .1rem .4rem; font-size: 9pt; }
+  a { text-decoration: none; color: inherit; }
+}

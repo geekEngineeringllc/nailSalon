@@ -43,7 +43,8 @@
                     customer: { name:'', phone:'', email:'', notes:'' },
                     recurring: { on:false, cadence:'biweekly', count:4 },
                     giftCardCode: '', giftCardInfo: null,
-                    usePackageId: null, _mePackages: [] };
+                    usePackageId: null, _mePackages: [],
+                    pointsToRedeem: 0, _mePoints: 0 };
 
     const todayISO = () => {
       const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -254,6 +255,24 @@
           </div>
           <div id="gc-msg" style="margin-top:.4rem;font-size:.85rem"></div>
         </div>
+        ${state._mePoints >= 100 ? (() => {
+          const maxRedeemable = Math.floor(Math.min(state._mePoints, totalPrice() * 100) / 100) * 100;
+          if (maxRedeemable < 100) return '';
+          const steps = [];
+          for (let p = 100; p <= maxRedeemable; p += 100) steps.push(p);
+          const dollarValue = state.pointsToRedeem / 100;
+          return `<div style="background:var(--bg-soft);border-radius:12px;padding:1rem 1.2rem;margin-top:1rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+              <label style="font-weight:600">Use reward points?</label>
+              <span style="font-size:.82rem;color:var(--muted)">${state._mePoints} pts available = ${money(Math.floor(state._mePoints/100))} off</span>
+            </div>
+            <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+              <button class="pts-opt ${state.pointsToRedeem===0?'active':''}" data-pts="0" style="padding:.35rem .75rem;border-radius:8px;border:1.5px solid var(--line);background:${state.pointsToRedeem===0?'var(--rose)':'#fff'};color:${state.pointsToRedeem===0?'#fff':'inherit'};cursor:pointer;font-family:inherit;font-size:.85rem">None</button>
+              ${steps.map(p => `<button class="pts-opt ${state.pointsToRedeem===p?'active':''}" data-pts="${p}" style="padding:.35rem .75rem;border-radius:8px;border:1.5px solid var(--line);background:${state.pointsToRedeem===p?'var(--rose)':'#fff'};color:${state.pointsToRedeem===p?'#fff':'inherit'};cursor:pointer;font-family:inherit;font-size:.85rem">${p} pts = ${money(p/100)} off</button>`).join('')}
+            </div>
+            ${state.pointsToRedeem > 0 ? `<div style="margin-top:.5rem;font-size:.85rem;color:#2f7a45">✓ ${money(dollarValue)} will be deducted at checkout · ${state._mePoints - state.pointsToRedeem} pts remaining after</div>` : ''}
+          </div>`;
+        })() : ''}
         ${(() => {
           if (state.serviceIds.length !== 1) return '';
           const eligible = state._mePackages.filter(p => p.serviceId === state.serviceIds[0]);
@@ -318,6 +337,10 @@
           gcMsg.style.color = '#2f7a45';
         }
       });
+      panel.querySelectorAll('.pts-opt').forEach(btn => btn.addEventListener('click', () => {
+        state.pointsToRedeem = Number(btn.dataset.pts);
+        renderDetails(panel);
+      }));
       const pkgSel = panel.querySelector('#pkg-sel');
       if (pkgSel) pkgSel.addEventListener('change', e => { state.usePackageId = e.target.value || null; });
       const recOn = panel.querySelector('#rec-on');
@@ -358,6 +381,7 @@
       const bookPayload = { services: state.serviceIds, staffId, date: state.date, time: state.time, customer: c };
       if (state.giftCardCode.trim()) bookPayload.giftCardCode = state.giftCardCode.trim();
       if (state.usePackageId) bookPayload.usePackageId = state.usePackageId;
+      if (state.pointsToRedeem > 0) bookPayload.pointsToRedeem = state.pointsToRedeem;
       const res = await api.book(bookPayload);
       if (!res.ok) {
         toast(res.data.error || 'Could not book — please try again.');
@@ -408,6 +432,8 @@
             <div class="summary-line"><span>Package (${esc(b.packageRedemption.packageName)})</span><strong style="color:#2f7a45">Prepaid</strong></div>` : ''}
             ${b.giftCardApplied ? `${!b.packageRedemption ? `<div class="summary-line"><span>List price</span><strong>${money(b.listPrice)}</strong></div>` : ''}
             <div class="summary-line"><span>Gift card (${esc(b.giftCardApplied.code)})</span><strong style="color:#2f7a45">− ${money(b.giftCardApplied.amount)}</strong></div>` : ''}
+            ${b.pointsRedeemed ? `${b.listPrice != null && !b.giftCardApplied && !b.packageRedemption ? `<div class="summary-line"><span>List price</span><strong>${money(b.listPrice)}</strong></div>` : ''}
+            <div class="summary-line"><span>Reward points (${b.pointsRedeemed.points} pts)</span><strong style="color:#2f7a45">− ${money(b.pointsRedeemed.savedAmount)}</strong></div>` : ''}
             <div class="summary-line"><span>Due at salon</span><strong>${money(b.price)}</strong></div>
           </div>
           <div style="margin-top:1.8rem;display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap">
@@ -445,6 +471,7 @@
         state.customer.phone = me.data.customer.phone || '';
         state.customer.email = me.data.customer.email || '';
         state._mePackages = (me.data.customer.packages || []).filter(p => p.paymentStatus === 'paid' && p.remaining > 0);
+        state._mePoints = me.data.customer.points || 0;
       }
       render();
     });

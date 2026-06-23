@@ -11,13 +11,30 @@
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
+  <!-- Admin login gate — shown only when ADMIN_PASSWORD is configured and session has expired -->
+  <div id="admin-gate" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:2.5rem;width:min(360px,90vw);box-shadow:0 8px 40px rgba(0,0,0,.18)">
+      <h2 style="margin:0 0 .3rem;font-family:var(--font-display)">Lumière.</h2>
+      <p class="muted" style="margin:0 0 1.5rem;font-size:.9rem">Owner dashboard — sign in to continue.</p>
+      <div class="field">
+        <label>Password</label>
+        <input id="gate-pw" type="password" placeholder="Admin password" autocomplete="current-password"
+          style="width:100%;padding:.8rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:.95rem;background:#fff">
+      </div>
+      <p id="gate-err" style="color:var(--rose-deep);font-size:.85rem;margin:.3rem 0 .8rem;min-height:1.1em"></p>
+      <button class="btn btn-primary" id="gate-submit" style="width:100%">Sign in</button>
+    </div>
+  </div>
   <header class="site-header" id="site-header"></header>
   <main>
     <section class="container">
-      <div class="section-head" style="text-align:left;margin-bottom:2rem">
-        <p class="eyebrow">Owner dashboard</p>
-        <h2>Today at Lumière</h2>
-        <p class="muted">Live view of bookings, revenue and staff load. (Demo — no login wall for easy review.)</p>
+      <div class="section-head" style="text-align:left;margin-bottom:2rem;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem">
+        <div>
+          <p class="eyebrow">Owner dashboard</p>
+          <h2 style="margin:0">Today at Lumière</h2>
+          <p class="muted">Live view of bookings, revenue and staff load.</p>
+        </div>
+        <button id="admin-logout" class="btn btn-ghost btn-sm" style="display:none;margin-top:.5rem">Sign out</button>
       </div>
 
       <div class="stat-grid" id="stats"></div>
@@ -33,6 +50,65 @@
       </div>
 
       <div class="grid grid-3" id="analytics" style="margin-bottom:2.5rem"></div>
+
+      <!-- Owner reports -->
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:.4rem">
+        <h3 style="margin:0">Owner reports</h3>
+      </div>
+      <div class="grid grid-3" style="margin-bottom:2.5rem">
+        <!-- Daily sheet -->
+        <div class="card" style="padding:1.4rem">
+          <h4 style="margin:0 0 .6rem;font-size:.95rem">Daily appointment sheet</h4>
+          <p class="muted" style="font-size:.82rem;margin:0 0 .8rem">Printable schedule for any day.</p>
+          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+            <input type="date" id="daily-date" style="padding:.45rem .7rem;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:.85rem">
+            <button class="btn btn-ghost btn-sm" id="daily-view">View</button>
+            <button class="btn btn-ghost btn-sm" id="daily-print" style="display:none">🖨 Print</button>
+          </div>
+          <div id="daily-result" style="margin-top:.8rem"></div>
+        </div>
+        <!-- Revenue export -->
+        <div class="card" style="padding:1.4rem">
+          <h4 style="margin:0 0 .6rem;font-size:.95rem">Revenue export</h4>
+          <p class="muted" style="font-size:.82rem;margin:0 0 .8rem">Download completed bookings as CSV for tax / payroll.</p>
+          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+            <input type="date" id="rev-from" style="padding:.45rem .7rem;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:.85rem">
+            <span class="muted" style="font-size:.82rem">to</span>
+            <input type="date" id="rev-to" style="padding:.45rem .7rem;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:.85rem">
+          </div>
+          <div style="display:flex;gap:.5rem;margin-top:.6rem;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" id="rev-preview">Preview</button>
+            <button class="btn btn-primary btn-sm" id="rev-csv">↓ Download CSV</button>
+          </div>
+          <div id="rev-result" style="margin-top:.8rem;font-size:.85rem"></div>
+        </div>
+        <!-- Low-stock alert -->
+        <div class="card" style="padding:1.4rem">
+          <h4 style="margin:0 0 .6rem;font-size:.95rem">Low-stock alerts</h4>
+          <p class="muted" style="font-size:.82rem;margin:0 0 .8rem">Retail products at or below their reorder threshold.</p>
+          <div id="low-stock-list"></div>
+        </div>
+        <!-- Backup status -->
+        <div class="card" style="padding:1.4rem">
+          <h4 style="margin:0 0 .6rem;font-size:.95rem">Data backups</h4>
+          <p class="muted" style="font-size:.82rem;margin:0 0 .8rem">Automatic daily snapshots of <code>db.json</code>. Last 7 kept.</p>
+          <div id="backup-list" style="margin-bottom:.8rem;font-size:.85rem"></div>
+          <button class="btn btn-ghost btn-sm" id="backup-now">↓ Back up now</button>
+          <span id="backup-msg" style="font-size:.82rem;margin-left:.6rem"></span>
+        </div>
+        <!-- Audit / recent activity -->
+        <div class="card" style="padding:1.4rem;grid-column:1/-1">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+            <h4 style="margin:0;font-size:.95rem">Recent activity</h4>
+            <button class="btn btn-ghost btn-sm" id="audit-refresh">Refresh</button>
+          </div>
+          <p class="muted" style="font-size:.82rem;margin:0 0 .8rem">Last 50 admin actions recorded on this server.</p>
+          <div id="audit-log" style="font-size:.82rem;font-family:monospace;max-height:260px;overflow-y:auto;line-height:1.6"></div>
+        </div>
+      </div>
+      <div id="daily-sheet-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;overflow-y:auto;padding:2rem">
+        <div style="background:#fff;border-radius:16px;max-width:720px;margin:0 auto;padding:2rem" id="daily-sheet-content"></div>
+      </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
         <h3 style="margin:0">All appointments</h3>
@@ -349,7 +425,7 @@
     </section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js"></script>
+  <script src="js/common.js?v=5"></script>
   <script>
     function bars(obj, labels) {
       const entries = Object.entries(obj);
@@ -545,6 +621,9 @@
       renderGallery(gallData.gallery || []);
       window._products = prodData.products || [];
       renderProducts(window._products);
+      loadLowStock();
+      loadBackups();
+      loadAuditLog();
       renderSales(salesData.sales || []);
       renderCommissions(commData.commissions || []);
       renderTips(tipsData.tips || []);
@@ -1427,6 +1506,144 @@
     }
     window.editTip = editTip;
 
+    // ---- Owner reports ----
+    function todayISO() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
+
+    async function viewDailySheet() {
+      const date = document.getElementById('daily-date').value || todayISO();
+      document.getElementById('daily-date').value = date;
+      const data = await api.dailyReport(date);
+      const rows = data.rows || [];
+      const sum = data.summary || {};
+      if (!rows.length) {
+        document.getElementById('daily-result').innerHTML = '<p class="muted" style="font-size:.85rem">No appointments on this date.</p>';
+        document.getElementById('daily-print').style.display = 'none';
+        return;
+      }
+      // Build sheet HTML
+      const byStaff = data.byStaff || {};
+      let html = `<div id="print-sheet">
+        <div style="text-align:center;margin-bottom:1.5rem">
+          <h2 style="margin:0;font-family:var(--font-display)">Lumière Beauty & Nail Studio</h2>
+          <p style="margin:.3rem 0 0;color:var(--muted);font-size:.9rem">Daily appointment sheet — ${date}</p>
+        </div>`;
+      Object.entries(byStaff).forEach(([staff, appts]) => {
+        html += `<h4 style="margin:1rem 0 .4rem;border-bottom:1px solid var(--line);padding-bottom:.3rem">${esc(staff)}</h4>
+          <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+            <thead><tr style="background:var(--bg-soft)">
+              <th style="padding:.4rem .6rem;text-align:left">Time</th>
+              <th style="padding:.4rem .6rem;text-align:left">Service</th>
+              <th style="padding:.4rem .6rem;text-align:left">Customer</th>
+              <th style="padding:.4rem .6rem;text-align:left">Phone</th>
+              <th style="padding:.4rem .6rem;text-align:right">Price</th>
+              <th style="padding:.4rem .6rem;text-align:left">Status</th>
+            </tr></thead>
+            <tbody>${appts.map(a => `<tr style="border-bottom:1px solid var(--line)">
+              <td style="padding:.35rem .6rem;font-weight:600">${esc(a.time)}</td>
+              <td style="padding:.35rem .6rem">${esc(a.serviceName)}</td>
+              <td style="padding:.35rem .6rem">${esc(a.customerName)}${a.notes ? '<br><span style="color:var(--muted);font-size:.78rem">'+esc(a.notes)+'</span>' : ''}</td>
+              <td style="padding:.35rem .6rem;color:var(--muted)">${esc(a.customerPhone)}</td>
+              <td style="padding:.35rem .6rem;text-align:right">$${Number(a.price).toFixed(2)}</td>
+              <td style="padding:.35rem .6rem"><span class="status ${a.status}">${a.status}</span></td>
+            </tr>`).join('')}</tbody>
+          </table>`;
+      });
+      html += `<div style="margin-top:1.2rem;padding:.8rem 1rem;background:var(--bg-soft);border-radius:8px;display:flex;gap:2rem;font-size:.88rem">
+        <span><strong>${sum.total}</strong> appointments</span>
+        <span>Projected: <strong>$${Number(sum.revenue + sum.tips).toFixed(2)}</strong></span>
+      </div></div>`;
+      const modal = document.getElementById('daily-sheet-modal');
+      document.getElementById('daily-sheet-content').innerHTML =
+        `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+          <span style="font-weight:600">Daily sheet — ${date}</span>
+          <div style="display:flex;gap:.5rem">
+            <button class="btn btn-primary btn-sm" onclick="window.print()">🖨 Print</button>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('daily-sheet-modal').style.display='none'">Close</button>
+          </div>
+        </div>` + html;
+      modal.style.display = 'block';
+      document.getElementById('daily-print').style.display = '';
+    }
+    window.viewDailySheet = viewDailySheet;
+
+    async function previewRevenue() {
+      const from = document.getElementById('rev-from').value;
+      const to = document.getElementById('rev-to').value;
+      const data = await (await api.revenueReport(from, to, false)).json();
+      const el = document.getElementById('rev-result');
+      const t = data.totals || {};
+      el.innerHTML = t.count != null
+        ? `<strong>${t.count}</strong> completed bookings · Revenue <strong>$${Number(t.revenue).toFixed(2)}</strong> · Tips <strong>$${Number(t.tips).toFixed(2)}</strong> · Total <strong>$${Number(t.total).toFixed(2)}</strong>`
+        : '<span class="muted">No data.</span>';
+    }
+
+    async function downloadCSV() {
+      const from = document.getElementById('rev-from').value;
+      const to = document.getElementById('rev-to').value;
+      const r = await api.revenueReport(from, to, true);
+      const blob = await r.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `revenue-${from||'all'}-${to||'all'}.csv`;
+      a.click();
+    }
+
+    async function loadLowStock() {
+      const data = await api.lowStockProducts();
+      const el = document.getElementById('low-stock-list');
+      const items = data.products || [];
+      el.innerHTML = items.length
+        ? items.map(p => `<div style="display:flex;justify-content:space-between;padding:.3rem 0;border-bottom:1px solid var(--line);font-size:.85rem">
+            <span style="color:#b94646;font-weight:600">${esc(p.name)}</span>
+            <span class="muted">${p.stock} left (threshold ${p.lowStockThreshold ?? 5})</span>
+          </div>`).join('')
+        : '<p class="muted" style="font-size:.85rem">All products are well-stocked.</p>';
+    }
+
+    async function loadBackups() {
+      const data = await fetch('/api/admin/backups').then(r => r.json()).catch(() => ({ backups: [] }));
+      const el = document.getElementById('backup-list');
+      const files = data.backups || [];
+      el.innerHTML = files.length
+        ? files.map(f => `<div style="padding:.2rem 0;color:var(--muted)">${f}</div>`).join('')
+        : '<p class="muted">No backups yet — one will be created now.</p>';
+    }
+
+    const ACTION_LABELS = {
+      'booking.status': 'Booking status changed',
+      'booking.cancel': 'Booking cancelled',
+      'service.create': 'Service created',
+      'service.update': 'Service updated',
+      'service.delete': 'Service deleted',
+      'staff.create':   'Staff member added',
+      'staff.update':   'Staff member updated',
+      'staff.delete':   'Staff member removed',
+      'tip.record':     'Tip recorded',
+      'product.create': 'Product created',
+      'product.update': 'Product updated',
+      'product.delete': 'Product deleted',
+      'sale.record':    'Retail sale recorded',
+    };
+
+    async function loadAuditLog() {
+      const el = document.getElementById('audit-log');
+      if (!el) return;
+      el.innerHTML = '<span class="muted">Loading…</span>';
+      const data = await api.auditLog(50).catch(() => ({ entries: [] }));
+      const entries = data.entries || [];
+      if (!entries.length) { el.innerHTML = '<span class="muted">No activity yet.</span>'; return; }
+      el.innerHTML = entries.map(e => {
+        const label = ACTION_LABELS[e.action] || e.action;
+        const detail = e.detail ? Object.entries(e.detail).filter(([k]) => k !== 'id').map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(' ') : '';
+        const t = e.ts ? e.ts.replace('T', ' ').slice(0, 19) : '';
+        return `<div style="padding:.25rem 0;border-bottom:1px solid var(--line);display:flex;gap:.8rem;flex-wrap:wrap">
+          <span style="color:var(--muted);min-width:155px">${t}</span>
+          <span style="font-weight:600;color:var(--rose-deep);min-width:200px">${esc(label)}</span>
+          <span style="color:var(--muted)">${esc(detail)}</span>
+        </div>`;
+      }).join('');
+    }
+
     window.editStaff = editStaff; window.deleteStaff = deleteStaff; window.closeStaffForm = closeStaffForm;
     window.onHmode = onHmode; window.addTimeOff = addTimeOff; window.addBreak = addBreak; window.removeRow = removeRow;
     window.deleteBlockoff = deleteBlockoff;
@@ -1475,9 +1692,55 @@
     window.editRes = editRes; window.deleteRes = deleteRes; window.closeResForm = closeResForm;
     window.onBkSvc = onBkSvc; window.closeBookForm = closeBookForm; window.openBookForm = openBookForm;
     window.goPage = goPage; window.clearBFilters = clearBFilters;
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Check if admin is authenticated (handles both dev/demo and password-protected modes)
+      const authData = await fetch('/api/admin/auth').then(r => r.json()).catch(() => ({ authenticated: true }));
+      const gate = document.getElementById('admin-gate');
+      if (!authData.authenticated) {
+        gate.style.display = 'flex';
+        const pw = document.getElementById('gate-pw');
+        const err = document.getElementById('gate-err');
+        const submit = document.getElementById('gate-submit');
+        const doLogin = async () => {
+          submit.disabled = true; err.textContent = '';
+          const r = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pw.value }) });
+          const d = await r.json();
+          if (r.ok) { gate.style.display = 'none'; initDashboard(); }
+          else { err.textContent = d.error || 'Sign-in failed.'; submit.disabled = false; pw.focus(); }
+        };
+        submit.addEventListener('click', doLogin);
+        pw.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+        pw.focus();
+        return;
+      }
+      if (authData.passwordRequired) document.getElementById('admin-logout').style.display = '';
+      initDashboard();
+
+      function initDashboard() {
+        if (authData.passwordRequired) {
+          document.getElementById('admin-logout').style.display = '';
+          document.getElementById('admin-logout').addEventListener('click', async () => {
+            await fetch('/api/admin/logout', { method: 'POST' });
+            location.reload();
+          });
+        }
       setupBookingFilters();
       load();
+      document.getElementById('backup-now').addEventListener('click', async () => {
+        const msg = document.getElementById('backup-msg');
+        msg.textContent = 'Backing up…';
+        const r = await fetch('/api/admin/backup', { method: 'POST' }).then(x => x.json()).catch(() => null);
+        if (r && r.ok) { msg.textContent = '✓ Done — ' + (r.backups || []).length + ' backup(s) kept.'; loadBackups(); }
+        else { msg.textContent = 'Backup failed.'; }
+        setTimeout(() => { msg.textContent = ''; }, 4000);
+      });
+      document.getElementById('audit-refresh').addEventListener('click', loadAuditLog);
+      document.getElementById('daily-date').value = todayISO();
+      document.getElementById('daily-view').addEventListener('click', viewDailySheet);
+      document.getElementById('daily-print').addEventListener('click', () => window.print());
+      document.getElementById('daily-sheet-modal').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+      document.getElementById('rev-preview').addEventListener('click', previewRevenue);
+      document.getElementById('rev-csv').addEventListener('click', downloadCSV);
       document.getElementById('addProduct').addEventListener('click', () => openProductForm(null));
       document.getElementById('comm-filter').addEventListener('click', () => load());
       document.getElementById('comm-clear').addEventListener('click', () => {
@@ -1549,6 +1812,7 @@
         toast(item.id ? 'Gallery item updated.' : 'Gallery item added.');
         closeGalleryForm(); load();
       });
+      } // end initDashboard
     });
   </script>
 </body>

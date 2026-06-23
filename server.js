@@ -957,6 +957,21 @@ async function handleAPI(req, res, url) {
         giftCard.redemptions.push({ bookingId: booking.id, ref: booking.ref, amount: applied, at: new Date().toISOString() });
         if (giftCard.balance <= 0) giftCard.status = 'depleted';
       }
+
+      // Apply loyalty points: 100 pts = $1. Customer must be logged in and own enough points.
+      if (data.pointsToRedeem && booking.price > 0 && sess) {
+        const pts = Math.round(Number(data.pointsToRedeem) || 0);
+        const ptsCust = fresh.customers.find((c) => c.id === sess.customerId);
+        if (pts > 0 && pts % 100 === 0 && ptsCust && (ptsCust.points || 0) >= pts) {
+          const savedByPoints = pts / 100;
+          const actualSaved = Math.min(savedByPoints, booking.price);
+          if (booking.listPrice == null) booking.listPrice = booking.price;
+          booking.price = Math.round((booking.price - actualSaved) * 100) / 100;
+          ptsCust.points = (ptsCust.points || 0) - pts;
+          booking.pointsRedeemed = { points: pts, savedAmount: actualSaved };
+        }
+      }
+
       fresh.bookings.push(booking);
       fresh.notifications.push(...makeNotifications(booking));
       saveDB(fresh);
