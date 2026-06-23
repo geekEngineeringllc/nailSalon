@@ -16,6 +16,9 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 const DATA_DIR = path.join(ROOT, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const SEED_FILE = path.join(DATA_DIR, 'seed.json');
+const BACKUP_DIR = path.join(DATA_DIR, 'backups');
+const BACKUP_KEEP = 7; // keep last 7 daily backups
+const AUDIT_FILE = path.join(DATA_DIR, 'audit.log');
 
 // ---- Tiny JSON datastore -------------------------------------------------
 function loadDB() {
@@ -26,6 +29,39 @@ function loadDB() {
 }
 function saveDB(db) {
   fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+}
+
+// ---- Nightly backup -------------------------------------------------------
+function runBackup() {
+  if (!fs.existsSync(DB_FILE)) return;
+  try {
+    if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    const stamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const dest = path.join(BACKUP_DIR, `db-${stamp}.json`);
+    fs.copyFileSync(DB_FILE, dest);
+    // Prune old backups — keep only the most recent BACKUP_KEEP files
+    const files = fs.readdirSync(BACKUP_DIR)
+      .filter(f => f.startsWith('db-') && f.endsWith('.json'))
+      .sort(); // lexicographic = chronological for YYYY-MM-DD names
+    files.slice(0, Math.max(0, files.length - BACKUP_KEEP))
+      .forEach(f => fs.unlinkSync(path.join(BACKUP_DIR, f)));
+    process.stdout.write(`[backup] ${dest} (kept ${Math.min(files.length, BACKUP_KEEP)} copies)\n`);
+  } catch (e) {
+    process.stderr.write(`[backup] ERROR: ${e.message}\n`);
+  }
+}
+function scheduleDailyBackup() {
+  // Fire once at startup (catches the case where the server was down at midnight)
+  runBackup();
+  // Then fire every 24 hours
+  setInterval(runBackup, 24 * 60 * 60 * 1000);
+}
+
+// ---- Audit log -----------------------------------------------------------
+function audit(req, action, detail) {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress || '-';
+  const line = JSON.stringify({ ts: new Date().toISOString(), ip, action, detail }) + '\n';
+  fs.appendFile(AUDIT_FILE, line, () => {}); // fire-and-forget
 }
 
 // Serialize read-modify-write sections so two concurrent mutating requests can't
@@ -182,7 +218,9 @@ const MIME = {
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
-  '.ico': 'image/x-icon'
+  '.ico': 'image/x-icon',
+  '.xml': 'application/xml; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
 };
 const CACHE_CTRL = {
   '.html': 'no-cache',
@@ -245,10 +283,21 @@ function readBody(req) {
 }
 
 function requireAdmin(req, res) {
+  // 1. Admin session cookie (preferred — UI-based login)
+  const sid = parseCookies(req).admin_sid;
+  if (sid) {
+    const s = _sessions.get(sid);
+    if (s && s.isAdmin && Date.now() < s.expiresAt) return true;
+    if (s) _sessions.delete(sid);
+  }
+  // 2. Legacy bearer token (env-var, for scripts/CI)
   const token = process.env.ADMIN_TOKEN;
-  if (!token) return true; // token not configured → open (dev mode)
-  const auth = req.headers['authorization'] || '';
-  if (auth === 'Bearer ' + token) return true;
+  if (token) {
+    const auth = req.headers['authorization'] || '';
+    if (auth === 'Bearer ' + token) return true;
+  }
+  // 3. No password configured → allow (dev/demo mode)
+  if (!process.env.ADMIN_PASSWORD && !process.env.ADMIN_TOKEN) return true;
   sendJSON(res, 401, { error: 'Admin access required.' });
   return false;
 }
@@ -304,11 +353,17 @@ function validateRegister(d) {
 }
 
 // Sessions are in-memory (lost on restart) — fine for now; move to DB/redis with the M7 DB swap.
-const _sessions = new Map(); // token -> { customerId, expiresAt }
+const _sessions = new Map(); // token -> { customerId, expiresAt, isAdmin? }
 const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days (decision D7)
+const ADMIN_SESSION_TTL = 8 * 60 * 60 * 1000;  // 8 hours for admin sessions
 function createSession(customerId) {
   const t = crypto.randomBytes(24).toString('hex');
   _sessions.set(t, { customerId, expiresAt: Date.now() + SESSION_TTL });
+  return t;
+}
+function createAdminSession() {
+  const t = crypto.randomBytes(32).toString('hex');
+  _sessions.set(t, { isAdmin: true, expiresAt: Date.now() + ADMIN_SESSION_TTL });
   return t;
 }
 function parseCookies(req) {
@@ -726,6 +781,38 @@ async function handleAPI(req, res, url) {
   if (!db.productSales) db.productSales = [];
   if (!db.gallery) db.gallery = [];
   const q = url.searchParams;
+
+  // ---- Admin auth routes (public — no gate) --------------------------------
+  // POST /api/admin/login { password }
+  if (req.method === 'POST' && url.pathname === '/api/admin/login') {
+    const { password } = body;
+    const configured = process.env.ADMIN_PASSWORD;
+    if (!configured) {
+      // No password configured — issue session so UI works in dev/demo mode
+      const t = createAdminSession();
+      res.setHeader('Set-Cookie', `admin_sid=${t}; HttpOnly; Path=/; Max-Age=${ADMIN_SESSION_TTL / 1000}; SameSite=Lax`);
+      return sendJSON(res, 200, { ok: true });
+    }
+    if (!password || password !== configured) {
+      return sendJSON(res, 401, { error: 'Incorrect password.' });
+    }
+    const t = createAdminSession();
+    res.setHeader('Set-Cookie', `admin_sid=${t}; HttpOnly; Path=/; Max-Age=${ADMIN_SESSION_TTL / 1000}; SameSite=Lax`);
+    return sendJSON(res, 200, { ok: true });
+  }
+  // GET /api/admin/auth — returns whether caller is authenticated admin
+  if (req.method === 'GET' && url.pathname === '/api/admin/auth') {
+    const passwordSet = !!process.env.ADMIN_PASSWORD;
+    const authed = requireAdmin(req, { writeHead() {}, setHeader() {}, end() {} }); // dry-run
+    return sendJSON(res, 200, { authenticated: authed, passwordRequired: passwordSet });
+  }
+  // POST /api/admin/logout
+  if (req.method === 'POST' && url.pathname === '/api/admin/logout') {
+    const sid = parseCookies(req).admin_sid;
+    if (sid) _sessions.delete(sid);
+    res.setHeader('Set-Cookie', 'admin_sid=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax');
+    return sendJSON(res, 200, { ok: true });
+  }
 
   // Admin gate — all /api/admin/* routes require the ADMIN_TOKEN when it is set
   if (url.pathname.startsWith('/api/admin/') && !requireAdmin(req, res)) return;
@@ -1173,6 +1260,7 @@ async function handleAPI(req, res, url) {
       refundGiftCard(fresh, b);
       notifyWaitlist(fresh, b);
       saveDB(fresh);
+      audit(req, 'booking.cancel', { id: b.id, ref: b.ref, customer: b.customer && b.customer.name });
       return sendJSON(res, 200, { ok: true });
     });
   }
@@ -1427,6 +1515,7 @@ async function handleAPI(req, res, url) {
         }
       }
       saveDB(fresh);
+      audit(req, 'booking.status', { id: b.id, ref: b.ref, status, prev: b.status });
       return sendJSON(res, 200, { booking: b });
     });
   }
@@ -1751,6 +1840,7 @@ async function handleAPI(req, res, url) {
       if (existing) {
         Object.assign(existing, clean);
         saveDB(fresh);
+        audit(req, 'service.update', { id: existing.id, name: existing.name });
         return sendJSON(res, 200, { ok: true, service: existing });
       }
       // create — derive a unique id from the name
@@ -1759,6 +1849,7 @@ async function handleAPI(req, res, url) {
       const created = Object.assign({ id }, clean);
       fresh.services.push(created);
       saveDB(fresh);
+      audit(req, 'service.create', { id: created.id, name: created.name });
       return sendJSON(res, 201, { ok: true, service: created });
     });
   }
@@ -1772,6 +1863,7 @@ async function handleAPI(req, res, url) {
       if (i === -1) return sendJSON(res, 404, { error: 'Service not found.' });
       const [removed] = fresh.services.splice(i, 1);
       saveDB(fresh);
+      audit(req, 'service.delete', { id: removed.id, name: removed.name });
       // past bookings keep their own snapshot of name/price, so they're unaffected.
       return sendJSON(res, 200, { ok: true, removed: removed.id });
     });
@@ -1802,6 +1894,7 @@ async function handleAPI(req, res, url) {
       if (existing) {
         Object.assign(existing, clean);
         saveDB(fresh);
+        audit(req, 'staff.update', { id: existing.id, name: existing.name });
         return sendJSON(res, 200, { ok: true, staff: existing });
       }
       let id = slugify(clean.name) || 'artist';
@@ -1809,6 +1902,7 @@ async function handleAPI(req, res, url) {
       const created = Object.assign({ id }, clean);
       fresh.staff.push(created);
       saveDB(fresh);
+      audit(req, 'staff.create', { id: created.id, name: created.name });
       return sendJSON(res, 201, { ok: true, staff: created });
     });
   }
@@ -1828,6 +1922,7 @@ async function handleAPI(req, res, url) {
       fresh.services.forEach((s) => { s.staffIds = s.staffIds.filter((x) => x !== id); });
       const [removed] = fresh.staff.splice(i, 1);
       saveDB(fresh);
+      audit(req, 'staff.delete', { id: removed.id, name: removed.name });
       return sendJSON(res, 200, { ok: true, removed: removed.id });
     });
   }
@@ -2198,6 +2293,7 @@ async function handleAPI(req, res, url) {
       if (b.status !== 'completed') return sendJSON(res, 400, { error: 'Tips can only be recorded on completed bookings.' });
       b.tip = Math.round(amount * 100) / 100;
       saveDB(fresh);
+      audit(req, 'tip.record', { id: b.id, ref: b.ref, tip: b.tip });
       return sendJSON(res, 200, { ok: true, booking: { id: b.id, ref: b.ref, tip: b.tip } });
     });
   }
@@ -2299,6 +2395,7 @@ async function handleAPI(req, res, url) {
         status = 201;
       }
       saveDB(fresh);
+      audit(req, status === 201 ? 'product.create' : 'product.update', { id: product.id, name: product.name });
       return sendJSON(res, status, { product: { ...product, lowStock: product.stock <= product.lowStockThreshold } });
     });
   }
@@ -2310,8 +2407,9 @@ async function handleAPI(req, res, url) {
       const fresh = loadDB();
       const idx = (fresh.products || []).findIndex((p) => p.id === id);
       if (idx < 0) return sendJSON(res, 404, { error: 'Product not found.' });
-      fresh.products.splice(idx, 1);
+      const [removed] = fresh.products.splice(idx, 1);
       saveDB(fresh);
+      audit(req, 'product.delete', { id: removed.id, name: removed.name });
       return sendJSON(res, 200, { ok: true });
     });
   }
@@ -2357,6 +2455,7 @@ async function handleAPI(req, res, url) {
       };
       fresh.productSales.push(sale);
       saveDB(fresh);
+      audit(req, 'sale.record', { id: sale.id, productId, productName: product.name, quantity: qty, total: sale.total });
       return sendJSON(res, 201, { sale, product: { ...product, lowStock: product.stock <= (product.lowStockThreshold ?? 5) } });
     });
   }
@@ -2436,6 +2535,34 @@ async function handleAPI(req, res, url) {
     return sendJSON(res, 200, { rows, totals, from, to });
   }
 
+  // POST /api/admin/backup — trigger a manual backup immediately
+  if (req.method === 'POST' && url.pathname === '/api/admin/backup') {
+    runBackup();
+    const files = fs.existsSync(BACKUP_DIR)
+      ? fs.readdirSync(BACKUP_DIR).filter(f => f.startsWith('db-') && f.endsWith('.json')).sort()
+      : [];
+    return sendJSON(res, 200, { ok: true, backups: files });
+  }
+
+  // GET /api/admin/backups — list available backups
+  if (req.method === 'GET' && url.pathname === '/api/admin/backups') {
+    const files = fs.existsSync(BACKUP_DIR)
+      ? fs.readdirSync(BACKUP_DIR).filter(f => f.startsWith('db-') && f.endsWith('.json')).sort().reverse()
+      : [];
+    return sendJSON(res, 200, { backups: files });
+  }
+
+  // GET /api/admin/audit?limit=N — tail of audit log, newest first
+  if (req.method === 'GET' && url.pathname === '/api/admin/audit') {
+    const limit = Math.min(200, Math.max(1, parseInt(q.get('limit') || '50', 10)));
+    if (!fs.existsSync(AUDIT_FILE)) return sendJSON(res, 200, { entries: [] });
+    const raw = fs.readFileSync(AUDIT_FILE, 'utf8');
+    const lines = raw.split('\n').filter(Boolean);
+    const tail = lines.slice(-limit).reverse();
+    const entries = tail.map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+    return sendJSON(res, 200, { entries });
+  }
+
   return sendJSON(res, 404, { error: 'Unknown API route.' });
 }
 
@@ -2503,4 +2630,6 @@ server.listen(PORT, () => {
   // Run notification delivery immediately, then every 60 s
   processNotifications();
   setInterval(processNotifications, 60000);
+  // Run db backup on startup then every 24 h
+  scheduleDailyBackup();
 });

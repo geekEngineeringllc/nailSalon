@@ -7,3 +7,6 @@ Disallow: /register.html
 Disallow: /account.html
 Disallow: /manage.html
 Disallow: /review.html
+Disallow: /unsubscribe.html
+
+Sitemap: https://lumierestudio.com/sitemap.xml
