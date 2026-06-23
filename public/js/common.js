@@ -454,6 +454,7 @@ async function renderChrome() {
         <span>© ${new Date().getFullYear()} ${s.name}. ${t('footer.crafted')}</span>
         <span style="margin-left:auto;display:flex;gap:1.2rem;flex-wrap:wrap">
           <a href="${langHref}" style="color:#b3a59c;text-decoration:none">${t('lang.switch')}</a>
+          <a href="faq.html" style="color:#b3a59c;text-decoration:none">FAQ</a>
           <a href="giftcard.html" style="color:#b3a59c;text-decoration:none">Gift Cards</a>
           <a href="reviews.html" style="color:#b3a59c;text-decoration:none">Reviews</a>
           <a href="privacy.html" style="color:#b3a59c;text-decoration:none">${t('footer.privacy')}</a>

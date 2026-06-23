@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FAQ — Lumière Beauty & Nail Studio</title>
+  <meta name="description" content="Answers to the most common questions about booking, services, policies, and your visit to Lumière Beauty & Nail Studio." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#b0657a">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Lumière Beauty & Nail Studio">
+  <meta property="og:title" content="FAQ — Lumière Beauty & Nail Studio">
+  <meta property="og:description" content="Answers to the most common questions about booking, services, policies, and your visit to Lumière.">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .faq-group { margin-bottom: 2.5rem; }
+    .faq-group h3 { font-size: 1.05rem; color: var(--rose-deep); margin-bottom: .8rem; padding-bottom: .5rem; border-bottom: 1px solid var(--line); }
+    .faq-item { border-bottom: 1px solid var(--line); }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-q { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 0; cursor: pointer; font-weight: 500; font-size: .97rem; user-select: none; }
+    .faq-q:hover { color: var(--rose-deep); }
+    .faq-icon { flex-shrink: 0; font-size: 1.1rem; color: var(--rose); transition: transform .2s; }
+    .faq-a { font-size: .93rem; line-height: 1.75; color: var(--text); padding-bottom: 1rem; display: none; }
+    .faq-a a { color: var(--rose-deep); }
+    .faq-item.open .faq-icon { transform: rotate(45deg); }
+    .faq-item.open .faq-a { display: block; }
+    #faq-search { width: 100%; box-sizing: border-box; padding: .6rem 1.1rem; border: 1.5px solid var(--line); border-radius: 24px; font-family: inherit; font-size: .95rem; outline: none; margin-bottom: 2rem; }
+  </style>
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <section class="container" style="max-width: 780px">
+      <div class="section-head">
+        <p class="eyebrow">Help center</p>
+        <h2>Frequently asked questions</h2>
+        <p class="muted">Can't find your answer? Call us at <span id="faq-phone"></span> or <a href="booking.html" style="color:var(--rose-deep)">book online</a> and we'll sort it out at your visit.</p>
+      </div>
+
+      <input id="faq-search" type="search" placeholder="Search questions…" aria-label="Search FAQ">
+
+      <div id="faq-body">
+
+        <div class="faq-group" data-group="booking">
+          <h3>Booking &amp; appointments</h3>
+
+          <div class="faq-item">
+            <div class="faq-q">How do I book an appointment?<span class="faq-icon">+</span></div>
+            <div class="faq-a">The easiest way is online — <a href="booking.html">book here</a> in under a minute. Pick your service, choose an artist, select a date and time, and confirm. You'll get a text and email confirmation straight away. We also take phone bookings during salon hours.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">Do I need to book in advance, or do you take walk-ins?<span class="faq-icon">+</span></div>
+            <div class="faq-a">We recommend booking at least 24 hours ahead, especially for weekends and longer services — our chairs fill up fast. Walk-ins are welcome when a chair is free, but we can't guarantee availability. Booking online is the only way to hold a guaranteed spot.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">How do I reschedule or cancel?<span class="faq-icon">+</span></div>
+            <div class="faq-a">Visit <a href="manage.html">Manage my appointment</a> with your booking reference and the phone number you booked with. You can reschedule or cancel online up to 24 hours before your visit. For same-day changes, please call us directly.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">Can I book for a group or bridal party?<span class="faq-icon">+</span></div>
+            <div class="faq-a">Yes! Use the <strong>Group / bridal party</strong> option on the <a href="booking.html">booking page</a> to add multiple people to one reservation. For larger parties (5+), we recommend calling us so we can confirm we have enough stations available.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">Can I request a specific artist?<span class="faq-icon">+</span></div>
+            <div class="faq-a">Absolutely — just select them at the "Choose your artist" step when booking. If your preferred artist isn't available on your chosen date, their next openings will appear when you pick a different date. You can also choose "Any available" for the soonest slot across the whole team.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">What is the waitlist?<span class="faq-icon">+</span></div>
+            <div class="faq-a">If a date is fully booked, you'll see an option to join the waitlist for that day. Enter your name and phone number and we'll contact you if a cancellation opens up. You're not charged anything to join the waitlist.</div>
+          </div>
+        </div>
+
+        <div class="faq-group" data-group="services">
+          <h3>Services &amp; pricing</h3>
+
+          <div class="faq-item">
+            <div class="faq-q">Where can I see all services and prices?<span class="faq-icon">+</span></div>
+            <div class="faq-a">Our full menu with transparent pricing is on the <a href="services.html">Services page</a>. Prices are listed per service and include all materials — no hidden fees at checkout.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">Can I book more than one service at once?<span class="faq-icon">+</span></div>
+            <div class="faq-a">Yes — you can add up to 3 services in a single booking. The total time and price are calculated automatically. Services are performed back-to-back in a single visit.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">How long do services typically take?<span class="faq-icon">+</span></div>
+            <div class="faq-a">Every service listing shows the estimated duration. As a general guide: a classic manicure is around 30 minutes, gel manicure 45 minutes, pedicures 60 minutes, and hair color or balayage 90–120 minutes. Complex nail art or bridal makeup may take longer — check the listing or ask when booking.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">Do you offer recurring appointments?<span class="faq-icon">+</span></div>
+            <div class="faq-a">Yes! At the confirmation step you'll see an option to set up a recurring booking — weekly, bi-weekly, or monthly. All sessions are confirmed at once, so your spot is secured in advance. You can cancel individual sessions from <a href="manage.html">Manage my appointment</a>.</div>
+          </div>
+        </div>
+
+        <div class="faq-group" data-group="visit">
+          <h3>Your visit</h3>
+
+          <div class="faq-item">
+            <div class="faq-q">What should I bring or do before my appointment?<span class="faq-icon">+</span></div>
+            <div class="faq-a">For nail services, remove any gel or acrylic at home beforehand if possible — it saves time. For hair color, come with clean dry hair. For facials, arrive with a clean face. No special prep is needed for most services. Arrive 5 minutes early so we can get you settled.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">What happens if I arrive late?<span class="faq-icon">+</span></div>
+            <div class="faq-a">We hold your appointment for 10 minutes. If you're running behind, please call us so we can let your artist know. Arrivals more than 10 minutes late may need to be shortened or rescheduled to avoid affecting the next client.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">Can I bring my own nail polish?<span class="faq-icon">+</span></div>
+            <div class="faq-a">Yes, you're welcome to bring your own polish. Our artists are happy to work with your color. Just make sure it's not dried out! We stock a wide selection of colors and brands in-house too.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">Is parking available?<span class="faq-icon">+</span></div>
+            <div class="faq-a">Yes — free parking is available directly in front of the building at 218 Maple Court. Street parking is also available on adjacent blocks at no charge.</div>
+          </div>
+        </div>
+
+        <div class="faq-group" data-group="payments">
+          <h3>Payments, gift cards &amp; packages</h3>
+
+          <div class="faq-item">
+            <div class="faq-q">What payment methods do you accept?<span class="faq-icon">+</span></div>
+            <div class="faq-a">We accept cash, all major credit and debit cards, and Lumière gift cards. Payment is collected at the salon after your service — not online at booking time (except for deposit services).</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">What is a deposit and when is it required?<span class="faq-icon">+</span></div>
+            <div class="faq-a">A few of our longer or specialist services (bridal packages, nail art commissions) require a small deposit to hold the booking. This is noted clearly on the service listing with a "Deposit" badge. The deposit is collected at the salon and goes toward your total — it's not an extra charge.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">How do gift cards work?<span class="faq-icon">+</span></div>
+            <div class="faq-a">Gift cards are available in any dollar amount from our front desk. They never expire and have no fees. To use one, enter the card code at the payment step when booking online, or hand it to us at your visit. You can check your balance anytime on our <a href="giftcard.html">Gift Cards page</a>.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">What are service packages?<span class="faq-icon">+</span></div>
+            <div class="faq-a">Packages let you pre-buy a bundle of sessions (e.g. 6 gel manicures) at a reduced rate. You pay once at the desk, and then each session is redeemed individually at booking — no need to pay again. Package balances appear in your <a href="account.html">account dashboard</a>.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">How do reward points work?<span class="faq-icon">+</span></div>
+            <div class="faq-a">You earn points on every completed visit. Every 100 points is worth $1 off a future service. Your balance shows in your <a href="account.html">account</a>. To redeem, just mention it to your artist at checkout — points are applied manually at the desk.</div>
+          </div>
+        </div>
+
+        <div class="faq-group" data-group="policies">
+          <h3>Policies</h3>
+
+          <div class="faq-item">
+            <div class="faq-q">What is your cancellation policy?<span class="faq-icon">+</span></div>
+            <div class="faq-a">We ask for at least 24 hours' notice to cancel or reschedule. Cancellations with less than 24 hours' notice may result in a cancellation fee for deposit services. For non-deposit services, we appreciate the notice but won't charge a fee. Repeated no-shows may affect future booking access.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">What if I need to make a complaint or have a concern?<span class="faq-icon">+</span></div>
+            <div class="faq-a">We want every visit to be perfect. If something wasn't right, please let us know — email us at <span id="faq-email"></span> or speak with our manager in the salon. We'll make it right. You can also leave a review via the link in your booking confirmation.</div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q">Do you have an SMS / text messaging policy?<span class="faq-icon">+</span></div>
+            <div class="faq-a">We send appointment reminders and (if you opt in) occasional special offers by text. You can opt out anytime by replying STOP or visiting your <a href="account.html">account settings</a>. Full details are on our <a href="sms-consent.html">SMS Policy page</a>.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="center" style="margin-top:3rem;margin-bottom:1rem">
+        <a class="btn btn-primary" href="booking.html">Book an appointment</a>
+        <a class="btn btn-ghost" href="services.html" style="margin-left:.8rem">View services</a>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/common.js?v=5"></script>
+  <script>
+    document.querySelectorAll('.faq-q').forEach(q => {
+      q.addEventListener('click', () => {
+        const item = q.closest('.faq-item');
+        const wasOpen = item.classList.contains('open');
+        // Close all
+        document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+        if (!wasOpen) item.classList.add('open');
+      });
+    });
+
+    const searchInput = document.getElementById('faq-search');
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.trim().toLowerCase();
+      document.querySelectorAll('.faq-item').forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = (!q || text.includes(q)) ? '' : 'none';
+      });
+      document.querySelectorAll('.faq-group').forEach(g => {
+        const visible = [...g.querySelectorAll('.faq-item')].some(i => i.style.display !== 'none');
+        g.style.display = visible ? '' : 'none';
+      });
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const cfg = await api.config();
+      const s = cfg.salon || {};
+      const phoneEl = document.getElementById('faq-phone');
+      if (phoneEl && s.phone) phoneEl.innerHTML = `<a href="tel:${s.phone.replace(/\D/g,'')}" style="color:var(--rose-deep)">${esc(s.phone)}</a>`;
+      const emailEl = document.getElementById('faq-email');
+      if (emailEl && s.email) emailEl.innerHTML = `<a href="mailto:${esc(s.email)}" style="color:var(--rose-deep)">${esc(s.email)}</a>`;
+
+      // JSON-LD FAQPage schema
+      const items = [...document.querySelectorAll('.faq-item')].map(item => ({
+        '@type': 'Question',
+        'name': item.querySelector('.faq-q').textContent.replace('+','').trim(),
+        'acceptedAnswer': { '@type': 'Answer', 'text': item.querySelector('.faq-a').textContent.trim() }
+      }));
+      const ld = document.createElement('script');
+      ld.type = 'application/ld+json';
+      ld.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', 'mainEntity': items });
+      document.head.appendChild(ld);
+    });
+  </script>
+</body>
+</html>
