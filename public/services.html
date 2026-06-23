@@ -36,101 +36,155 @@
         <div class="sk-card skeleton" style="width:70%"></div>
       </div>
     </section>
+
+    <!-- Packages -->
+    <section class="container" id="packages-section" style="display:none;padding-top:0">
+      <div class="section-head" style="margin-bottom:1.2rem">
+        <p class="eyebrow">Save more</p>
+        <h2>Service packages</h2>
+        <p class="muted">Buy a bundle of sessions at a reduced rate — redeemable any time from your account.</p>
+      </div>
+      <div class="panel" id="pkg-list" style="max-width:860px;margin-inline:auto"></div>
+    </section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js"></script>
+  <script src="js/common.js?v=2"></script>
   <script>
     let CFG, current = 'all', RATINGS = {}, searchQ = '';
+
+    function svcRowHtml(s) {
+      const staff = (s.staffIds || []).map(id => (CFG.staff.find(p => p.id === id) || {}).name).filter(Boolean).join(', ');
+      const r = RATINGS[s.id];
+      const ratingHtml = r
+        ? `<div style="font-size:.82rem;color:#c6960a;margin-top:.25rem">
+             ${'★'.repeat(Math.round(r.avg))}${'☆'.repeat(5 - Math.round(r.avg))}
+             <span style="color:var(--muted);font-size:.78rem">${r.avg.toFixed(1)} (${r.count} review${r.count > 1 ? 's' : ''})</span>
+           </div>`
+        : '';
+      const depositBadge = s.depositRequired
+        ? `<span style="font-size:.72rem;font-weight:600;letter-spacing:.04em;color:#a9772a;background:#fcf0dd;border-radius:4px;padding:.1rem .45rem;margin-left:.5rem">Deposit</span>`
+        : '';
+      return `<div class="service-row">
+        <div class="meta">
+          <div class="name">${esc(s.name)}${depositBadge}</div>
+          <div class="desc">${esc(s.description || '')}</div>
+          <div class="pill">${s.duration} min${staff ? ' · with ' + esc(staff) : ''}</div>
+          ${ratingHtml}
+        </div>
+        <div class="price">${money(s.price)}<small>from</small></div>
+        <a class="btn btn-primary btn-sm" href="booking.html?service=${s.id}">Book</a>
+      </div>`;
+    }
+
     function render() {
       const list = document.getElementById('service-list');
       const q = searchQ.toLowerCase();
+      const countEl = document.getElementById('svcCount');
+
       let svcs = CFG.services.filter(s => current === 'all' || s.category === current);
       if (q) svcs = svcs.filter(s =>
-        s.name.toLowerCase().includes(q) ||
-        (s.description || '').toLowerCase().includes(q)
+        s.name.toLowerCase().includes(q) || (s.description || '').toLowerCase().includes(q)
       );
-      const countEl = document.getElementById('svcCount');
-      if (q && svcs.length === 0) {
+
+      if (svcs.length === 0) {
         list.innerHTML = `<p class="muted" style="text-align:center;padding:2rem 1rem">No services match "<strong>${esc(searchQ)}</strong>".</p>`;
         countEl.textContent = '';
         return;
       }
       countEl.textContent = q ? `${svcs.length} service${svcs.length !== 1 ? 's' : ''} matching "${searchQ}"` : '';
-      list.innerHTML = svcs.map(s => {
-        const staff = s.staffIds.map(id => (CFG.staff.find(p=>p.id===id)||{}).name).filter(Boolean).join(', ');
-        const r = RATINGS[s.id];
-        const ratingHtml = r
-          ? `<div style="font-size:.82rem;color:#c6960a;margin-top:.25rem">
-               ${'★'.repeat(Math.round(r.avg))}${'☆'.repeat(5-Math.round(r.avg))}
-               <span style="color:var(--muted);font-size:.78rem">${r.avg.toFixed(1)} (${r.count} review${r.count>1?'s':''})</span>
-             </div>`
-          : '';
-        return `<div class="service-row" id="${s.category}">
+
+      if (current !== 'all' || q) {
+        // Flat list — single category or search result
+        list.innerHTML = svcs.map(svcRowHtml).join('');
+      } else {
+        // Grouped by category with section headers
+        list.innerHTML = CFG.categories.map(cat => {
+          const group = svcs.filter(s => s.category === cat.id);
+          if (!group.length) return '';
+          return `<div id="${cat.id}" style="margin-bottom:1.4rem">
+            <h3 style="font-size:1rem;font-weight:600;color:var(--rose-deep);margin:0 0 .6rem;padding-bottom:.4rem;border-bottom:1px solid var(--line)">${esc(cat.name)}</h3>
+            ${group.map(svcRowHtml).join('')}
+          </div>`;
+        }).join('');
+      }
+    }
+
+    function renderPackages() {
+      const el = document.getElementById('packages-section');
+      if (!el) return;
+      const pkgs = (CFG.packages || []).filter(p => p.active);
+      if (!pkgs.length) { el.style.display = 'none'; return; }
+      const svcMap = Object.fromEntries((CFG.services || []).map(s => [s.id, s]));
+      el.style.display = '';
+      document.getElementById('pkg-list').innerHTML = pkgs.map(p => {
+        const svc = svcMap[p.serviceId] || {};
+        const fullPrice = (svc.price || 0) * p.sessions;
+        const saving = fullPrice - p.price;
+        return `<div class="service-row" style="align-items:flex-start">
           <div class="meta">
-            <div class="name">${s.name}</div>
-            <div class="desc">${s.description}</div>
-            <div class="pill">${s.duration} min · with ${staff}</div>
-            ${ratingHtml}
+            <div class="name">${esc(p.name)}</div>
+            <div class="desc">${esc(p.description || '')}</div>
+            <div class="pill">${p.sessions} sessions of ${esc(svc.name || p.serviceId)}${saving > 0 ? ` · <span style="color:#4caf7d;font-weight:600">Save ${money(saving)}</span>` : ''}</div>
           </div>
-          <div class="price">${money(s.price)}<small>from</small></div>
-          <a class="btn btn-primary btn-sm" href="booking.html?service=${s.id}">Book</a>
+          <div class="price">${money(p.price)}<small>pkg</small></div>
+          <a class="btn btn-primary btn-sm" href="account.html">Buy</a>
         </div>`;
       }).join('');
     }
+
     document.addEventListener('DOMContentLoaded', async () => {
-      [CFG] = await Promise.all([
-        (window.__CFG__ || api.config().then(c => (window.__CFG__ = c))),
+      const [cfg, rv] = await Promise.all([
+        window.__CFG__ || api.config().then(c => (window.__CFG__ = c)),
+        api.reviews(),
       ]);
-      // Fetch reviews and build per-service rating map
-      const rv = await api.reviews();
+      CFG = cfg;
+
       (rv.reviews || []).forEach(r => {
         if (!RATINGS[r.serviceId]) RATINGS[r.serviceId] = { sum: 0, count: 0 };
         RATINGS[r.serviceId].sum += r.rating;
         RATINGS[r.serviceId].count += 1;
       });
-      Object.keys(RATINGS).forEach(id => {
-        RATINGS[id].avg = RATINGS[id].sum / RATINGS[id].count;
-      });
+      Object.keys(RATINGS).forEach(id => { RATINGS[id].avg = RATINGS[id].sum / RATINGS[id].count; });
 
-      const cats = [{id:'all',name:'All'}, ...CFG.categories];
+      const cats = [{ id: 'all', name: 'All' }, ...CFG.categories];
       document.getElementById('filters').innerHTML = cats.map(c =>
-        `<button class="chip ${c.id==='all'?'active':''}" data-cat="${c.id}">${c.name}</button>`).join('');
+        `<button class="chip ${c.id === 'all' ? 'active' : ''}" data-cat="${c.id}">${esc(c.name)}</button>`).join('');
       document.querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => {
-        document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+        document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
         ch.classList.add('active'); current = ch.dataset.cat; render();
       }));
+
       let searchTimer;
       document.getElementById('svcSearch').addEventListener('input', e => {
         clearTimeout(searchTimer);
         searchTimer = setTimeout(() => { searchQ = e.target.value.trim(); render(); }, 200);
       });
+
+      // Deep-link to category via #nails, #hair, etc.
       if (location.hash) {
         const cat = location.hash.slice(1);
-        if (CFG.categories.some(c=>c.id===cat)) {
+        if (CFG.categories.some(c => c.id === cat)) {
           current = cat;
-          document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('active', x.dataset.cat===cat));
+          document.querySelectorAll('.chip').forEach(x => x.classList.toggle('active', x.dataset.cat === cat));
         }
       }
+
       render();
-      // Inject JSON-LD ItemList for search engines
-      const ldScript = document.createElement('script');
-      ldScript.type = 'application/ld+json';
-      ldScript.textContent = JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'ItemList',
+      renderPackages();
+
+      // JSON-LD ItemList for search engines
+      const ld = document.createElement('script');
+      ld.type = 'application/ld+json';
+      ld.textContent = JSON.stringify({
+        '@context': 'https://schema.org', '@type': 'ItemList',
         'name': 'Services at Lumière Beauty & Nail Studio',
         'itemListElement': CFG.services.map((s, i) => ({
-          '@type': 'ListItem',
-          'position': i + 1,
-          'item': {
-            '@type': 'Service',
-            'name': s.name,
-            'description': s.description,
-            'offers': { '@type': 'Offer', 'price': s.price, 'priceCurrency': 'USD' }
-          }
+          '@type': 'ListItem', 'position': i + 1,
+          'item': { '@type': 'Service', 'name': s.name, 'description': s.description,
+            'offers': { '@type': 'Offer', 'price': s.price, 'priceCurrency': 'USD' } }
         }))
       });
-      document.head.appendChild(ldScript);
+      document.head.appendChild(ld);
     });
   </script>
 </body>
