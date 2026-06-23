@@ -91,6 +91,19 @@
             <span style="background:${tier.color}1a;color:${tier.color};font-weight:600;font-size:.82rem;padding:.3rem .9rem;border-radius:24px;border:1.5px solid ${tier.color}40;letter-spacing:.04em">${tier.label} member${tier.next ? ` · ${tier.nextAt - visits} visit${tier.nextAt - visits !== 1 ? 's' : ''} to ${tier.next}` : ''}</span>
           </div>`;
         })()}
+        ${(() => {
+          const next = upcoming.slice().sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))[0];
+          if (!next) return '';
+          const days = Math.round((new Date(next.date + 'T00:00:00') - new Date(today + 'T00:00:00')) / 86400000);
+          const label = days === 0 ? 'Today!' : days === 1 ? 'Tomorrow' : `In ${days} day${days !== 1 ? 's' : ''}`;
+          return `<div style="background:linear-gradient(135deg,var(--rose)15,var(--rose-deep)08);border:1.5px solid var(--rose)30;border-radius:12px;padding:.9rem 1.2rem;margin-bottom:1.2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+            <div>
+              <span style="font-weight:600;color:var(--rose-deep)">${label}</span>
+              <span class="muted" style="font-size:.88rem;margin-left:.5rem">${esc(next.serviceName)} with ${esc(next.staffName)} · ${next.time}</span>
+            </div>
+            <a class="btn btn-ghost btn-sm" href="/api/bookings/ics?ref=${next.ref}&phone=${encodeURIComponent((c.phone||'').replace(/\D/g,''))}" download>📅 Add to calendar</a>
+          </div>`;
+        })()}
         <div class="grid grid-3" style="margin-bottom:.8rem">
           <div class="stat"><div class="big">${c.points || 0}</div><div class="lbl">Reward points</div></div>
           <div class="stat"><div class="big">${upcoming.length}</div><div class="lbl">Upcoming visits</div></div>
