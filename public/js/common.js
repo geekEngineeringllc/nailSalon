@@ -408,6 +408,14 @@ async function renderChrome() {
   const cfg = window.__CFG__ || (window.__CFG__ = await api.config());
   const page = location.pathname.split('/').pop() || 'index.html';
 
+  // Canonical URL — strip query params to prevent duplicate-content issues
+  if (!document.querySelector('link[rel="canonical"]')) {
+    const el = document.createElement('link');
+    el.rel = 'canonical';
+    el.href = location.origin + location.pathname;
+    document.head.appendChild(el);
+  }
+
   const header = document.getElementById('site-header');
   if (header) {
     const meRes = await api.me();
