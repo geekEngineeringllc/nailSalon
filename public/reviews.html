@@ -45,8 +45,16 @@
         <div style="flex:1;min-width:180px" id="bar-chart"></div>
       </div>
 
-      <!-- Filters -->
-      <div class="filters" id="filters" style="margin-bottom:1.5rem"></div>
+      <!-- Filters + sort -->
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.6rem;margin-bottom:1.5rem">
+        <div class="filters" id="filters" style="margin-bottom:0"></div>
+        <select id="sort-sel" style="padding:.4rem .8rem;border:1.5px solid var(--line);border-radius:8px;font-family:inherit;font-size:.85rem;outline:none">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="high">Highest rated</option>
+          <option value="low">Lowest rated</option>
+        </select>
+      </div>
 
       <!-- Review list -->
       <div style="max-width:720px;margin-inline:auto" id="review-list">
@@ -63,7 +71,7 @@
   <footer class="site-footer" id="site-footer"></footer>
   <script src="js/common.js?v=7"></script>
   <script>
-    let ALL_REVIEWS = [], CFG = null, currentCat = 'all';
+    let ALL_REVIEWS = [], CFG = null, currentCat = 'all', currentSort = 'newest';
 
     function fmtDate(iso) {
       if (!iso) return '';
@@ -121,13 +129,17 @@
     }
 
     function applyFilter() {
-      let filtered = ALL_REVIEWS;
+      let filtered = ALL_REVIEWS.slice();
       if (currentCat !== 'all' && CFG) {
         const svcIds = new Set(
           (CFG.services || []).filter(s => s.category === currentCat).map(s => s.id)
         );
-        filtered = ALL_REVIEWS.filter(r => svcIds.has(r.serviceId));
+        filtered = filtered.filter(r => svcIds.has(r.serviceId));
       }
+      if      (currentSort === 'oldest') filtered.sort((a, b) => (a.submittedAt || '').localeCompare(b.submittedAt || ''));
+      else if (currentSort === 'high')   filtered.sort((a, b) => b.rating - a.rating);
+      else if (currentSort === 'low')    filtered.sort((a, b) => a.rating - b.rating);
+      else                               filtered.sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
       renderSummary(filtered);
       renderList(filtered);
     }
@@ -147,6 +159,10 @@
         currentCat = ch.dataset.cat;
         applyFilter();
       }));
+
+      document.getElementById('sort-sel').addEventListener('change', e => {
+        currentSort = e.target.value; applyFilter();
+      });
 
       applyFilter();
 
