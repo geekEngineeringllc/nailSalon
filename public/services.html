@@ -52,7 +52,7 @@
   <footer class="site-footer" id="site-footer"></footer>
   <script src="js/common.js?v=6"></script>
   <script>
-    let CFG, current = 'all', RATINGS = {}, searchQ = '';
+    let CFG, current = 'all', RATINGS = {}, POPULAR = new Set(), searchQ = '';
 
     function svcRowHtml(s) {
       const staff = (s.staffIds || []).map(id => (CFG.staff.find(p => p.id === id) || {}).name).filter(Boolean).join(', ');
@@ -66,9 +66,12 @@
       const depositBadge = s.depositRequired
         ? `<span style="font-size:.72rem;font-weight:600;letter-spacing:.04em;color:#a9772a;background:#fcf0dd;border-radius:4px;padding:.1rem .45rem;margin-left:.5rem">Deposit</span>`
         : '';
+      const popularBadge = POPULAR.has(s.id)
+        ? `<span style="font-size:.72rem;font-weight:600;letter-spacing:.04em;color:#2f7a45;background:#e8f5ee;border-radius:4px;padding:.1rem .45rem;margin-left:.5rem">Popular</span>`
+        : '';
       return `<div class="service-row">
         <div class="meta">
-          <div class="name">${esc(s.name)}${depositBadge}</div>
+          <div class="name">${esc(s.name)}${popularBadge}${depositBadge}</div>
           <div class="desc">${esc(s.description || '')}</div>
           <div class="pill">${s.duration} min${staff ? ' · with ' + esc(staff) : ''}</div>
           ${ratingHtml}
@@ -135,11 +138,15 @@
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
-      const [cfg, rv] = await Promise.all([
+      const [cfg, rv, stats] = await Promise.all([
         window.__CFG__ || api.config().then(c => (window.__CFG__ = c)),
         api.reviews(),
+        api.stats(),
       ]);
       CFG = cfg;
+
+      // Top 3 most-booked services get a Popular badge
+      (stats.topServices || []).slice(0, 3).forEach(s => POPULAR.add(s.id));
 
       (rv.reviews || []).forEach(r => {
         if (!RATINGS[r.serviceId]) RATINGS[r.serviceId] = { sum: 0, count: 0 };
