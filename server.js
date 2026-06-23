@@ -2396,9 +2396,11 @@ async function handleAPI(req, res, url) {
     return sendJSON(res, 200, { commissions, from, to });
   }
 
-  // GET /api/admin/customers?q= — customer CRM list with booking stats
+  // GET /api/admin/customers?q=&lapsed=N — customer CRM list with booking stats
+  // lapsed=N filters to customers whose last completed visit was >= N days ago (or never visited)
   if (req.method === 'GET' && url.pathname === '/api/admin/customers') {
     const search = (q.get('q') || '').toLowerCase().trim();
+    const lapsedDays = parseInt(q.get('lapsed') || '0', 10);
     const bookings = db.bookings || [];
     const custList = (db.customers || []).map((c) => {
       const myBookings = bookings.filter((b) => b.customerId === c.id);
@@ -2422,15 +2424,22 @@ async function handleAPI(req, res, url) {
         createdAt: c.createdAt || null,
       };
     });
-    const filtered = search
+    let filtered = search
       ? custList.filter((c) =>
           c.name.toLowerCase().includes(search) ||
           c.phone.includes(search) ||
           c.email.toLowerCase().includes(search)
         )
       : custList;
+    if (lapsedDays > 0) {
+      const cutoff = new Date(); cutoff.setMinutes(cutoff.getMinutes() - cutoff.getTimezoneOffset());
+      cutoff.setDate(cutoff.getDate() - lapsedDays);
+      const cutoffStr = cutoff.toISOString().slice(0, 10);
+      filtered = filtered.filter((c) => !c.lastVisit || c.lastVisit < cutoffStr);
+      filtered = filtered.filter((c) => c.upcomingCount === 0);  // skip those with upcoming bookings
+    }
     filtered.sort((a, b) => (b.lastVisit || '').localeCompare(a.lastVisit || '') || a.name.localeCompare(b.name));
-    return sendJSON(res, 200, { customers: filtered, total: filtered.length });
+    return sendJSON(res, 200, { customers: filtered, total: filtered.length, lapsedDays: lapsedDays || null });
   }
 
   // GET /api/admin/customers/:id/bookings — full booking history for one customer
