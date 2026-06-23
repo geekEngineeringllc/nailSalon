@@ -5,6 +5,8 @@
     "phone": "(555) 240-1180",
     "email": "hello@lumierestudio.com",
     "address": "218 Maple Court, Suite 5, Riverside",
+    "instagram": "https://www.instagram.com/lumierestudio",
+    "facebook": "https://www.facebook.com/lumierestudio",
     "hours": [
       { "day": "Monday", "open": "09:00", "close": "18:00" },
       { "day": "Tuesday", "open": "09:00", "close": "18:00" },
