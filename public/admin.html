@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>(function(){try{var t=localStorage.getItem('lumiere_theme');if(!t&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)t='dark';if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Owner Dashboard — Lumière Beauty & Nail Studio</title>
@@ -511,10 +512,40 @@
         </div>
         <p id="gal-msg" class="muted" style="font-size:.85rem;margin-top:.6rem"></p>
       </div>
+
+      <!-- Salon settings -->
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:.4rem">
+        <h3 style="margin:0">Salon settings</h3>
+      </div>
+      <div class="card" style="padding:1.6rem;max-width:680px">
+        <p class="muted" style="font-size:.85rem;margin:0 0 1.2rem">These details appear in the footer, contact page, confirmation emails, and search results.</p>
+        <div class="grid grid-2" style="gap:1rem">
+          <div class="field" style="margin:0"><label>Salon name</label><input id="sl-name" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"></div>
+          <div class="field" style="margin:0"><label>Tagline</label><input id="sl-tagline" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"></div>
+          <div class="field" style="margin:0"><label>Phone</label><input id="sl-phone" type="tel" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"></div>
+          <div class="field" style="margin:0"><label>Email</label><input id="sl-email" type="email" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"></div>
+        </div>
+        <div class="field" style="margin:.8rem 0 0"><label>Address</label><input id="sl-address" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"></div>
+        <div class="grid grid-4" style="gap:1rem;margin-top:.8rem">
+          <div class="field" style="margin:0"><label>City</label><input id="sl-city" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"></div>
+          <div class="field" style="margin:0"><label>State / region</label><input id="sl-region" placeholder="e.g. CA" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"></div>
+          <div class="field" style="margin:0"><label>Country</label><input id="sl-country" placeholder="e.g. US" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"></div>
+          <div class="field" style="margin:0"><label>ZIP / postal</label><input id="sl-postalCode" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"></div>
+        </div>
+        <p class="muted" style="font-size:.78rem;margin:.6rem 0 0">City, region &amp; country power your local search results (titles, keywords, and map data).</p>
+        <div class="grid grid-2" style="gap:1rem;margin-top:.8rem">
+          <div class="field" style="margin:0"><label>Instagram URL</label><input id="sl-instagram" type="url" placeholder="https://www.instagram.com/..." style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"></div>
+          <div class="field" style="margin:0"><label>Facebook URL</label><input id="sl-facebook" type="url" placeholder="https://www.facebook.com/..." style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"></div>
+        </div>
+        <div style="margin-top:1.2rem;display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" id="sl-save">Save settings</button>
+          <span id="sl-msg" style="font-size:.85rem"></span>
+        </div>
+      </div>
     </section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js?v=8"></script>
+  <script src="js/common.js?v=10"></script>
   <script>
     function bars(obj, labels) {
       const entries = Object.entries(obj);
@@ -1799,6 +1830,14 @@
           <button class="btn btn-ghost btn-sm" id="pts-save">Save</button>
           <span id="pts-msg" style="font-size:.82rem"></span>
         </div>
+        <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:.85rem 1rem;margin-bottom:1rem">
+          <label class="form-label" style="font-size:.78rem;display:block;margin-bottom:.3rem">Private notes (staff only — not shown to customer)</label>
+          <textarea id="cust-notes" rows="3" class="form-input" style="width:100%;resize:vertical;font-family:inherit" placeholder="Allergies, preferences, reminders…">${esc(c.adminNotes || '')}</textarea>
+          <div style="margin-top:.5rem;display:flex;gap:.6rem;align-items:center">
+            <button class="btn btn-ghost btn-sm" id="cust-notes-save">Save notes</button>
+            <span id="cust-notes-msg" style="font-size:.82rem"></span>
+          </div>
+        </div>
         ${bks.length ? `<div style="overflow-x:auto"><table class="bookings" style="font-size:.85rem">
           <thead><tr><th>Date</th><th>Service</th><th>Artist</th><th>Status</th><th>Price</th><th>Ref</th></tr></thead>
           <tbody>${bks.map(b => `<tr>
@@ -1832,6 +1871,22 @@
           msg.textContent = (r && r.error) || 'Could not save.';
           msg.style.color = 'var(--rose-deep)';
         }
+      });
+
+      document.getElementById('cust-notes-save').addEventListener('click', async () => {
+        const notes = document.getElementById('cust-notes').value;
+        const msg = document.getElementById('cust-notes-msg');
+        msg.textContent = 'Saving…'; msg.style.color = 'var(--muted)';
+        const r = await fetch('/api/admin/customers/' + id + '/notes', {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes })
+        }).then(x => x.json()).catch(() => null);
+        if (r && r.ok) {
+          msg.textContent = '✓ Notes saved.'; msg.style.color = '#2f7a45';
+        } else {
+          msg.textContent = (r && r.error) || 'Could not save.'; msg.style.color = 'var(--rose-deep)';
+        }
+        setTimeout(() => { msg.textContent = ''; }, 3000);
       });
     }
     window.loadCustomerDetail = loadCustomerDetail;
@@ -2203,6 +2258,33 @@
         if (!r.ok) { msg.style.color='var(--rose-deep)'; msg.textContent = r.data.error || 'Could not save.'; return; }
         toast(item.id ? 'Gallery item updated.' : 'Gallery item added.');
         closeGalleryForm(); load();
+      });
+
+      // Salon settings — populate fields from config, then save on button click
+      api.config().then(cfg => {
+        const s = cfg.salon || {};
+        ['name','tagline','phone','email','address','city','region','country','postalCode','instagram','facebook'].forEach(k => {
+          const el = document.getElementById('sl-' + k);
+          if (el) el.value = s[k] || '';
+        });
+      });
+      document.getElementById('sl-save').addEventListener('click', async () => {
+        const saveBtn = document.getElementById('sl-save');
+        const msg = document.getElementById('sl-msg');
+        const payload = {};
+        ['name','tagline','phone','email','address','city','region','country','postalCode','instagram','facebook'].forEach(k => {
+          payload[k] = (document.getElementById('sl-' + k) || {}).value || '';
+        });
+        saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+        const r = await api.updateSalon(payload);
+        saveBtn.disabled = false; saveBtn.textContent = 'Save settings';
+        if (r.ok) {
+          msg.style.color = '#2f7a45'; msg.textContent = '✓ Settings saved.';
+          window.__CFG__ = null; // bust cached config so next page load picks up changes
+        } else {
+          msg.style.color = 'var(--rose-deep)'; msg.textContent = r.data.error || 'Could not save.';
+        }
+        setTimeout(() => { msg.textContent = ''; }, 4000);
       });
       } // end initDashboard
     });

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>(function(){try{var t=localStorage.getItem('lumiere_theme');if(!t&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)t='dark';if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Services & Pricing — Lumière Beauty & Nail Studio</title>
@@ -20,17 +21,17 @@
   <header class="site-header" id="site-header"></header>
   <main id="main-content">
     <section class="container" style="padding-bottom:1rem">
-      <div class="section-head">
+      <div class="section-head" data-reveal>
         <p class="eyebrow">The menu</p>
-        <h2>Services & pricing</h2>
+        <h2>Services &amp; pricing</h2>
         <p class="muted">Transparent prices, generous time. Tap a category to filter, then book the service you love.</p>
       </div>
-      <div class="filters" id="filters"></div>
+      <div class="filters sticky" id="filters"></div>
       <div style="max-width:860px;margin-inline:auto;margin-bottom:1rem">
         <input id="svcSearch" type="search" placeholder="Search services…"
-          style="width:100%;box-sizing:border-box;padding:.55rem 1rem;border:1.5px solid var(--line);border-radius:24px;font-family:inherit;font-size:.95rem;outline:none">
+          style="width:100%;box-sizing:border-box;padding:.6rem 1.1rem;border:1.5px solid var(--line);border-radius:24px;font-family:inherit;font-size:.95rem;outline:none;background:var(--surface);color:var(--ink)">
       </div>
-      <div id="svcCount" style="max-width:860px;margin-inline:auto;margin-bottom:.5rem;font-size:.85rem;color:var(--muted);min-height:1.2em"></div>
+      <div id="svcCount" style="max-width:860px;margin-inline:auto;margin-bottom:.5rem;font-size:.85rem;color:var(--ink-soft);min-height:1.2em"></div>
       <div class="panel" id="service-list" style="max-width:860px;margin-inline:auto">
         <div class="sk-card skeleton"></div>
         <div class="sk-card skeleton"></div>
@@ -41,7 +42,7 @@
 
     <!-- Packages -->
     <section class="container" id="packages-section" style="display:none;padding-top:0">
-      <div class="section-head" style="margin-bottom:1.2rem">
+      <div class="section-head" data-reveal style="margin-bottom:1.2rem">
         <p class="eyebrow">Save more</p>
         <h2>Service packages</h2>
         <p class="muted">Buy a bundle of sessions at a reduced rate — redeemable any time from your account.</p>
@@ -50,7 +51,7 @@
     </section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js?v=8"></script>
+  <script src="js/common.js?v=10"></script>
   <script>
     let CFG, current = 'all', RATINGS = {}, POPULAR = new Set(), searchQ = '';
 
@@ -60,7 +61,7 @@
       const ratingHtml = r
         ? `<div style="font-size:.82rem;color:#c6960a;margin-top:.25rem">
              ${'★'.repeat(Math.round(r.avg))}${'☆'.repeat(5 - Math.round(r.avg))}
-             <span style="color:var(--muted);font-size:.78rem">${r.avg.toFixed(1)} (${r.count} review${r.count > 1 ? 's' : ''})</span>
+             <span style="color:var(--ink-soft);font-size:.78rem">${r.avg.toFixed(1)} (${r.count} review${r.count > 1 ? 's' : ''})</span>
            </div>`
         : '';
       const depositBadge = s.depositRequired
@@ -69,7 +70,7 @@
       const popularBadge = POPULAR.has(s.id)
         ? `<span style="font-size:.72rem;font-weight:600;letter-spacing:.04em;color:#2f7a45;background:#e8f5ee;border-radius:4px;padding:.1rem .45rem;margin-left:.5rem">Popular</span>`
         : '';
-      return `<div class="service-row">
+      return `<div class="service-row" data-reveal>
         <div class="meta">
           <div class="name">${esc(s.name)}${popularBadge}${depositBadge}</div>
           <div class="desc">${esc(s.description || '')}</div>
@@ -106,12 +107,13 @@
         list.innerHTML = CFG.categories.map(cat => {
           const group = svcs.filter(s => s.category === cat.id);
           if (!group.length) return '';
-          return `<div id="${cat.id}" style="margin-bottom:1.4rem">
-            <h3 style="font-size:1rem;font-weight:600;color:var(--rose-deep);margin:0 0 .6rem;padding-bottom:.4rem;border-bottom:1px solid var(--line)">${esc(cat.name)}</h3>
+          return `<div id="${cat.id}" data-reveal style="margin-bottom:1.4rem">
+            <h3 style="font-size:1rem;font-weight:600;color:var(--accent-text);margin:0 0 .6rem;padding-bottom:.4rem;border-bottom:1px solid var(--line)">${esc(cat.name)}</h3>
             ${group.map(svcRowHtml).join('')}
           </div>`;
         }).join('');
       }
+      if (window.revealScan) window.revealScan();
     }
 
     function renderPackages() {
@@ -125,7 +127,7 @@
         const svc = svcMap[p.serviceId] || {};
         const fullPrice = (svc.price || 0) * p.sessions;
         const saving = fullPrice - p.price;
-        return `<div class="service-row" style="align-items:flex-start">
+        return `<div class="service-row" data-reveal style="align-items:flex-start">
           <div class="meta">
             <div class="name">${esc(p.name)}</div>
             <div class="desc">${esc(p.description || '')}</div>
@@ -135,6 +137,7 @@
           <a class="btn btn-primary btn-sm" href="account.html">Buy</a>
         </div>`;
       }).join('');
+      if (window.revealScan) window.revealScan();
     }
 
     document.addEventListener('DOMContentLoaded', async () => {

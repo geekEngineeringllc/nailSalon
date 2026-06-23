@@ -270,6 +270,7 @@ const api = {
   async myReferral() { return (await fetch('/api/referral')).json(); },
   async adminReferrals() { return (await fetch('/api/admin/referrals')).json(); },
   async updateProfile(payload) { const r = await fetch('/api/me', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); return { ok: r.ok, status: r.status, data: await r.json() }; },
+  async updateSalon(payload) { const r = await fetch('/api/admin/salon', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async marketingOptout() { const r = await fetch('/api/marketing/optout', { method: 'POST' }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async marketingOptin() { const r = await fetch('/api/marketing/optin', { method: 'POST' }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async adminBroadcasts() { return (await fetch('/api/admin/broadcasts')).json(); },
@@ -364,6 +365,8 @@ const LOCALES = {
     'footer.book': 'Book an appointment', 'footer.crafted': 'Crafted with care.',
     'footer.privacy': 'Privacy Policy', 'footer.terms': 'Terms of Service', 'footer.sms': 'SMS Policy',
     'lang.switch': 'Español',
+    'cta.book-my': 'Book my appointment', 'fab.book': 'Book now', 'action.call': 'Call',
+    'theme.dark': 'Dark', 'theme.light': 'Light', 'theme.toggle': 'Toggle dark / light theme',
   },
   es: {
     'nav.home': 'Inicio', 'nav.services': 'Servicios', 'nav.gallery': 'Galería',
@@ -374,6 +377,8 @@ const LOCALES = {
     'footer.book': 'Reservar una cita', 'footer.crafted': 'Hecho con cariño.',
     'footer.privacy': 'Privacidad', 'footer.terms': 'Términos', 'footer.sms': 'Política SMS',
     'lang.switch': 'English',
+    'cta.book-my': 'Reservar mi cita', 'fab.book': 'Reservar', 'action.call': 'Llamar',
+    'theme.dark': 'Oscuro', 'theme.light': 'Claro', 'theme.toggle': 'Cambiar tema claro / oscuro',
   },
 };
 (function () {
@@ -405,6 +410,114 @@ const NAV = [
   ['admin.html', 'nav.admin'],
 ];
 
+// ---- Theme (light / dark) ---------------------------------------------------
+// The effective theme is set before paint by a tiny inline <head> snippet on each
+// page (reads localStorage, else prefers-color-scheme) to avoid a flash. Here we
+// expose the toggle and keep any toggle buttons in sync.
+function currentTheme() {
+  const explicit = document.documentElement.getAttribute('data-theme');
+  if (explicit === 'dark' || explicit === 'light') return explicit;
+  try { if (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) return 'dark'; } catch {}
+  return 'light';
+}
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  try { localStorage.setItem('lumiere_theme', theme); } catch {}
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', theme === 'dark' ? '#1b1618' : '#b0657a');
+  document.querySelectorAll('[data-theme-toggle]').forEach(syncThemeToggle);
+}
+function toggleTheme() { applyTheme(currentTheme() === 'dark' ? 'light' : 'dark'); }
+window.toggleTheme = toggleTheme;
+function syncThemeToggle(btn) {
+  const dark = currentTheme() === 'dark';
+  btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+  btn.setAttribute('aria-label', t('theme.toggle'));
+  btn.innerHTML = dark ? '☀️ <span>' + t('theme.light') + '</span>' : '🌙 <span>' + t('theme.dark') + '</span>';
+}
+function wireThemeToggles(root) {
+  (root || document).querySelectorAll('[data-theme-toggle]').forEach((btn) => {
+    if (btn._wired) return;
+    btn._wired = true;
+    btn.addEventListener('click', toggleTheme);
+    syncThemeToggle(btn);
+  });
+}
+
+// ---- Motion: prefers-reduced-motion + scroll-reveal ------------------------
+function prefersReducedMotion() {
+  try { return window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
+}
+let _revealIO;
+// Reveals any [data-reveal] element on scroll. Re-callable: pages that render
+// content dynamically should call window.revealScan() after injecting markup.
+function revealScan() {
+  const els = document.querySelectorAll('[data-reveal]:not(.in)');
+  if (!els.length) return;
+  if (!('IntersectionObserver' in window) || prefersReducedMotion()) {
+    els.forEach((el) => el.classList.add('in'));
+    return;
+  }
+  if (!_revealIO) {
+    _revealIO = new IntersectionObserver((entries, obs) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); } });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  }
+  els.forEach((el) => _revealIO.observe(el));
+}
+window.revealScan = revealScan;
+
+// ---- Sticky-header shadow on scroll ----------------------------------------
+function setupHeaderScroll() {
+  const apply = () => {
+    const h = document.getElementById('site-header');
+    if (h) h.classList.toggle('scrolled', window.scrollY > 8);
+  };
+  window.addEventListener('scroll', apply, { passive: true });
+  apply();
+}
+
+// ---- Floating Book CTA + sticky mobile action bar --------------------------
+const NO_BOOK_CTA = new Set([
+  'booking.html', 'admin.html', 'account.html', 'login.html',
+  'register.html', 'manage.html', 'review.html', 'offline.html', '404.html',
+]);
+function setupBookCta(cfg) {
+  const page = location.pathname.split('/').pop() || 'index.html';
+  if (NO_BOOK_CTA.has(page) || document.querySelector('.book-fab')) return;
+
+  const fab = document.createElement('a');
+  fab.href = 'booking.html';
+  fab.className = 'book-fab';
+  fab.setAttribute('aria-label', t('fab.book'));
+  fab.innerHTML = '✦ ' + t('cta.book-my');
+  document.body.appendChild(fab);
+
+  const phone = ((cfg.salon && cfg.salon.phone) || '').replace(/\D/g, '');
+  const bar = document.createElement('div');
+  bar.className = 'mobile-bar';
+  bar.innerHTML =
+    `<a class="btn btn-primary" href="booking.html">${t('cta.book-my')}</a>` +
+    (phone
+      ? `<a class="btn btn-ghost" href="tel:${phone}">${t('action.call')}</a>`
+      : `<a class="btn btn-ghost" href="services.html">${t('nav.services')}</a>`);
+  document.body.appendChild(bar);
+
+  const threshold = () => Math.max(360, window.innerHeight * 0.6);
+  const reveal = () => {
+    const show = window.scrollY > threshold();
+    fab.classList.toggle('show', show);
+    bar.classList.toggle('show', show);
+    document.body.classList.toggle('has-mobile-bar', show);
+  };
+  window.addEventListener('scroll', reveal, { passive: true });
+  reveal();
+}
+
+// Inline brand SVGs (Simple Icons paths) — fill: currentColor via .social-row svg
+const SVG_INSTAGRAM = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.17.054 1.805.249 2.227.415.56.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227a3.81 3.81 0 0 1-.896 1.382 3.744 3.744 0 0 1-1.379.896c-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421a3.716 3.716 0 0 1-1.379-.896 3.644 3.644 0 0 1-.9-1.381c-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.164 1.051-.36 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0-2.163c-3.259 0-3.667.014-4.947.072-1.277.058-2.148.261-2.913.558a5.898 5.898 0 0 0-2.126 1.384A5.86 5.86 0 0 0 .630 4.14C.333 4.905.131 5.776.072 7.053.014 8.333 0 8.741 0 12s.014 3.667.072 4.947c.058 1.277.261 2.148.558 2.913a5.898 5.898 0 0 0 1.384 2.126A5.86 5.86 0 0 0 4.14 23.37c.766.296 1.636.499 2.913.558C8.333 23.986 8.741 24 12 24s3.667-.014 4.947-.072c1.277-.059 2.148-.262 2.913-.558a5.898 5.898 0 0 0 2.126-1.384 5.86 5.86 0 0 0 1.384-2.126c.296-.765.499-1.636.558-2.913.058-1.28.072-1.688.072-4.947s-.014-3.667-.072-4.947c-.059-1.277-.262-2.148-.558-2.913a5.898 5.898 0 0 0-1.384-2.126A5.847 5.847 0 0 0 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>';
+const SVG_FACEBOOK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647z"/></svg>';
+
 async function renderChrome() {
   const cfg = window.__CFG__ || (window.__CFG__ = await api.config());
   const page = location.pathname.split('/').pop() || 'index.html';
@@ -432,6 +545,7 @@ async function renderChrome() {
         <ul class="nav-links">
           ${NAV.map(([h, k]) => `<li><a href="${h}" class="${h === page ? 'active' : ''}">${t(k)}</a></li>`).join('')}
           ${authLink}
+          <li><button type="button" class="theme-toggle" data-theme-toggle></button></li>
           <li><a class="btn btn-primary btn-sm" href="booking.html">${t('nav.book-now')}</a></li>
         </ul>
       </div>`;
@@ -454,7 +568,7 @@ async function renderChrome() {
           <h4>${t('footer.visit')}</h4>
           <p style="font-size:.9rem"><a href="location.html" style="color:inherit;text-decoration:none">${esc(s.address)}</a></p>
           <p style="font-size:.9rem"><a href="tel:${(s.phone||'').replace(/\D/g,'')}" style="color:inherit;text-decoration:none">${esc(s.phone)}</a><br><a href="mailto:${esc(s.email)}" style="color:#b3a59c;text-decoration:none">${esc(s.email)}</a></p>
-          ${(s.instagram || s.facebook) ? `<p style="display:flex;gap:.9rem;margin-top:.6rem">${s.instagram ? `<a href="${esc(s.instagram)}" target="_blank" rel="noopener noreferrer" aria-label="Instagram" style="color:#b3a59c;text-decoration:none;font-size:.85rem">Instagram</a>` : ''}${s.facebook ? `<a href="${esc(s.facebook)}" target="_blank" rel="noopener noreferrer" aria-label="Facebook" style="color:#b3a59c;text-decoration:none;font-size:.85rem">Facebook</a>` : ''}</p>` : ''}
+          ${(s.instagram || s.facebook) ? `<div class="social-row">${s.instagram ? `<a href="${esc(s.instagram)}" target="_blank" rel="noopener noreferrer" aria-label="Instagram">${SVG_INSTAGRAM}</a>` : ''}${s.facebook ? `<a href="${esc(s.facebook)}" target="_blank" rel="noopener noreferrer" aria-label="Facebook">${SVG_FACEBOOK}</a>` : ''}</div>` : ''}
         </div>
         <div>
           <h4>${t('footer.hours')}</h4>
@@ -463,7 +577,8 @@ async function renderChrome() {
       </div>
       <div class="footer-bottom">
         <span>© ${new Date().getFullYear()} ${s.name}. ${t('footer.crafted')}</span>
-        <span style="margin-left:auto;display:flex;gap:1.2rem;flex-wrap:wrap">
+        <span style="margin-left:auto;display:flex;gap:1.1rem;flex-wrap:wrap;align-items:center">
+          <button type="button" class="theme-toggle" data-theme-toggle style="border-color:rgba(255,255,255,.35);color:#d7c7bd"></button>
           <a href="${langHref}" style="color:#b3a59c;text-decoration:none">${t('lang.switch')}</a>
           <a href="location.html" style="color:#b3a59c;text-decoration:none">Location</a>
           <a href="faq.html" style="color:#b3a59c;text-decoration:none">FAQ</a>
@@ -475,6 +590,11 @@ async function renderChrome() {
         </span>
       </div>`;
   }
+
+  wireThemeToggles();
+  setupHeaderScroll();
+  setupBookCta(cfg);
+  revealScan();
 }
 
 document.addEventListener('DOMContentLoaded', renderChrome);

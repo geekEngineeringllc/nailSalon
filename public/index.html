@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>(function(){try{var t=localStorage.getItem('lumiere_theme');if(!t&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)t='dark';if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lumière Beauty & Nail Studio — Riverside</title>
@@ -50,21 +51,21 @@
     <!-- Hero -->
     <section class="container hero">
       <div>
-        <p class="eyebrow">Beauty parlor & nail studio · Riverside</p>
-        <div id="hours-pill" style="display:inline-flex;align-items:center;gap:.45rem;font-family:var(--font-body);font-size:.8rem;font-weight:500;margin-bottom:.9rem;padding:.3rem .75rem;border-radius:50px;background:var(--bg-soft)">
+        <p class="eyebrow">Beauty parlor &amp; nail studio · Riverside</p>
+        <div id="hours-pill" style="display:inline-flex;align-items:center;gap:.45rem;font-family:var(--font-body);font-size:.8rem;font-weight:500;margin-bottom:.9rem;padding:.32rem .8rem;border-radius:50px;background:var(--bg-soft);border:1px solid var(--line)">
           <span id="hours-dot" style="width:7px;height:7px;border-radius:50%;background:var(--line)"></span>
-          <span id="hours-text" style="color:var(--text-muted)">Checking hours…</span>
+          <span id="hours-text" style="color:var(--ink-soft)">Checking hours…</span>
         </div>
         <h1>Beauty, on your<br>schedule.</h1>
         <p class="lead">Nails, hair, skin and makeup under one elegant roof. Pick your service, choose your artist, and book a time that fits your day — all in under a minute.</p>
         <div class="hero-cta">
-          <a class="btn btn-primary" href="booking.html">Book an appointment</a>
+          <a class="btn btn-primary" href="booking.html">Book my appointment</a>
           <a class="btn btn-ghost" href="services.html">View the menu</a>
         </div>
         <div class="hero-meta">
-          <div><strong id="stat-services">—</strong><span class="muted">signature services</span></div>
-          <div><strong id="stat-staff">—</strong><span class="muted">expert artists</span></div>
-          <div><strong id="stat-rating">—</strong><span class="muted">guest rating</span></div>
+          <div><strong id="stat-services">—</strong><small>signature services</small></div>
+          <div><strong id="stat-staff">—</strong><small>expert artists</small></div>
+          <div><strong id="stat-rating">—</strong><small>guest rating</small></div>
         </div>
       </div>
       <div class="hero-art" aria-hidden="true"></div>
@@ -73,27 +74,36 @@
     <!-- Value props -->
     <section class="container" style="padding-top:1rem">
       <div class="grid grid-3">
-        <div class="card"><div class="icon">🗓️</div><h3>Real-time booking</h3><p class="muted">See live openings by artist and chair — no phone tag, no waiting on hold.</p></div>
-        <div class="card"><div class="icon">💖</div><h3>Your favorite artist</h3><p class="muted">Request the hands you trust, or let us match you with the right specialist.</p></div>
-        <div class="card"><div class="icon">✨</div><h3>Clean, calm space</h3><p class="muted">Sanitized stations, premium products, and a little quiet luxury every visit.</p></div>
+        <div class="card" data-reveal data-reveal-delay="1"><div class="icon">🗓️</div><h3>Real-time booking</h3><p class="muted">See live openings by artist and chair — no phone tag, no waiting on hold.</p></div>
+        <div class="card" data-reveal data-reveal-delay="2"><div class="icon">💖</div><h3>Your favorite artist</h3><p class="muted">Request the hands you trust, or let us match you with the right specialist.</p></div>
+        <div class="card" data-reveal data-reveal-delay="3"><div class="icon">✨</div><h3>Clean, calm space</h3><p class="muted">Sanitized stations, premium products, and a little quiet luxury every visit.</p></div>
       </div>
     </section>
 
     <!-- Services preview -->
     <section class="container">
-      <div class="section-head">
+      <div class="section-head" data-reveal>
         <p class="eyebrow">What we do</p>
         <h2>A full menu of pampering</h2>
         <p class="muted">From a quick gel refresh to full bridal glam — find your service and book it instantly.</p>
       </div>
       <div class="grid grid-4" id="cat-grid"></div>
-      <div class="center" style="margin-top:2.2rem"><a class="btn btn-ghost" href="services.html">See all services & prices</a></div>
+      <div class="center" style="margin-top:2.2rem"><a class="btn btn-ghost" href="services.html">See all services &amp; prices</a></div>
+    </section>
+
+    <!-- Trust band -->
+    <section class="container" style="padding-top:0">
+      <div class="trust-band">
+        <div class="trust-item" data-reveal data-reveal-delay="1"><div class="t-ic">🧼</div><div><h4>Hospital-grade hygiene</h4><p>Tools sterilized in an autoclave; single-use files &amp; buffers on every service.</p></div></div>
+        <div class="trust-item" data-reveal data-reveal-delay="2"><div class="t-ic">🎓</div><div><h4>Licensed artists</h4><p>Every technician is state-licensed and trained in the latest techniques.</p></div></div>
+        <div class="trust-item" data-reveal data-reveal-delay="3"><div class="t-ic">🌿</div><div><h4>Clean, vegan products</h4><p>Cruelty-free, low-odor polishes and premium care for sensitive skin &amp; nails.</p></div></div>
+      </div>
     </section>
 
     <!-- Team preview -->
     <section style="background:var(--bg-soft)">
       <div class="container">
-        <div class="section-head">
+        <div class="section-head" data-reveal>
           <p class="eyebrow">Meet the artists</p>
           <h2>Hands you can trust</h2>
         </div>
@@ -103,7 +113,7 @@
 
     <!-- Gallery preview -->
     <section class="container">
-      <div class="section-head">
+      <div class="section-head" data-reveal>
         <p class="eyebrow">From the studio</p>
         <h2>Recent looks</h2>
       </div>
@@ -114,11 +124,11 @@
     <!-- Testimonials -->
     <section style="background:var(--bg-soft)">
       <div class="container">
-        <div class="section-head"><p class="eyebrow">Loved by guests</p><h2>Kind words</h2></div>
-        <div class="grid grid-3">
-          <div class="card"><p>"Best gel manicure in town — three weeks and not a single chip. Booking online took 30 seconds."</p><strong>— Priya R.</strong></div>
-          <div class="card"><p>"Maya's balayage completely changed my hair. The whole place feels like a little escape."</p><strong>— Daniela M.</strong></div>
-          <div class="card"><p>"I booked bridal makeup and a trial through the site. Smooth, professional, gorgeous results."</p><strong>— Hannah L.</strong></div>
+        <div class="section-head" data-reveal><p class="eyebrow">Loved by guests</p><h2>Kind words</h2></div>
+        <div class="grid grid-3" id="testi-grid">
+          <div class="card" data-reveal data-reveal-delay="1"><div class="t-stars" style="color:var(--gold);letter-spacing:2px;margin-bottom:.5rem">★★★★★</div><p>"Best gel manicure in town — three weeks and not a single chip. Booking online took 30 seconds."</p><strong>— Priya R.</strong></div>
+          <div class="card" data-reveal data-reveal-delay="2"><div class="t-stars" style="color:var(--gold);letter-spacing:2px;margin-bottom:.5rem">★★★★★</div><p>"Maya's balayage completely changed my hair. The whole place feels like a little escape."</p><strong>— Daniela M.</strong></div>
+          <div class="card" data-reveal data-reveal-delay="3"><div class="t-stars" style="color:var(--gold);letter-spacing:2px;margin-bottom:.5rem">★★★★★</div><p>"I booked bridal makeup and a trial through the site. Smooth, professional, gorgeous results."</p><strong>— Hannah L.</strong></div>
         </div>
         <div class="center" style="margin-top:2rem"><a class="btn btn-ghost" href="reviews.html">Read all guest reviews</a></div>
       </div>
@@ -126,19 +136,19 @@
 
     <!-- Visit us -->
     <section class="container" id="visit-section">
-      <div class="section-head">
+      <div class="section-head" data-reveal>
         <p class="eyebrow">Find us</p>
         <h2>Visit the studio</h2>
       </div>
       <div class="grid grid-2" style="max-width:860px;margin-inline:auto;gap:2rem;align-items:start">
         <div>
           <div class="card" style="padding:1.6rem">
-            <h3 style="margin:0 0 1rem;font-size:1.05rem">Contact & location</h3>
+            <h3 style="margin:0 0 1rem;font-size:1.05rem">Contact &amp; location</h3>
             <p id="visit-address" class="muted" style="margin:0 0 .5rem;font-size:.95rem"></p>
             <p id="visit-phone"   style="margin:0 0 .3rem;font-size:.95rem"></p>
             <p id="visit-email"   style="margin:0 0 1.2rem;font-size:.95rem"></p>
             <div style="display:flex;gap:.6rem;flex-wrap:wrap">
-              <a class="btn btn-primary btn-sm" href="booking.html">Book an appointment</a>
+              <a class="btn btn-primary btn-sm" href="booking.html">Book my appointment</a>
               <a class="btn btn-ghost btn-sm" href="location.html">Get directions →</a>
             </div>
           </div>
@@ -154,20 +164,21 @@
 
     <!-- CTA band -->
     <section class="container">
-      <div class="cta-band">
+      <div class="cta-band" data-reveal>
         <p class="eyebrow" style="color:#f3d9c4">Ready when you are</p>
         <h2>Treat yourself this week</h2>
         <p style="max-width:34rem;margin:0 auto 1.6rem;opacity:.9">Openings fill fast on weekends. Lock in your spot now and we'll send a reminder before your visit.</p>
-        <a class="btn btn-gold" href="booking.html">Book now</a>
+        <a class="btn btn-gold" href="booking.html">Book my appointment</a>
       </div>
     </section>
   </main>
 
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js?v=8"></script>
+  <script src="js/common.js?v=10"></script>
   <script>
     const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
     const GRADS = ['#c98a86','#5a3d4f','#c8a96a','#a85f5b','#9d7b8c','#d8a48f','#7a5c6e','#caa37a'];
+    const starRow = (n) => '★★★★★☆☆☆☆☆'.slice(5 - Math.max(0, Math.min(5, Math.round(n))), 10 - Math.max(0, Math.min(5, Math.round(n))));
 
     function renderHoursPill(hours) {
       const todayName = DAYS[new Date().getDay()];
@@ -182,7 +193,7 @@
       const [ch, cm] = entry.close.split(':').map(Number);
       const isOpen = cur >= oh * 60 + om && cur < ch * 60 + cm;
       dot.style.background  = isOpen ? '#4caf7d' : '#c0392b';
-      txt.style.color       = 'var(--text)';
+      txt.style.color       = 'var(--ink)';
       txt.textContent       = isOpen
         ? `Open today · closes ${fmt(entry.close)}`
         : `Closed · opens ${fmt(entry.open)} ${todayName}`;
@@ -190,20 +201,21 @@
 
     function galleryTile(item, idx) {
       if (item.imageUrl) {
-        return `<a class="tile" href="gallery.html" style="padding:0;overflow:hidden;display:block" title="${esc(item.title)}">
+        return `<a class="tile" href="gallery.html" data-reveal style="padding:0;overflow:hidden;display:block" title="${esc(item.title)}">
           <img src="${esc(item.imageUrl)}" alt="${esc(item.title)}" loading="lazy"
                style="width:100%;height:100%;object-fit:cover"></a>`;
       }
-      return `<a class="tile" href="gallery.html"
+      return `<a class="tile" href="gallery.html" data-reveal
           style="background:linear-gradient(135deg,${GRADS[idx%GRADS.length]},${GRADS[(idx+3)%GRADS.length]});text-decoration:none"
           title="${esc(item.title)}">${esc(item.emoji || '🖼️')}</a>`;
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
-      const [cfg, stats, galData] = await Promise.all([
+      const [cfg, stats, galData, revData] = await Promise.all([
         window.__CFG__ || api.config().then(c => (window.__CFG__ = c)),
         api.stats(),
         fetch('/api/gallery').then(r => r.json()),
+        fetch('/api/reviews').then(r => r.json()).catch(() => ({ reviews: [] })),
       ]);
 
       // hours pill
@@ -217,16 +229,16 @@
 
       // category cards
       const icons = { nails: '💅', hair: '💇‍♀️', skin: '🧖‍♀️', makeup: '💄' };
-      document.getElementById('cat-grid').innerHTML = cfg.categories.map(c => `
-        <a class="card" href="services.html#${c.id}">
+      document.getElementById('cat-grid').innerHTML = cfg.categories.map((c, i) => `
+        <a class="card" href="services.html#${c.id}" data-reveal data-reveal-delay="${(i % 3) + 1}">
           <div class="icon">${icons[c.id] || '✨'}</div>
           <h3>${esc(c.name)}</h3>
           <p class="muted" style="font-size:.9rem">${esc(c.blurb)}</p>
         </a>`).join('');
 
       // team
-      document.getElementById('team-grid').innerHTML = cfg.staff.map(p => `
-        <div class="card team-card">
+      document.getElementById('team-grid').innerHTML = cfg.staff.map((p, i) => `
+        <div class="card team-card" data-reveal data-reveal-delay="${(i % 4) + 1}">
           <div class="avatar">${esc(p.name.split(' ').map(w=>w[0]).join(''))}</div>
           <h3>${esc(p.name)}</h3>
           <p class="muted" style="font-size:.85rem">${esc(p.title)}</p>
@@ -236,7 +248,18 @@
       const items = (galData.gallery || []).slice(0, 8);
       document.getElementById('gallery-mini').innerHTML = items.length
         ? items.map((item, i) => galleryTile(item, i)).join('')
-        : Array.from({length:8}, (_,i) => `<a class="tile" href="gallery.html" style="background:linear-gradient(135deg,${GRADS[i]},${GRADS[(i+3)%GRADS.length]})">✨</a>`).join('');
+        : Array.from({length:8}, (_,i) => `<a class="tile" href="gallery.html" data-reveal style="background:linear-gradient(135deg,${GRADS[i]},${GRADS[(i+3)%GRADS.length]})">✨</a>`).join('');
+
+      // testimonials — pull the highest-rated recent reviews; keep static fallback if none
+      const top = (revData.reviews || []).filter(r => r.comment && r.rating >= 4).slice(0, 3);
+      if (top.length) {
+        document.getElementById('testi-grid').innerHTML = top.map((r, i) => `
+          <div class="card" data-reveal data-reveal-delay="${i + 1}" style="background:var(--glass);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-color:var(--glass-line)">
+            <div class="t-stars" style="color:var(--gold);letter-spacing:2px;margin-bottom:.5rem">${starRow(r.rating)}</div>
+            <p>"${esc(r.comment)}"</p>
+            <strong>— ${esc(r.customerFirstName || 'Guest')}${r.serviceName ? ' · <span class="muted" style="font-weight:400">' + esc(r.serviceName) + '</span>' : ''}</strong>
+          </div>`).join('');
+      }
 
       // AggregateRating JSON-LD (dynamic — bots that execute JS benefit; static bots get the base BeautySalon block)
       if (stats && stats.avgRating != null && stats.totalReviews > 0) {
@@ -269,12 +292,15 @@
         hoursEl.innerHTML = s.hours.map(h => {
           const isToday = h.day === todayName;
           return `<tr style="${isToday ? 'font-weight:600' : ''}">
-            <td style="padding:.3rem 0;color:${isToday ? 'var(--rose-deep)' : 'var(--text-muted)'};width:110px">${h.day}</td>
+            <td style="padding:.3rem 0;color:${isToday ? 'var(--rose-deep)' : 'var(--ink-soft)'};width:110px">${h.day}</td>
             <td style="padding:.3rem 0">${fmtTime(h.open)} – ${fmtTime(h.close)}</td>
             ${isToday ? '<td style="padding:.3rem 0 .3rem .6rem"><span style="font-size:.72rem;background:#e8f5ee;color:#2f7a45;border-radius:4px;padding:.1rem .4rem;font-weight:600">Today</span></td>' : '<td></td>'}
           </tr>`;
         }).join('');
       }
+
+      // reveal any freshly-injected [data-reveal] elements
+      if (window.revealScan) window.revealScan();
     });
   </script>
 </body>

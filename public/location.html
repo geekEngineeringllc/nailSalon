@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>(function(){try{var t=localStorage.getItem('lumiere_theme');if(!t&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)t='dark';if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Location &amp; Hours — Lumière Beauty &amp; Nail Studio</title>
@@ -31,7 +32,7 @@
   <header class="site-header" id="site-header"></header>
   <main id="main-content">
     <section class="container">
-      <div class="section-head">
+      <div class="section-head" data-reveal>
         <p class="eyebrow">Find us</p>
         <h2>Location &amp; hours</h2>
         <p class="muted">We're conveniently located in Riverside with free parking right out front.</p>
@@ -40,8 +41,8 @@
       <div class="loc-grid" style="margin-bottom:3rem">
         <!-- Info panel -->
         <div>
-          <div class="card" style="margin-bottom:1.4rem">
-            <h3 style="font-size:1rem;margin:0 0 1rem;font-family:var(--font-display);font-size:1.15rem">Contact &amp; address</h3>
+          <div class="card" data-reveal style="margin-bottom:1.4rem">
+            <h3 style="font-size:1.15rem;margin:0 0 1rem;font-family:var(--font-display)">Contact &amp; address</h3>
             <div id="contact-lines">
               <div class="contact-line"><span class="contact-icon">📍</span><span id="loc-address" class="muted">Loading…</span></div>
               <div class="contact-line"><span class="contact-icon">📞</span><span id="loc-phone" class="muted"></span></div>
@@ -53,15 +54,15 @@
             </div>
           </div>
 
-          <div class="card">
-            <h3 style="font-size:1rem;margin:0 0 1rem;font-family:var(--font-display);font-size:1.15rem">Hours this week</h3>
+          <div class="card" data-reveal data-reveal-delay="1">
+            <h3 style="font-size:1.15rem;margin:0 0 1rem;font-family:var(--font-display)">Hours this week</h3>
             <div id="hours-table"><p class="muted" style="font-size:.9rem">Loading hours…</p></div>
             <p class="muted" style="font-size:.82rem;margin-top:.8rem;margin-bottom:0">Hours are subject to change on public holidays. Call ahead if unsure.</p>
           </div>
         </div>
 
         <!-- Map -->
-        <div>
+        <div data-reveal data-reveal-delay="2">
           <iframe
             id="map-frame"
             class="map-frame"
@@ -78,13 +79,13 @@
       </div>
 
       <div class="center" style="margin-top:1rem;margin-bottom:3rem">
-        <a class="btn btn-primary" href="booking.html">Book an appointment</a>
+        <a class="btn btn-primary" href="booking.html">Book my appointment</a>
         <a class="btn btn-ghost" href="faq.html" style="margin-left:.8rem">FAQ</a>
       </div>
     </section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js?v=8"></script>
+  <script src="js/common.js?v=10"></script>
   <script>
     const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 

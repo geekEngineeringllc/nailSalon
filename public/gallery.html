@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>(function(){try{var t=localStorage.getItem('lumiere_theme');if(!t&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)t='dark';if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gallery — Lumière Beauty & Nail Studio</title>
@@ -20,29 +21,39 @@
   <header class="site-header" id="site-header"></header>
   <main id="main-content">
     <section class="container">
-      <div class="section-head">
+      <div class="section-head" data-reveal>
         <p class="eyebrow">Our work</p>
         <h2>The Lumière gallery</h2>
         <p class="muted">A taste of what our artists create every day. Filter by category, then book the look you love.</p>
       </div>
       <div class="filters" id="filters"></div>
       <div class="gallery" id="gallery"></div>
-      <div class="center" style="margin-top:2.4rem"><a class="btn btn-primary" href="booking.html">Book your look</a></div>
+      <div class="center" style="margin-top:2.4rem"><a class="btn btn-primary" href="booking.html">Book my appointment</a></div>
 
       <!-- Lightbox -->
-      <div id="lb" role="dialog" aria-modal="true" aria-label="Image lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;align-items:center;justify-content:center">
-        <button id="lb-close" aria-label="Close" style="position:absolute;top:1rem;right:1.2rem;background:none;border:none;color:#fff;font-size:2rem;cursor:pointer;line-height:1">✕</button>
-        <button id="lb-prev" aria-label="Previous" style="position:absolute;left:1rem;background:none;border:none;color:#fff;font-size:2.5rem;cursor:pointer;line-height:1;padding:.5rem">‹</button>
-        <button id="lb-next" aria-label="Next" style="position:absolute;right:1rem;background:none;border:none;color:#fff;font-size:2.5rem;cursor:pointer;line-height:1;padding:.5rem">›</button>
-        <div style="text-align:center;max-width:min(90vw,900px);padding:0 3rem">
-          <img id="lb-img" src="" alt="" style="max-width:100%;max-height:80vh;border-radius:8px;object-fit:contain">
-          <p id="lb-caption" style="color:#e8d5c0;margin-top:.8rem;font-size:.9rem"></p>
+      <div id="lb" role="dialog" aria-modal="true" aria-label="Image lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;align-items:center;justify-content:center">
+        <button id="lb-close" aria-label="Close" style="position:absolute;top:1.1rem;right:1.2rem;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.14);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:1.4rem;cursor:pointer;line-height:1;display:grid;place-items:center">✕</button>
+        <button id="lb-prev" aria-label="Previous" style="position:absolute;left:1.1rem;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.14);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:1.8rem;cursor:pointer;line-height:1;display:grid;place-items:center">‹</button>
+        <button id="lb-next" aria-label="Next" style="position:absolute;right:1.1rem;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.14);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:1.8rem;cursor:pointer;line-height:1;display:grid;place-items:center">›</button>
+        <div style="text-align:center;max-width:min(92vw,920px);padding:0 3.5rem">
+          <img id="lb-img" src="" alt="" style="max-width:100%;max-height:82vh;border-radius:12px;object-fit:contain;box-shadow:0 30px 80px -20px rgba(0,0,0,.7)">
+          <p id="lb-caption" style="color:#e8d5c0;margin-top:.9rem;font-size:.9rem"></p>
         </div>
       </div>
     </section>
+
+    <!-- Before / after transformations (renders only when items carry a beforeUrl) -->
+    <section class="container" id="ba-section" style="display:none;padding-top:0">
+      <div class="section-head" data-reveal>
+        <p class="eyebrow">Transformations</p>
+        <h2>Before &amp; after</h2>
+        <p class="muted">Drag the slider to reveal the result.</p>
+      </div>
+      <div class="grid grid-2" id="ba-grid" style="max-width:920px;margin-inline:auto"></div>
+    </section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js?v=8"></script>
+  <script src="js/common.js?v=10"></script>
   <script>
     const GRADS = ['#c98a86','#5a3d4f','#c8a96a','#a85f5b','#9d7b8c','#d8a48f','#7a5c6e','#caa37a'];
     let ITEMS = [], current = 'all', lbIdx = -1;
@@ -50,12 +61,6 @@
     // ---- Lightbox ----
     function lbVisible() { return document.getElementById('lb').style.display !== 'none'; }
     function lbImages() { return ITEMS.filter(i => (current === 'all' || i.category === current) && i.imageUrl); }
-    function openLb(item) {
-      const imgs = lbImages();
-      lbIdx = imgs.findIndex(i => i === item);
-      if (lbIdx < 0) return;
-      showLb();
-    }
     function showLb() {
       const imgs = lbImages();
       if (!imgs.length) return;
@@ -68,6 +73,8 @@
       document.getElementById('lb-prev').style.opacity = lbIdx > 0 ? '1' : '.3';
       document.getElementById('lb-next').style.opacity = lbIdx < imgs.length - 1 ? '1' : '.3';
       document.body.style.overflow = 'hidden';
+      // preload neighbours for snappy nav
+      [lbIdx - 1, lbIdx + 1].forEach(j => { if (imgs[j]) { const im = new Image(); im.src = imgs[j].imageUrl; } });
     }
     function closeLb() {
       document.getElementById('lb').style.display = 'none';
@@ -85,12 +92,24 @@
       if (e.key === 'ArrowLeft' && lbIdx > 0) { lbIdx--; showLb(); }
       if (e.key === 'ArrowRight' && lbIdx < lbImages().length - 1) { lbIdx++; showLb(); }
     });
+    // Touch swipe
+    let _touchX = null;
+    const _lbEl = document.getElementById('lb');
+    _lbEl.addEventListener('touchstart', e => { _touchX = e.changedTouches[0].clientX; }, { passive: true });
+    _lbEl.addEventListener('touchend', e => {
+      if (_touchX == null) return;
+      const dx = e.changedTouches[0].clientX - _touchX; _touchX = null;
+      if (Math.abs(dx) < 40) return;
+      const imgs = lbImages();
+      if (dx < 0 && lbIdx < imgs.length - 1) { lbIdx++; showLb(); }
+      else if (dx > 0 && lbIdx > 0) { lbIdx--; showLb(); }
+    }, { passive: true });
 
-    // ---- Tiles ----
+    // ---- Tiles (bento) ----
     function tileHtml(item, idx) {
-      const clickable = item.imageUrl ? ' style="cursor:zoom-in"' : '';
+      const span = (idx % 6 === 0) ? ' wide' : '';   // every 6th tile spans two columns
       if (item.imageUrl) {
-        return `<div class="tile" data-lb="1" style="padding:0;overflow:hidden;cursor:zoom-in" title="${esc(item.caption || item.title)}">
+        return `<div class="tile${span}" data-lb="1" data-reveal style="padding:0" title="${esc(item.caption || item.title)}">
           <img src="${esc(item.imageUrl)}" alt="${esc(item.title)}" loading="lazy"
                style="width:100%;height:100%;object-fit:cover;pointer-events:none">
           <span style="position:absolute;bottom:0;left:0;right:0;padding:.5rem .7rem;
@@ -100,7 +119,7 @@
           </span>
         </div>`;
       }
-      return `<div class="tile" style="background:linear-gradient(135deg,${GRADS[idx%GRADS.length]},${GRADS[(idx+3)%GRADS.length]});flex-direction:column;gap:.4rem;position:relative" title="${esc(item.caption || item.title)}">
+      return `<div class="tile${span}" data-reveal style="background:linear-gradient(135deg,${GRADS[idx%GRADS.length]},${GRADS[(idx+3)%GRADS.length]});flex-direction:column;gap:.4rem" title="${esc(item.caption || item.title)}">
         <span style="font-size:2rem">${esc(item.emoji || '🖼️')}</span>
         <span style="font-size:.8rem;font-family:var(--font-body);font-weight:500;opacity:.95">${esc(item.title)}</span>
       </div>`;
@@ -110,16 +129,47 @@
       const el = document.getElementById('gallery');
       const filtered = ITEMS.filter(i => current === 'all' || i.category === current);
       el.innerHTML = filtered.length
-        ? filtered.map((item, idx) => `<div style="position:relative">${tileHtml(item, idx)}</div>`).join('')
+        ? filtered.map((item, idx) => tileHtml(item, idx)).join('')
         : `<p class="muted" style="text-align:center;padding:2rem;grid-column:1/-1">No items in this category yet.</p>`;
-      // Wire lightbox clicks on image tiles
-      el.querySelectorAll('.tile[data-lb]').forEach(tile => {
-        const idx = [...el.querySelectorAll('.tile[data-lb]')].indexOf(tile);
-        tile.addEventListener('click', () => {
-          const imgs = ITEMS.filter(i => (current === 'all' || i.category === current) && i.imageUrl);
-          if (idx >= 0 && idx < imgs.length) { lbIdx = idx; showLb(); }
-        });
+      // Wire lightbox clicks — image tiles are in DOM order, matching lbImages()
+      [...el.querySelectorAll('.tile[data-lb]')].forEach((tile, i) => {
+        tile.addEventListener('click', () => { lbIdx = i; showLb(); });
       });
+      if (window.revealScan) window.revealScan();
+    }
+
+    // ---- Before / after slider ----
+    // Activates for any gallery item carrying both `imageUrl` (the "after") and
+    // `beforeUrl` (the "before"). No data → the whole section stays hidden.
+    function buildBeforeAfter() {
+      const pairs = ITEMS.filter(i => i.imageUrl && i.beforeUrl);
+      const sec = document.getElementById('ba-section');
+      if (!pairs.length) { sec.style.display = 'none'; return; }
+      sec.style.display = '';
+      document.getElementById('ba-grid').innerHTML = pairs.map((it, i) => `
+        <div class="ba-slider" data-ba data-reveal>
+          <img class="ba-before" src="${esc(it.beforeUrl)}" alt="Before — ${esc(it.title)}">
+          <img class="ba-after" src="${esc(it.imageUrl)}" alt="After — ${esc(it.title)}">
+          <span class="ba-label before">Before</span>
+          <span class="ba-label after">After</span>
+          <div class="ba-handle" aria-hidden="true"></div>
+        </div>`).join('');
+      document.querySelectorAll('[data-ba]').forEach(wireBaSlider);
+    }
+    function wireBaSlider(el) {
+      const set = (clientX) => {
+        const rect = el.getBoundingClientRect();
+        let pct = ((clientX - rect.left) / rect.width) * 100;
+        el.style.setProperty('--ba', Math.max(0, Math.min(100, pct)) + '%');
+      };
+      let dragging = false;
+      const xOf = e => (e.touches ? e.touches[0] : e).clientX;
+      el.addEventListener('mousedown', e => { dragging = true; set(xOf(e)); });
+      el.addEventListener('touchstart', e => { dragging = true; set(xOf(e)); }, { passive: true });
+      window.addEventListener('mousemove', e => { if (dragging) set(xOf(e)); });
+      el.addEventListener('touchmove', e => { if (dragging) set(xOf(e)); }, { passive: true });
+      window.addEventListener('mouseup', () => { dragging = false; });
+      el.addEventListener('touchend', () => { dragging = false; });
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
@@ -130,12 +180,14 @@
       ITEMS = gData.gallery || [];
       const cats = [{id:'all',name:'All'}, ...CFG.categories];
       document.getElementById('filters').innerHTML = cats.map(c=>
-        `<button class="chip ${c.id==='all'?'active':''}" data-cat="${c.id}">${c.name}</button>`).join('');
+        `<button class="chip ${c.id==='all'?'active':''}" data-cat="${c.id}">${esc(c.name)}</button>`).join('');
       document.querySelectorAll('.chip').forEach(ch=>ch.addEventListener('click',()=>{
         document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
         ch.classList.add('active'); current=ch.dataset.cat; render();
       }));
       render();
+      buildBeforeAfter();
+      if (window.revealScan) window.revealScan();
     });
   </script>
 </body>
