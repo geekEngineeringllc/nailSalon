@@ -594,13 +594,16 @@ function makeNotifications(booking) {
   const toAddr = booking.customer.email || booking.customer.phone;
   const ch = booking.customer.email ? 'email' : 'sms';
   const first = booking.customer.name.split(' ')[0];
+  const base = process.env.BASE_URL || 'http://localhost:3000';
+  const phone = (booking.customer.phone || '').replace(/\D/g, '');
+  const manageUrl = `${base}/manage.html?ref=${encodeURIComponent(booking.ref)}&phone=${encodeURIComponent(phone)}`;
   const out = [
     {
       id: crypto.randomBytes(4).toString('hex'),
       bookingId: booking.id, ref: booking.ref,
       to: toAddr, toName: booking.customer.name,
       channel: ch, type: 'confirmation',
-      message: `Hi ${first}, your ${booking.serviceName} with ${booking.staffName} on ${booking.date} at ${booking.time} is confirmed. Ref: ${booking.ref}.\n\nSee you soon!\nLumière Beauty & Nail Studio`,
+      message: `Hi ${first}, your ${booking.serviceName} with ${booking.staffName} on ${booking.date} at ${booking.time} is confirmed. Ref: ${booking.ref}.\n\nManage your booking:\n${manageUrl}\n\nSee you soon!\nLumière Beauty & Nail Studio`,
       status: 'scheduled', scheduledFor: new Date().toISOString()
     }
   ];
@@ -612,7 +615,7 @@ function makeNotifications(booking) {
       bookingId: booking.id, ref: booking.ref,
       to: toAddr, toName: booking.customer.name,
       channel: ch, type: 'reminder',
-      message: `Hi ${first}, just a reminder — your ${booking.serviceName} at Lumière is tomorrow at ${booking.time} with ${booking.staffName}.\n\nNeed to reschedule? Visit: ${booking.ref}\nLumière Beauty & Nail Studio`,
+      message: `Hi ${first}, just a reminder — your ${booking.serviceName} at Lumière is tomorrow at ${booking.time} with ${booking.staffName}.\n\nManage or reschedule:\n${manageUrl}\n\nLumière Beauty & Nail Studio`,
       status: 'scheduled', scheduledFor: remindAt.toISOString()
     });
   }
@@ -1143,7 +1146,7 @@ async function handleAPI(req, res, url) {
       `Service: ${b.serviceName}`,
       `Artist: ${b.staffName}`,
       `Booking ref: ${b.ref}`,
-      `Manage: ${req.headers.host ? 'http://' + req.headers.host + '/manage.html' : '/manage.html'}`,
+      `Manage: ${req.headers.host ? 'http://' + req.headers.host + '/manage.html?ref=' + encodeURIComponent(b.ref) + '&phone=' + encodeURIComponent((b.customer.phone || '').replace(/\D/g,'')) : '/manage.html'}`,
     ];
     const fold = (s) => s.match(/.{1,75}/g).join('\r\n ');  // iCal line folding
 
@@ -2362,6 +2365,53 @@ async function handleAPI(req, res, url) {
     }
     const commissions = Object.values(staffMap).sort((a, b) => a.staffName.localeCompare(b.staffName));
     return sendJSON(res, 200, { commissions, from, to });
+  }
+
+  // GET /api/admin/customers?q= — customer CRM list with booking stats
+  if (req.method === 'GET' && url.pathname === '/api/admin/customers') {
+    const search = (q.get('q') || '').toLowerCase().trim();
+    const bookings = db.bookings || [];
+    const custList = (db.customers || []).map((c) => {
+      const myBookings = bookings.filter((b) => b.customerId === c.id);
+      const completed = myBookings.filter((b) => b.status === 'completed');
+      const upcoming = myBookings.filter((b) => b.status === 'confirmed');
+      const lastVisit = completed.sort((a, b) => b.date.localeCompare(a.date))[0];
+      return {
+        id: c.id,
+        name: c.name,
+        phone: c.phone,
+        email: c.email || '',
+        points: c.points || 0,
+        totalBookings: myBookings.length,
+        completedVisits: completed.length,
+        upcomingCount: upcoming.length,
+        lastVisit: lastVisit ? lastVisit.date : null,
+        totalSpent: Math.round(completed.reduce((s, b) => s + (b.price || 0), 0) * 100) / 100,
+        marketingOptOut: c.marketingOptOut || false,
+        membership: c.membership ? { planName: c.membership.planName, status: c.membership.status } : null,
+        createdAt: c.createdAt || null,
+      };
+    });
+    const filtered = search
+      ? custList.filter((c) =>
+          c.name.toLowerCase().includes(search) ||
+          c.phone.includes(search) ||
+          c.email.toLowerCase().includes(search)
+        )
+      : custList;
+    filtered.sort((a, b) => (b.lastVisit || '').localeCompare(a.lastVisit || '') || a.name.localeCompare(b.name));
+    return sendJSON(res, 200, { customers: filtered, total: filtered.length });
+  }
+
+  // GET /api/admin/customers/:id/bookings — full booking history for one customer
+  if (req.method === 'GET' && /^\/api\/admin\/customers\/[^/]+\/bookings$/.test(url.pathname)) {
+    const custId = url.pathname.split('/')[4];
+    const cust = (db.customers || []).find((c) => c.id === custId);
+    if (!cust) return sendJSON(res, 404, { error: 'Customer not found.' });
+    const myBookings = (db.bookings || [])
+      .filter((b) => b.customerId === custId)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    return sendJSON(res, 200, { customer: { id: cust.id, name: cust.name, phone: cust.phone, email: cust.email, points: cust.points }, bookings: myBookings });
   }
 
   // --- Retail store + inventory ---
