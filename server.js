@@ -2414,6 +2414,24 @@ async function handleAPI(req, res, url) {
     return sendJSON(res, 200, { customer: { id: cust.id, name: cust.name, phone: cust.phone, email: cust.email, points: cust.points }, bookings: myBookings });
   }
 
+  // POST /api/admin/customers/:id/points { delta, reason } — manual points adjustment
+  if (req.method === 'POST' && /^\/api\/admin\/customers\/[^/]+\/points$/.test(url.pathname)) {
+    const custId = url.pathname.split('/')[4];
+    const { delta, reason } = await readBody(req);
+    const d = Math.round(Number(delta) || 0);
+    if (d === 0) return sendJSON(res, 400, { error: 'delta must be a non-zero integer.' });
+    return withLock(() => {
+      const fresh = loadDB();
+      const cust = (fresh.customers || []).find((c) => c.id === custId);
+      if (!cust) return sendJSON(res, 404, { error: 'Customer not found.' });
+      const before = cust.points || 0;
+      cust.points = Math.max(0, before + d);
+      saveDB(fresh);
+      audit(req, 'points.adjust', { customerId: cust.id, name: cust.name, delta: d, before, after: cust.points, reason: reason || '' });
+      return sendJSON(res, 200, { ok: true, customerId: cust.id, points: cust.points, delta: d });
+    });
+  }
+
   // --- Retail store + inventory ---
 
   // GET /api/admin/products — list all products with stock status

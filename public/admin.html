@@ -1660,10 +1660,22 @@
       const c = data.customer;
       const bks = data.bookings || [];
       bodyEl.innerHTML = `
-        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:.8rem;font-size:.88rem">
+        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:1rem;font-size:.88rem;align-items:center">
           ${c.email ? `<span><strong>Email:</strong> ${esc(c.email)}</span>` : ''}
-          <span><strong>Points:</strong> ${c.points || 0}</span>
+          <span><strong>Points:</strong> <span id="cd-pts">${c.points || 0}</span></span>
           <span><strong>Total bookings:</strong> ${bks.length}</span>
+        </div>
+        <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:.85rem 1rem;margin-bottom:1rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end">
+          <div>
+            <label class="form-label" style="font-size:.78rem">Adjust points (+ add / − deduct)</label>
+            <input id="pts-delta" type="number" step="1" class="form-input" placeholder="e.g. 100 or -50" style="width:160px">
+          </div>
+          <div style="flex:1;min-width:160px">
+            <label class="form-label" style="font-size:.78rem">Reason</label>
+            <input id="pts-reason" class="form-input" placeholder="Goodwill credit, correction…" style="width:100%">
+          </div>
+          <button class="btn btn-ghost btn-sm" id="pts-save">Save</button>
+          <span id="pts-msg" style="font-size:.82rem"></span>
         </div>
         ${bks.length ? `<div style="overflow-x:auto"><table class="bookings" style="font-size:.85rem">
           <thead><tr><th>Date</th><th>Service</th><th>Artist</th><th>Status</th><th>Price</th><th>Ref</th></tr></thead>
@@ -1676,6 +1688,29 @@
             <td style="font-size:.78rem">${esc(b.ref)}</td>
           </tr>`).join('')}</tbody>
         </table></div>` : '<p class="muted" style="margin:0">No bookings yet.</p>'}`;
+
+      document.getElementById('pts-save').addEventListener('click', async () => {
+        const delta = parseInt(document.getElementById('pts-delta').value, 10);
+        const reason = document.getElementById('pts-reason').value.trim();
+        const msg = document.getElementById('pts-msg');
+        if (!delta || isNaN(delta)) { msg.textContent = 'Enter a non-zero number.'; msg.style.color = 'var(--rose-deep)'; return; }
+        msg.textContent = 'Saving…'; msg.style.color = 'var(--muted)';
+        const r = await fetch('/api/admin/customers/' + id + '/points', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ delta, reason })
+        }).then(x => x.json()).catch(() => null);
+        if (r && r.ok) {
+          document.getElementById('cd-pts').textContent = r.points;
+          document.getElementById('pts-delta').value = '';
+          document.getElementById('pts-reason').value = '';
+          msg.textContent = `✓ ${delta > 0 ? '+' : ''}${delta} pts → new balance: ${r.points}`;
+          msg.style.color = '#2f7a45';
+          loadCustomers(document.getElementById('cust-search').value.trim());
+        } else {
+          msg.textContent = (r && r.error) || 'Could not save.';
+          msg.style.color = 'var(--rose-deep)';
+        }
+      });
     }
     window.loadCustomerDetail = loadCustomerDetail;
 
