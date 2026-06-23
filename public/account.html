@@ -16,26 +16,36 @@
     <section class="container" id="content" style="min-height:50vh"></section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js"></script>
+  <script src="js/common.js?v=4"></script>
   <script>
     const todayISO = () => { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
     function bookingCard(b, allowManage) {
+      const actions = allowManage
+        ? `<a class="btn btn-ghost btn-sm" href="manage.html">Manage</a>`
+        : `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem">
+             <div class="price">${money(b.price)}</div>
+             ${b.status !== 'cancelled' && b.serviceId
+               ? `<a class="btn btn-ghost btn-sm" href="booking.html?service=${b.serviceId}">Rebook →</a>`
+               : ''}
+           </div>`;
       return `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
         <div>
           <div style="font-family:var(--font-display);font-size:1.2rem">${esc(b.serviceName)}</div>
           <div class="muted" style="font-size:.9rem">${b.date} · ${b.time} · with ${esc(b.staffName)}</div>
           <div style="font-size:.8rem;margin-top:.3rem"><span class="status ${b.status}">${b.status}</span> · ${b.ref}</div>
         </div>
-        ${allowManage ? `<a class="btn btn-ghost btn-sm" href="manage.html">Manage</a>` : `<div class="price">${money(b.price)}</div>`}
+        ${actions}
       </div>`;
     }
-    function packageCard(p) {
+    function packageCard(p, svcMap) {
       const pct = Math.round((p.remaining / p.total) * 100);
       const paid = p.paymentStatus === 'paid';
+      const svcName = (svcMap && svcMap[p.serviceId] && svcMap[p.serviceId].name) || p.serviceId;
+      const bookUrl = paid && p.remaining > 0 && p.serviceId ? `booking.html?service=${p.serviceId}` : 'booking.html';
       return `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
         <div style="flex:1;min-width:0">
           <div style="font-family:var(--font-display);font-size:1.1rem">${esc(p.name)}</div>
-          <div class="muted" style="font-size:.85rem">${esc(p.serviceId)} · ${p.remaining} of ${p.total} sessions left</div>
+          <div class="muted" style="font-size:.85rem">${esc(svcName)} · ${p.remaining} of ${p.total} sessions left</div>
           <div style="margin-top:.5rem;height:6px;background:var(--bg-soft);border-radius:4px;overflow:hidden">
             <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--rose),var(--rose-deep))"></div>
           </div>
@@ -43,7 +53,7 @@
         </div>
         <div style="text-align:right">
           <div class="price">${money(p.price)}</div>
-          ${paid && p.remaining > 0 ? `<a class="btn btn-ghost btn-sm" href="booking.html" style="margin-top:.4rem">Use a session →</a>` : ''}
+          ${paid && p.remaining > 0 ? `<a class="btn btn-ghost btn-sm" href="${bookUrl}" style="margin-top:.4rem">Use a session →</a>` : ''}
         </div>
       </div>`;
     }
@@ -54,6 +64,7 @@
       const past = me.bookings.filter(b => !(b.date > today || b.date === today) || b.status === 'cancelled');
       const myPkgs = c.packages || [];
       const availPkgs = (cfg && cfg.packages || []).filter(p => p.active !== false);
+      const svcMap = Object.fromEntries((cfg && cfg.services || []).map(s => [s.id, s]));
       document.getElementById('content').innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;margin:2rem 0">
           <div>
@@ -64,11 +75,12 @@
           <button class="btn btn-ghost btn-sm" id="logout">Log out</button>
         </div>
 
-        <div class="grid grid-3" style="margin-bottom:2.5rem">
+        <div class="grid grid-3" style="margin-bottom:.8rem">
           <div class="stat"><div class="big">${c.points || 0}</div><div class="lbl">Reward points</div></div>
           <div class="stat"><div class="big">${upcoming.length}</div><div class="lbl">Upcoming visits</div></div>
           <div class="stat"><div class="big">${me.bookings.length}</div><div class="lbl">Total visits</div></div>
         </div>
+        ${c.points >= 100 ? `<p class="muted" style="font-size:.83rem;text-align:center;margin-bottom:2rem">You have <strong>${c.points} pts</strong> — worth <strong>${money(Math.floor(c.points/100))}</strong> off your next visit. Mention at checkout to redeem.</p>` : `<p class="muted" style="font-size:.83rem;text-align:center;margin-bottom:2rem">Every 100 points = $1 off a future visit. Mention at checkout to redeem.</p>`}
 
         <div style="display:flex;justify-content:space-between;align-items:center">
           <h3>Upcoming</h3><a class="btn btn-primary btn-sm" href="booking.html">+ Book again</a>
@@ -96,7 +108,7 @@
         ${myPkgs.length ? `
         <h3>My packages</h3>
         <div class="grid" style="gap:1rem;margin-bottom:2.5rem">
-          ${myPkgs.map(p => packageCard(p)).join('')}
+          ${myPkgs.map(p => packageCard(p, svcMap)).join('')}
         </div>` : ''}
 
         ${availPkgs.length ? `
@@ -104,16 +116,20 @@
           <h3>Available packages</h3>
         </div>
         <div class="grid" style="gap:1rem;margin-bottom:2.5rem">
-          ${availPkgs.map(p => `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
-            <div>
-              <div style="font-family:var(--font-display);font-size:1.1rem">${esc(p.name)}</div>
-              <div class="muted" style="font-size:.85rem">${p.sessions} sessions · ${esc(p.serviceId)}</div>
-            </div>
-            <div style="text-align:right">
-              <div class="price">${money(p.price)}</div>
-              <div class="muted" style="font-size:.78rem">Pay at salon</div>
-            </div>
-          </div>`).join('')}
+          ${availPkgs.map(p => {
+            const svcName = (svcMap[p.serviceId] && svcMap[p.serviceId].name) || p.serviceId;
+            return `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+              <div>
+                <div style="font-family:var(--font-display);font-size:1.1rem">${esc(p.name)}</div>
+                <div class="muted" style="font-size:.85rem">${p.sessions} sessions · ${esc(svcName)}</div>
+                ${p.description ? `<div class="muted" style="font-size:.82rem;margin-top:.2rem">${esc(p.description)}</div>` : ''}
+              </div>
+              <div style="text-align:right">
+                <div class="price">${money(p.price)}</div>
+                <div class="muted" style="font-size:.78rem">Pay at salon</div>
+              </div>
+            </div>`;
+          }).join('')}
         </div>` : ''}
 
         ${(() => {
