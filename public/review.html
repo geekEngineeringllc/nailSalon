@@ -6,6 +6,8 @@
   <title>Leave a Review — Lumière Beauty & Nail Studio</title>
   <meta name="description" content="Share your experience at Lumière Beauty & Nail Studio." />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#b0657a">
   <meta name="robots" content="noindex">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -84,10 +86,13 @@
     function renderSuccess(rating) {
       document.getElementById('panel').innerHTML = `
         <div style="text-align:center;padding:1.5rem 0">
-          <div class="check" style="font-size:2rem;margin-bottom:.8rem">✓</div>
+          <div style="font-size:2.4rem;margin-bottom:.6rem">✓</div>
           <h3 style="margin:0 0 .4rem">Thank you!</h3>
-          <p class="muted">Your ${'★'.repeat(rating)}${'☆'.repeat(5-rating)} review has been saved. We really appreciate your feedback.</p>
-          <a class="btn btn-primary" href="index.html" style="margin-top:1.2rem;display:inline-block">Back to Lumière</a>
+          <p class="muted" style="margin-bottom:1.6rem">Your ${'★'.repeat(rating)}${'☆'.repeat(5-rating)} review has been saved. We really appreciate your feedback.</p>
+          <div style="display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap">
+            <a class="btn btn-primary" href="booking.html">Book another visit</a>
+            <a class="btn btn-ghost" href="reviews.html">See all reviews</a>
+          </div>
         </div>`;
     }
 

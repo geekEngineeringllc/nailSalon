@@ -81,6 +81,16 @@
           <button class="btn btn-ghost btn-sm" id="logout">Log out</button>
         </div>
 
+        ${(() => {
+          const visits = me.bookings.filter(b => b.status === 'completed').length;
+          const tier = visits >= 25 ? {label:'Platinum',color:'#7c6fa0',next:null,nextAt:null}
+                     : visits >= 10 ? {label:'Gold',color:'#c6960a',next:'Platinum',nextAt:25}
+                     : visits >= 5  ? {label:'Silver',color:'#6b8fa0',next:'Gold',nextAt:10}
+                     :                {label:'Bronze',color:'#9a6b4b',next:'Silver',nextAt:5};
+          return `<div style="display:flex;justify-content:center;margin-bottom:1.2rem">
+            <span style="background:${tier.color}1a;color:${tier.color};font-weight:600;font-size:.82rem;padding:.3rem .9rem;border-radius:24px;border:1.5px solid ${tier.color}40;letter-spacing:.04em">${tier.label} member${tier.next ? ` · ${tier.nextAt - visits} visit${tier.nextAt - visits !== 1 ? 's' : ''} to ${tier.next}` : ''}</span>
+          </div>`;
+        })()}
         <div class="grid grid-3" style="margin-bottom:.8rem">
           <div class="stat"><div class="big">${c.points || 0}</div><div class="lbl">Reward points</div></div>
           <div class="stat"><div class="big">${upcoming.length}</div><div class="lbl">Upcoming visits</div></div>
