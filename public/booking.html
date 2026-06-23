@@ -441,9 +441,32 @@
             <a class="btn btn-primary" href="booking.html">Book another</a>
             <a class="btn btn-ghost" href="index.html">Back home</a>
           </div>
+          <div id="ref-nudge" style="margin-top:1.6rem"></div>
         </div>`;
       window.scrollTo({ top: 0, behavior: 'smooth' });
       focusPanelHeading(document.getElementById('panel'));
+      // Async: inject referral card for logged-in customers
+      Promise.all([api.me(), fetch('/api/referral').then(r => r.ok ? r.json() : null).catch(() => null)]).then(([me, ref]) => {
+        const nudge = document.getElementById('ref-nudge');
+        if (!nudge || !me.ok || !ref || !ref.referralCode) return;
+        const url = location.origin + '/register.html?ref=' + encodeURIComponent(ref.referralCode);
+        nudge.innerHTML = `
+          <div style="background:var(--bg-soft);border-radius:14px;padding:1.2rem 1.4rem;max-width:420px;margin:0 auto;text-align:left">
+            <p style="font-weight:600;margin:0 0 .3rem;font-size:.95rem">Loved your visit? Tell a friend</p>
+            <p class="muted" style="font-size:.85rem;margin:0 0 .9rem">Share your code and both of you earn bonus reward points when they book.</p>
+            <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+              <code style="background:#fff;padding:.35rem .8rem;border-radius:8px;font-size:.95rem;letter-spacing:.07em;border:1px solid var(--line)">${esc(ref.referralCode)}</code>
+              <button class="btn btn-ghost btn-sm" id="nudge-share">Share link</button>
+            </div>
+          </div>`;
+        document.getElementById('nudge-share').addEventListener('click', () => {
+          if (navigator.share) {
+            navigator.share({ title: 'Join Lumière Beauty & Nail Studio', text: 'Sign up and get 100 bonus points!', url });
+          } else {
+            navigator.clipboard.writeText(url).then(() => toast('Referral link copied!')).catch(() => toast('Your link: ' + url));
+          }
+        });
+      });
     }
 
     function go(step) {
