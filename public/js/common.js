@@ -416,6 +416,7 @@ async function renderChrome() {
       ? `<li><a href="account.html" class="${page === 'account.html' ? 'active' : ''}">${t('nav.hi', esc(cust.name.split(' ')[0]))}</a></li>`
       : `<li><a href="login.html" class="${page === 'login.html' ? 'active' : ''}">${t('nav.login')}</a></li>`;
     header.innerHTML = `
+      <a class="skip-link" href="#main-content">Skip to main content</a>
       <div class="container nav">
         <a class="brand" href="index.html">Lumière<span>.</span></a>
         <button class="nav-toggle" aria-label="${t('nav.menu')}">☰</button>

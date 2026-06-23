@@ -26,7 +26,7 @@
     </div>
   </div>
   <header class="site-header" id="site-header"></header>
-  <main>
+  <main id="main-content">
     <section class="container">
       <div class="section-head" style="text-align:left;margin-bottom:2rem;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem">
         <div>
@@ -95,6 +95,28 @@
           <div id="backup-list" style="margin-bottom:.8rem;font-size:.85rem"></div>
           <button class="btn btn-ghost btn-sm" id="backup-now">↓ Back up now</button>
           <span id="backup-msg" style="font-size:.82rem;margin-left:.6rem"></span>
+        </div>
+        <!-- Revenue chart -->
+        <div class="card" style="padding:1.4rem;grid-column:1/-1">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.2rem;flex-wrap:wrap;gap:.6rem">
+            <h4 style="margin:0;font-size:.95rem">Daily revenue — last 30 days</h4>
+            <div style="display:flex;gap:.5rem;align-items:center">
+              <span id="chart-summary" style="font-size:.82rem;color:var(--muted)"></span>
+              <select id="chart-days" style="padding:.3rem .6rem;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:.82rem;background:var(--bg)">
+                <option value="14">14 days</option>
+                <option value="30" selected>30 days</option>
+                <option value="60">60 days</option>
+                <option value="90">90 days</option>
+              </select>
+            </div>
+          </div>
+          <div id="rev-chart-wrap" style="overflow-x:auto;margin-top:.8rem">
+            <svg id="rev-chart" width="100%" height="220" viewBox="0 0 900 220" preserveAspectRatio="none" style="display:block"></svg>
+          </div>
+          <div id="rev-chart-legend" style="display:flex;gap:1.2rem;font-size:.78rem;margin-top:.5rem;flex-wrap:wrap">
+            <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--accent);margin-right:4px;vertical-align:middle"></span>Service revenue</span>
+            <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#a78bfa;margin-right:4px;vertical-align:middle"></span>Tips</span>
+          </div>
         </div>
         <!-- Audit / recent activity -->
         <div class="card" style="padding:1.4rem;grid-column:1/-1">
@@ -647,6 +669,7 @@
       renderProducts(window._products);
       loadLowStock();
       loadBackups();
+      loadRevenueChart();
       loadAuditLog();
       loadCustomers();
       renderSales(salesData.sales || []);
@@ -1758,6 +1781,85 @@
       }).join('');
     }
 
+    async function loadRevenueChart(days) {
+      days = days || parseInt(document.getElementById('chart-days').value, 10) || 30;
+      const svg = document.getElementById('rev-chart');
+      const summary = document.getElementById('chart-summary');
+      if (!svg) return;
+      svg.innerHTML = '<text x="450" y="114" text-anchor="middle" font-size="13" fill="var(--muted)">Loading…</text>';
+      let data;
+      try { data = await (await fetch('/api/admin/reports/chart?days=' + days)).json(); } catch { svg.innerHTML = ''; return; }
+      const pts = data.points || [];
+      if (!pts.length) { svg.innerHTML = '<text x="450" y="114" text-anchor="middle" font-size="13" fill="var(--muted)">No data yet.</text>'; return; }
+
+      const W = 900, H = 220, PAD_L = 52, PAD_R = 12, PAD_T = 14, PAD_B = 38;
+      const chartW = W - PAD_L - PAD_R;
+      const chartH = H - PAD_T - PAD_B;
+      const maxTotal = Math.max(1, ...pts.map(p => p.total));
+      const totalRevenue = pts.reduce((s, p) => s + p.total, 0);
+      const avgRev = totalRevenue / pts.length;
+      const nonZero = pts.filter(p => p.total > 0).length;
+      summary.textContent = `${nonZero} active days · Total $${totalRevenue.toFixed(2)} · Avg $${avgRev.toFixed(2)}/day`;
+
+      const barW = Math.max(4, Math.floor((chartW / pts.length) * 0.68));
+      const gap = chartW / pts.length;
+
+      // Y-axis labels: round up to nice number
+      const yTick = maxTotal <= 100 ? 25 : maxTotal <= 500 ? 100 : maxTotal <= 1000 ? 200 : 500;
+      const yMax = Math.ceil(maxTotal / yTick) * yTick;
+      const yLines = [];
+      for (let y = 0; y <= yMax; y += yTick) yLines.push(y);
+
+      let s = `<defs>
+        <style>
+          .rc-bar-rev { fill: var(--accent, #ec4899); }
+          .rc-bar-tip { fill: #a78bfa; }
+          .rc-hover-hit { fill: transparent; cursor: default; }
+          .rc-tooltip { font-family: inherit; }
+        </style>
+        <filter id="rc-shadow"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity=".18"/></filter>
+      </defs>`;
+
+      // Y grid lines + labels
+      yLines.forEach(y => {
+        const ry = PAD_T + chartH - (y / yMax) * chartH;
+        s += `<line x1="${PAD_L}" y1="${ry}" x2="${W - PAD_R}" y2="${ry}" stroke="var(--line,#e5e7eb)" stroke-width="1"/>`;
+        s += `<text x="${PAD_L - 5}" y="${ry + 4}" text-anchor="end" font-size="10" fill="var(--muted,#9ca3af)">$${y >= 1000 ? (y/1000).toFixed(y%1000===0?0:1)+'k' : y}</text>`;
+      });
+
+      // Bars + X labels + tooltips
+      pts.forEach((p, i) => {
+        const cx = PAD_L + i * gap + gap / 2;
+        const revH = (p.revenue / yMax) * chartH;
+        const tipH = (p.tips / yMax) * chartH;
+        const totalH = revH + tipH;
+        const barX = cx - barW / 2;
+
+        if (totalH > 0) {
+          // revenue bar (bottom)
+          s += `<rect class="rc-bar-rev" x="${barX}" y="${PAD_T + chartH - revH}" width="${barW}" height="${revH}" rx="2" filter="url(#rc-shadow)"/>`;
+          // tip bar (stacked on top)
+          if (tipH > 0) s += `<rect class="rc-bar-tip" x="${barX}" y="${PAD_T + chartH - revH - tipH}" width="${barW}" height="${tipH}" rx="2"/>`;
+        }
+
+        // X-axis date label (every ~5 days or fewer)
+        const step = Math.max(1, Math.ceil(pts.length / 18));
+        if (i % step === 0 || i === pts.length - 1) {
+          const label = p.date.slice(5); // MM-DD
+          s += `<text x="${cx}" y="${H - 6}" text-anchor="middle" font-size="10" fill="var(--muted,#9ca3af)">${label}</text>`;
+        }
+
+        // Invisible hit area + tooltip via title
+        const tip = `${p.date}: $${p.total.toFixed(2)} (rev $${p.revenue.toFixed(2)} + tips $${p.tips.toFixed(2)}) · ${p.bookings} booking${p.bookings!==1?'s':''}`;
+        s += `<rect class="rc-hover-hit" x="${barX - gap/4}" y="${PAD_T}" width="${gap}" height="${chartH}" rx="0"><title>${tip}</title></rect>`;
+      });
+
+      // Y axis line
+      s += `<line x1="${PAD_L}" y1="${PAD_T}" x2="${PAD_L}" y2="${PAD_T + chartH}" stroke="var(--line,#e5e7eb)" stroke-width="1"/>`;
+
+      svg.innerHTML = s;
+    }
+
     window.editStaff = editStaff; window.deleteStaff = deleteStaff; window.closeStaffForm = closeStaffForm;
     window.onHmode = onHmode; window.addTimeOff = addTimeOff; window.addBreak = addBreak; window.removeRow = removeRow;
     window.deleteBlockoff = deleteBlockoff;
@@ -1849,6 +1951,7 @@
         setTimeout(() => { msg.textContent = ''; }, 4000);
       });
       document.getElementById('audit-refresh').addEventListener('click', loadAuditLog);
+      document.getElementById('chart-days').addEventListener('change', () => loadRevenueChart());
       document.getElementById('cust-search-btn').addEventListener('click', () => {
         loadCustomers(document.getElementById('cust-search').value.trim());
       });

@@ -56,6 +56,10 @@ section { padding: 5.5rem 0; }
 .btn-gold { background: var(--gold); color: #3a2c10; }
 .btn-sm { padding: .55rem 1.1rem; font-size: .82rem; }
 
+/* ---- Skip navigation (accessibility) ---- */
+.skip-link { position:absolute; top:-100%;left:0;z-index:200;padding:.5rem 1rem;background:var(--rose-deep);color:#fff;font-size:.9rem;border-radius:0 0 8px 0;text-decoration:none;transition:top .15s; }
+.skip-link:focus { top:0; }
+
 /* ---- Header / nav ---- */
 .site-header {
   position: sticky; top: 0; z-index: 50;
