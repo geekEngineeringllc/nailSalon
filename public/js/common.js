@@ -303,6 +303,9 @@ const api = {
   async recordTip(id, tipAmount) { const r = await fetch('/api/admin/bookings/tip', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, tipAmount }) }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async adminTips() { return (await fetch('/api/admin/tips')).json(); },
   async adminCommissions(from, to) { const qs = new URLSearchParams({}); if (from) qs.set('from', from); if (to) qs.set('to', to); return (await fetch('/api/admin/commissions?' + qs)).json(); },
+  async dailyReport(date) { const qs = date ? '?date=' + date : ''; return (await fetch('/api/admin/reports/daily' + qs)).json(); },
+  async revenueReport(from, to, csv) { const p = new URLSearchParams(); if (from) p.set('from', from); if (to) p.set('to', to); if (csv) p.set('format', 'csv'); return fetch('/api/admin/reports/revenue?' + p); },
+  async auditLog(limit) { const qs = limit ? '?limit=' + limit : ''; return (await fetch('/api/admin/audit' + qs)).json(); },
   async galleryItems() { return (await fetch('/api/gallery')).json(); },
   async saveGalleryItem(item) { const r = await fetch('/api/admin/gallery/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item }) }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async deleteGalleryItem(id) { const r = await fetch('/api/admin/gallery/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); return { ok: r.ok, status: r.status, data: await r.json() }; }
@@ -353,7 +356,7 @@ function focusPanelHeading(container) {
 const LOCALES = {
   en: {
     'nav.home': 'Home', 'nav.services': 'Services', 'nav.gallery': 'Gallery',
-    'nav.team': 'Team', 'nav.manage': 'Manage', 'nav.admin': 'Admin',
+    'nav.team': 'Team', 'nav.reviews': 'Reviews', 'nav.manage': 'Manage', 'nav.admin': 'Admin',
     'nav.login': 'Log in', 'nav.book-now': 'Book Now', 'nav.hi': 'Hi, {0}', 'nav.menu': 'Menu',
     'footer.visit': 'Visit', 'footer.hours': 'Hours',
     'footer.tagline-ext': 'Walk in for a touch-up, book ahead for the full experience.',
@@ -363,7 +366,7 @@ const LOCALES = {
   },
   es: {
     'nav.home': 'Inicio', 'nav.services': 'Servicios', 'nav.gallery': 'Galería',
-    'nav.team': 'Equipo', 'nav.manage': 'Mi cita', 'nav.admin': 'Admin',
+    'nav.team': 'Equipo', 'nav.reviews': 'Reseñas', 'nav.manage': 'Mi cita', 'nav.admin': 'Admin',
     'nav.login': 'Ingresar', 'nav.book-now': 'Reservar', 'nav.hi': 'Hola, {0}', 'nav.menu': 'Menú',
     'footer.visit': 'Visítanos', 'footer.hours': 'Horario',
     'footer.tagline-ext': 'Pasa sin cita o reserva con anticipación.',
@@ -396,6 +399,7 @@ const NAV = [
   ['services.html', 'nav.services'],
   ['gallery.html', 'nav.gallery'],
   ['team.html', 'nav.team'],
+  ['reviews.html', 'nav.reviews'],
   ['manage.html', 'nav.manage'],
   ['admin.html', 'nav.admin'],
 ];

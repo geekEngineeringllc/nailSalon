@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guest Reviews — Lumière Beauty & Nail Studio</title>
+  <meta name="description" content="Read what Lumière Beauty & Nail Studio guests are saying — honest reviews from real visits." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Lumière Beauty & Nail Studio">
+  <meta property="og:title" content="Guest Reviews — Lumière Beauty & Nail Studio">
+  <meta property="og:description" content="Read what our guests are saying — honest reviews from real visits.">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .bar-row { display:flex; align-items:center; gap:.6rem; font-size:.85rem; margin:.25rem 0; }
+    .bar-track { flex:1; height:7px; background:var(--bg-soft); border-radius:4px; overflow:hidden; }
+    .bar-fill  { height:100%; background:linear-gradient(90deg,#c6960a,#e8b84b); border-radius:4px; transition:width .4s; }
+    .review-item { border-bottom:1px solid var(--line); padding:1.4rem 0; }
+    .review-item:last-child { border-bottom:none; }
+    .review-stars { color:#c6960a; letter-spacing:.05em; }
+    .avg-big { font-size:3.5rem; font-family:var(--font-display); font-weight:700; line-height:1; }
+  </style>
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <section class="container">
+      <div class="section-head">
+        <p class="eyebrow">Guest voices</p>
+        <h2>What our guests say</h2>
+        <p class="muted">Every review comes from a verified visit — no anonymous submissions.</p>
+      </div>
+
+      <!-- Summary card -->
+      <div class="card" id="summary-card" style="max-width:600px;margin:0 auto 2.5rem;display:flex;gap:2rem;align-items:center;flex-wrap:wrap">
+        <div style="text-align:center;min-width:90px">
+          <div class="avg-big" id="avg-score">—</div>
+          <div class="review-stars" id="avg-stars" style="font-size:1.3rem"></div>
+          <div class="muted" style="font-size:.82rem;margin-top:.3rem" id="total-count"></div>
+        </div>
+        <div style="flex:1;min-width:180px" id="bar-chart"></div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters" id="filters" style="margin-bottom:1.5rem"></div>
+
+      <!-- Review list -->
+      <div style="max-width:720px;margin-inline:auto" id="review-list">
+        <div class="sk-card skeleton"></div>
+        <div class="sk-card skeleton"></div>
+        <div class="sk-card skeleton" style="width:80%"></div>
+      </div>
+
+      <div class="center" style="margin-top:3rem">
+        <a class="btn btn-primary" href="booking.html">Book your visit</a>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/common.js?v=4"></script>
+  <script>
+    let ALL_REVIEWS = [], CFG = null, currentCat = 'all';
+
+    function fmtDate(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+
+    function starsFilled(n, size) {
+      const sz = size ? `font-size:${size}` : '';
+      return `<span class="review-stars" style="${sz}">${'★'.repeat(n)}${'☆'.repeat(5 - n)}</span>`;
+    }
+
+    function renderSummary(reviews) {
+      if (!reviews.length) {
+        document.getElementById('summary-card').style.display = 'none';
+        return;
+      }
+      const avg = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
+      document.getElementById('avg-score').textContent = avg.toFixed(1);
+      document.getElementById('avg-stars').innerHTML = starsFilled(Math.round(avg));
+      document.getElementById('total-count').textContent = `${reviews.length} review${reviews.length !== 1 ? 's' : ''}`;
+
+      const dist = [5, 4, 3, 2, 1].map(n => ({
+        n, count: reviews.filter(r => r.rating === n).length
+      }));
+      document.getElementById('bar-chart').innerHTML = dist.map(d => {
+        const pct = reviews.length ? Math.round((d.count / reviews.length) * 100) : 0;
+        return `<div class="bar-row">
+          <span style="width:1.2em;text-align:right">${d.n}</span>
+          <span style="color:#c6960a;font-size:.8rem">★</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+          <span style="width:2.5em;text-align:right;color:var(--text-muted)">${d.count}</span>
+        </div>`;
+      }).join('');
+    }
+
+    function renderList(reviews) {
+      const el = document.getElementById('review-list');
+      if (!reviews.length) {
+        el.innerHTML = `<p class="muted" style="text-align:center;padding:2.5rem 0">No reviews yet in this category — be the first!</p>`;
+        return;
+      }
+      el.innerHTML = reviews.map(r => `
+        <div class="review-item">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;flex-wrap:wrap">
+            <div>
+              ${starsFilled(r.rating, '1.15rem')}
+              <div style="font-weight:600;margin:.35rem 0 .1rem">${esc(r.customerFirstName || 'Guest')}</div>
+              <div class="muted" style="font-size:.82rem">${esc(r.serviceName)} · with ${esc(r.staffName)}</div>
+            </div>
+            <div class="muted" style="font-size:.8rem;white-space:nowrap">${fmtDate(r.submittedAt)}</div>
+          </div>
+          ${r.comment ? `<p style="margin:.8rem 0 0;font-size:.95rem;line-height:1.6;color:var(--text)">"${esc(r.comment)}"</p>` : ''}
+        </div>`).join('');
+    }
+
+    function applyFilter() {
+      let filtered = ALL_REVIEWS;
+      if (currentCat !== 'all' && CFG) {
+        const svcIds = new Set(
+          (CFG.services || []).filter(s => s.category === currentCat).map(s => s.id)
+        );
+        filtered = ALL_REVIEWS.filter(r => svcIds.has(r.serviceId));
+      }
+      renderSummary(filtered);
+      renderList(filtered);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const [cfg, rv] = await Promise.all([api.config(), api.reviews()]);
+      CFG = cfg;
+      ALL_REVIEWS = (rv.reviews || []);
+
+      const cats = [{ id: 'all', name: 'All' }, ...(cfg.categories || [])];
+      document.getElementById('filters').innerHTML = cats.map(c =>
+        `<button class="chip ${c.id === 'all' ? 'active' : ''}" data-cat="${c.id}">${esc(c.name)}</button>`
+      ).join('');
+      document.querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => {
+        document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+        ch.classList.add('active');
+        currentCat = ch.dataset.cat;
+        applyFilter();
+      }));
+
+      applyFilter();
+
+      // JSON-LD AggregateRating for search engines
+      if (ALL_REVIEWS.length) {
+        const avg = ALL_REVIEWS.reduce((s, r) => s + r.rating, 0) / ALL_REVIEWS.length;
+        const ld = document.createElement('script');
+        ld.type = 'application/ld+json';
+        ld.textContent = JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BeautySalon',
+          'name': 'Lumière Beauty & Nail Studio',
+          'aggregateRating': {
+            '@type': 'AggregateRating',
+            'ratingValue': avg.toFixed(1),
+            'reviewCount': ALL_REVIEWS.length,
+            'bestRating': 5,
+            'worstRating': 1
+          }
+        });
+        document.head.appendChild(ld);
+      }
+    });
+  </script>
+</body>
+</html>
