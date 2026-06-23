@@ -132,6 +132,20 @@
         <div style="background:#fff;border-radius:16px;max-width:720px;margin:0 auto;padding:2rem" id="daily-sheet-content"></div>
       </div>
 
+      <!-- Weekly schedule calendar -->
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.6rem;margin-bottom:.6rem">
+        <h3 style="margin:0">Weekly schedule</h3>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <button class="btn btn-ghost btn-sm" id="week-prev">&#8249; Prev</button>
+          <span id="week-label" style="font-size:.88rem;font-weight:600;min-width:180px;text-align:center"></span>
+          <button class="btn btn-ghost btn-sm" id="week-next">Next &#8250;</button>
+          <button class="btn btn-ghost btn-sm" id="week-today">Today</button>
+        </div>
+      </div>
+      <div id="week-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:.4rem;margin-bottom:2.5rem;overflow-x:auto;min-width:0">
+        <!-- populated by loadWeekView() -->
+      </div>
+
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
         <h3 style="margin:0">All appointments</h3>
         <div style="display:flex;gap:.6rem;flex-wrap:wrap">
@@ -667,6 +681,7 @@
       renderGallery(gallData.gallery || []);
       window._products = prodData.products || [];
       renderProducts(window._products);
+      loadWeekView();
       loadLowStock();
       loadBackups();
       loadRevenueChart();
@@ -1860,6 +1875,60 @@
       svg.innerHTML = s;
     }
 
+    // ----- Weekly schedule calendar -----
+    const STAFF_COLORS = ['#f87171','#fb923c','#facc15','#4ade80','#60a5fa','#a78bfa','#f472b6','#34d399'];
+    let _weekAnchor = (() => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); })();
+    let _staffColorMap = {};
+
+    async function loadWeekView(anchor) {
+      if (anchor) _weekAnchor = anchor;
+      const grid = document.getElementById('week-grid');
+      const lbl = document.getElementById('week-label');
+      if (!grid) return;
+      grid.innerHTML = '<div style="grid-column:1/-1;color:var(--muted);font-size:.85rem;padding:.5rem">Loading…</div>';
+      let data;
+      try { data = await (await fetch('/api/admin/schedule/week?date=' + _weekAnchor)).json(); } catch { grid.innerHTML = '<div style="grid-column:1/-1;color:var(--muted);font-size:.85rem">Failed to load.</div>'; return; }
+      const days = data.days || [];
+      const ws = data.weekStart || _weekAnchor;
+      const we = days[6] ? days[6].date : ws;
+      lbl.textContent = ws.slice(5) + ' – ' + we.slice(5);
+
+      // Assign stable colors to staff members
+      days.forEach(d => d.bookings.forEach(b => { if (b.staffId && !(b.staffId in _staffColorMap)) { _staffColorMap[b.staffId] = STAFF_COLORS[Object.keys(_staffColorMap).length % STAFF_COLORS.length]; } }));
+
+      const todayStr = (() => { const t = new Date(); t.setMinutes(t.getMinutes() - t.getTimezoneOffset()); return t.toISOString().slice(0,10); })();
+
+      const STATUS_DOT = { confirmed: '🔵', completed: '✅', 'no-show': '⚠️', cancelled: '❌', pending: '🟡' };
+
+      grid.innerHTML = days.map(day => {
+        const isToday = day.date === todayStr;
+        const hdr = `<div style="font-weight:700;font-size:.82rem;padding:.3rem .5rem ${day.bookings.length ? '.2rem' : '.3rem'};border-radius:6px 6px 0 0;background:${isToday ? 'var(--rose-deep,#be123c)' : 'var(--bg-soft,#f9fafb)'};color:${isToday ? '#fff' : 'inherit'}">${day.label} <span style="font-size:.75rem;font-weight:400">${day.date.slice(5)}</span>${isToday ? ' <span style="font-size:.7rem;opacity:.8">today</span>' : ''}</div>`;
+        const cards = day.bookings.length
+          ? day.bookings.map(b => {
+              const color = _staffColorMap[b.staffId] || '#94a3b8';
+              const statusIcon = STATUS_DOT[b.status] || '';
+              return `<div style="border-left:3px solid ${color};background:var(--bg,#fff);border-radius:0 4px 4px 0;padding:.3rem .5rem;margin:.2rem 0;font-size:.75rem;line-height:1.4;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+                <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(b.time)} ${statusIcon}</div>
+                <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)">${esc(b.customer)}</div>
+                <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(b.serviceName)}</div>
+                <div style="font-size:.7rem;color:var(--muted)">${esc(b.staffName)}</div>
+              </div>`;
+            }).join('')
+          : '<div style="font-size:.75rem;color:var(--muted);padding:.4rem .5rem;font-style:italic">No bookings</div>';
+        return `<div style="border:1px solid var(--line);border-radius:6px;background:var(--bg-soft,#f9fafb);min-height:120px;overflow:hidden">
+          ${hdr}
+          <div style="padding:.2rem .4rem .4rem">${cards}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function weekOffset(delta) {
+      const d = new Date(_weekAnchor + 'T12:00:00Z');
+      d.setUTCDate(d.getUTCDate() + delta * 7);
+      _weekAnchor = d.toISOString().slice(0, 10);
+      loadWeekView();
+    }
+
     window.editStaff = editStaff; window.deleteStaff = deleteStaff; window.closeStaffForm = closeStaffForm;
     window.onHmode = onHmode; window.addTimeOff = addTimeOff; window.addBreak = addBreak; window.removeRow = removeRow;
     window.deleteBlockoff = deleteBlockoff;
@@ -1952,6 +2021,9 @@
       });
       document.getElementById('audit-refresh').addEventListener('click', loadAuditLog);
       document.getElementById('chart-days').addEventListener('change', () => loadRevenueChart());
+      document.getElementById('week-prev').addEventListener('click', () => weekOffset(-1));
+      document.getElementById('week-next').addEventListener('click', () => weekOffset(1));
+      document.getElementById('week-today').addEventListener('click', () => { const t = new Date(); t.setMinutes(t.getMinutes() - t.getTimezoneOffset()); _weekAnchor = t.toISOString().slice(0,10); loadWeekView(); });
       document.getElementById('cust-search-btn').addEventListener('click', () => {
         loadCustomers(document.getElementById('cust-search').value.trim());
       });

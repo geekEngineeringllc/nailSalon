@@ -2645,6 +2645,36 @@ async function handleAPI(req, res, url) {
     return sendJSON(res, 200, { rows, totals, from, to });
   }
 
+  // GET /api/admin/schedule/week?date=YYYY-MM-DD — 7-day week view for staff calendar
+  if (req.method === 'GET' && url.pathname === '/api/admin/schedule/week') {
+    const raw = q.get('date') || new Date().toISOString().slice(0, 10);
+    const anchor = new Date(raw + 'T12:00:00Z');
+    const dow = anchor.getUTCDay(); // 0=Sun
+    const monday = new Date(anchor); monday.setUTCDate(anchor.getUTCDate() - ((dow + 6) % 7));
+    const days = [];
+    const staffMap = {}; (db.staff || []).forEach(s => { staffMap[s.id] = s.name; });
+    const svcMap = {}; (db.services || []).forEach(s => { svcMap[s.id] = s.name; });
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setUTCDate(monday.getUTCDate() + i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      const label = DAYS[d.getUTCDay()];
+      const bookings = (db.bookings || [])
+        .filter(b => b.date === dateStr && b.status !== 'cancelled')
+        .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+        .map(b => ({
+          id: b.id, ref: b.ref, time: b.time || '', date: b.date, status: b.status,
+          staffId: b.staffId, staffName: staffMap[b.staffId] || 'Unassigned',
+          serviceId: b.serviceId, serviceName: svcMap[b.serviceId] || b.service || '',
+          customer: b.customerName || '', phone: b.customerPhone || '',
+          price: b.price || 0, notes: b.notes || '',
+          duration: b.duration || 60,
+        }));
+      days.push({ date: dateStr, label, bookings });
+    }
+    return sendJSON(res, 200, { days, weekStart: monday.toISOString().slice(0, 10) });
+  }
+
   // GET /api/admin/reports/chart?days=N — daily revenue + booking counts for chart
   if (req.method === 'GET' && url.pathname === '/api/admin/reports/chart') {
     const days = Math.min(90, Math.max(7, parseInt(q.get('days') || '30', 10)));
