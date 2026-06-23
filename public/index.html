@@ -49,6 +49,10 @@
     <section class="container hero">
       <div>
         <p class="eyebrow">Beauty parlor & nail studio · Riverside</p>
+        <div id="hours-pill" style="display:inline-flex;align-items:center;gap:.45rem;font-family:var(--font-body);font-size:.8rem;font-weight:500;margin-bottom:.9rem;padding:.3rem .75rem;border-radius:50px;background:var(--bg-soft)">
+          <span id="hours-dot" style="width:7px;height:7px;border-radius:50%;background:var(--line)"></span>
+          <span id="hours-text" style="color:var(--text-muted)">Checking hours…</span>
+        </div>
         <h1>Beauty, on your<br>schedule.</h1>
         <p class="lead">Nails, hair, skin and makeup under one elegant roof. Pick your service, choose your artist, and book a time that fits your day — all in under a minute.</p>
         <div class="hero-cta">
@@ -56,9 +60,9 @@
           <a class="btn btn-ghost" href="services.html">View the menu</a>
         </div>
         <div class="hero-meta">
-          <div><strong>15+</strong><span class="muted">signature services</span></div>
-          <div><strong>4</strong><span class="muted">expert artists</span></div>
-          <div><strong>4.9★</strong><span class="muted">guest rating</span></div>
+          <div><strong id="stat-services">—</strong><span class="muted">signature services</span></div>
+          <div><strong id="stat-staff">—</strong><span class="muted">expert artists</span></div>
+          <div><strong id="stat-rating">—</strong><span class="muted">guest rating</span></div>
         </div>
       </div>
       <div class="hero-art" aria-hidden="true"></div>
@@ -131,28 +135,77 @@
   <footer class="site-footer" id="site-footer"></footer>
   <script src="js/common.js"></script>
   <script>
+    const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const GRADS = ['#c98a86','#5a3d4f','#c8a96a','#a85f5b','#9d7b8c','#d8a48f','#7a5c6e','#caa37a'];
+
+    function renderHoursPill(hours) {
+      const todayName = DAYS[new Date().getDay()];
+      const entry = (hours || []).find(h => h.day === todayName);
+      const dot  = document.getElementById('hours-dot');
+      const txt  = document.getElementById('hours-text');
+      if (!entry) { txt.textContent = 'Hours unavailable'; return; }
+      const fmt = t => { const [h, m] = t.split(':'); const hr = +h; return (hr % 12 || 12) + (m !== '00' ? ':' + m : '') + (hr < 12 ? 'am' : 'pm'); };
+      const now = new Date();
+      const cur = now.getHours() * 60 + now.getMinutes();
+      const [oh, om] = entry.open.split(':').map(Number);
+      const [ch, cm] = entry.close.split(':').map(Number);
+      const isOpen = cur >= oh * 60 + om && cur < ch * 60 + cm;
+      dot.style.background  = isOpen ? '#4caf7d' : '#c0392b';
+      txt.style.color       = 'var(--text)';
+      txt.textContent       = isOpen
+        ? `Open today · closes ${fmt(entry.close)}`
+        : `Closed · opens ${fmt(entry.open)} ${todayName}`;
+    }
+
+    function galleryTile(item, idx) {
+      if (item.imageUrl) {
+        return `<a class="tile" href="gallery.html" style="padding:0;overflow:hidden;display:block" title="${esc(item.title)}">
+          <img src="${esc(item.imageUrl)}" alt="${esc(item.title)}" loading="lazy"
+               style="width:100%;height:100%;object-fit:cover"></a>`;
+      }
+      return `<a class="tile" href="gallery.html"
+          style="background:linear-gradient(135deg,${GRADS[idx%GRADS.length]},${GRADS[(idx+3)%GRADS.length]});text-decoration:none"
+          title="${esc(item.title)}">${esc(item.emoji || '🖼️')}</a>`;
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
-      const cfg = window.__CFG__ || (window.__CFG__ = await api.config());
+      const [cfg, stats, galData] = await Promise.all([
+        window.__CFG__ || api.config().then(c => (window.__CFG__ = c)),
+        api.stats(),
+        fetch('/api/gallery').then(r => r.json()),
+      ]);
+
+      // hours pill
+      renderHoursPill(cfg.salon && cfg.salon.hours);
+
+      // hero stats
+      document.getElementById('stat-services').textContent = cfg.services ? cfg.services.length + '+' : '—';
+      document.getElementById('stat-staff').textContent    = cfg.staff ? cfg.staff.length : '—';
+      const rating = stats && stats.avgRating != null ? stats.avgRating + '★' : '4.9★';
+      document.getElementById('stat-rating').textContent  = rating;
+
       // category cards
       const icons = { nails: '💅', hair: '💇‍♀️', skin: '🧖‍♀️', makeup: '💄' };
       document.getElementById('cat-grid').innerHTML = cfg.categories.map(c => `
         <a class="card" href="services.html#${c.id}">
           <div class="icon">${icons[c.id] || '✨'}</div>
-          <h3>${c.name}</h3>
-          <p class="muted" style="font-size:.9rem">${c.blurb}</p>
+          <h3>${esc(c.name)}</h3>
+          <p class="muted" style="font-size:.9rem">${esc(c.blurb)}</p>
         </a>`).join('');
+
       // team
       document.getElementById('team-grid').innerHTML = cfg.staff.map(p => `
         <div class="card team-card">
-          <div class="avatar">${p.name.split(' ').map(w=>w[0]).join('')}</div>
-          <h3>${p.name}</h3>
-          <p class="muted" style="font-size:.85rem">${p.title}</p>
+          <div class="avatar">${esc(p.name.split(' ').map(w=>w[0]).join(''))}</div>
+          <h3>${esc(p.name)}</h3>
+          <p class="muted" style="font-size:.85rem">${esc(p.title)}</p>
         </div>`).join('');
-      // mini gallery
-      const grads = ['#c98a86','#5a3d4f','#c8a96a','#a85f5b','#9d7b8c','#d8a48f','#7a5c6e','#caa37a'];
-      const emojis = ['💅','✨','💇‍♀️','💄','🌸','💖','🧖‍♀️','🌟'];
-      document.getElementById('gallery-mini').innerHTML = emojis.map((e,i)=>`
-        <div class="tile" style="background:linear-gradient(135deg,${grads[i]},${grads[(i+3)%grads.length]})">${e}</div>`).join('');
+
+      // mini gallery — first 8 items from API, fall back to emoji tiles if empty
+      const items = (galData.gallery || []).slice(0, 8);
+      document.getElementById('gallery-mini').innerHTML = items.length
+        ? items.map((item, i) => galleryTile(item, i)).join('')
+        : Array.from({length:8}, (_,i) => `<a class="tile" href="gallery.html" style="background:linear-gradient(135deg,${GRADS[i]},${GRADS[(i+3)%GRADS.length]})">✨</a>`).join('');
     });
   </script>
 </body>

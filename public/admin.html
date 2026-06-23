@@ -294,7 +294,7 @@
       <div id="staffForm" style="display:none"></div>
       <div style="overflow-x:auto">
         <table class="bookings">
-          <thead><tr><th>Artist</th><th>Title</th><th>Specialties</th><th></th></tr></thead>
+          <thead><tr><th>Artist</th><th>Title</th><th>Specialties</th><th>Commission</th><th></th></tr></thead>
           <tbody id="staffRows"></tbody>
         </table>
       </div>
@@ -812,6 +812,7 @@
         <td><strong>${esc(p.name)}</strong></td>
         <td>${esc(p.title || '')}</td>
         <td style="font-size:.82rem" class="muted">${(p.specialties||[]).map(esc).join(', ')}</td>
+        <td style="font-size:.85rem">${p.commissionPct != null ? p.commissionPct + '%' : '0%'}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost btn-sm" onclick="editStaff('${p.id}')">Edit</button>
           <button class="btn btn-ghost btn-sm" onclick="deleteStaff('${p.id}','${esc(p.name)}')">Delete</button>
@@ -844,6 +845,7 @@
         <div class="field"><label>Title</label><input id="st-title" value="${esc(sel.title)}" placeholder="Senior Nail & Makeup Artist"></div>
         <div class="field"><label>Bio</label><textarea id="st-bio" rows="2" placeholder="A sentence about this artist.">${esc(sel.bio)}</textarea></div>
         <div class="field"><label>Specialties (comma-separated)</label><input id="st-spec" value="${esc((sel.specialties||[]).join(', '))}" placeholder="Acrylics, Nail Art, Glam Makeup"></div>
+        <div class="field"><label>Commission rate (%)</label><input id="st-commission" type="number" min="0" max="100" step="1" value="${sel.commissionPct ?? 0}" placeholder="0" style="width:120px"></div>
 
         <details style="margin:.5rem 0 1rem"><summary style="cursor:pointer;font-weight:600">Schedule (optional)</summary>
           <div style="margin-top:1rem">
@@ -916,6 +918,7 @@
         title: document.getElementById('st-title').value,
         bio: document.getElementById('st-bio').value,
         specialties: document.getElementById('st-spec').value.split(',').map(s=>s.trim()).filter(Boolean),
+        commissionPct: Number(document.getElementById('st-commission').value) || 0,
         hours, timeOff, breaks
       };
       const res = await api.saveStaff(staff);
