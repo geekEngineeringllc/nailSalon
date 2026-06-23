@@ -260,6 +260,30 @@
         </table>
       </div>
 
+      <!-- Customer CRM -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
+        <h3 style="margin:0">Customers</h3>
+      </div>
+      <p class="muted" style="margin-top:-.4rem;font-size:.9rem">All registered customers with booking stats, points balance, and spend. Click a row to view full history.</p>
+      <div style="display:flex;gap:.6rem;margin-bottom:.8rem">
+        <input id="cust-search" placeholder="Search name, phone, or email…" style="flex:1;max-width:380px;padding:.5rem .9rem;border:1.5px solid var(--line);border-radius:24px;font-family:inherit;font-size:.88rem;outline:none">
+        <button class="btn btn-ghost btn-sm" id="cust-search-btn">Search</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="bookings">
+          <thead><tr><th>Name</th><th>Phone</th><th>Points</th><th>Visits</th><th>Spent</th><th>Last visit</th><th>Member</th><th>Mktg</th></tr></thead>
+          <tbody id="custRows"></tbody>
+        </table>
+      </div>
+      <!-- Customer detail panel (hidden by default) -->
+      <div id="cust-detail" style="display:none;background:var(--bg-soft);border-radius:12px;padding:1.2rem;margin-top:1rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem">
+          <h4 style="margin:0" id="cust-detail-name"></h4>
+          <button class="btn btn-ghost btn-sm" id="cust-detail-close">✕ Close</button>
+        </div>
+        <div id="cust-detail-body"></div>
+      </div>
+
       <!-- Retail store + inventory -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
         <h3 style="margin:0">Retail products</h3>
@@ -624,6 +648,7 @@
       loadLowStock();
       loadBackups();
       loadAuditLog();
+      loadCustomers();
       renderSales(salesData.sales || []);
       renderCommissions(commData.commissions || []);
       renderTips(tipsData.tips || []);
@@ -1600,6 +1625,60 @@
         : '<p class="muted" style="font-size:.85rem">All products are well-stocked.</p>';
     }
 
+    function renderCustomers(customers) {
+      const tbody = document.getElementById('custRows');
+      if (!tbody) return;
+      if (!customers.length) { tbody.innerHTML = '<tr><td colspan="8" class="muted" style="text-align:center;padding:1.5rem">No customers found.</td></tr>'; return; }
+      tbody.innerHTML = customers.map(c => `<tr style="cursor:pointer" onclick="loadCustomerDetail('${c.id}','${esc(c.name)}')">
+        <td><strong>${esc(c.name)}</strong></td>
+        <td>${esc(c.phone)}</td>
+        <td style="text-align:right">${c.points}</td>
+        <td style="text-align:right">${c.completedVisits}${c.upcomingCount > 0 ? ` <span style="font-size:.75rem;color:#2f7a45">(+${c.upcomingCount} upcoming)</span>` : ''}</td>
+        <td style="text-align:right">${money(c.totalSpent)}</td>
+        <td>${c.lastVisit || '<span class="muted">—</span>'}</td>
+        <td>${c.membership ? `<span style="font-size:.78rem;color:${c.membership.status==='active'?'#2f7a45':'#a9772a'}">${esc(c.membership.planName)}</span>` : '<span class="muted">—</span>'}</td>
+        <td>${c.marketingOptOut ? '<span class="muted" style="font-size:.78rem">Out</span>' : '<span style="font-size:.78rem;color:#2f7a45">In</span>'}</td>
+      </tr>`).join('');
+    }
+
+    async function loadCustomers(q) {
+      const qs = q ? '?q=' + encodeURIComponent(q) : '';
+      const data = await fetch('/api/admin/customers' + qs).then(r => r.json()).catch(() => ({ customers: [] }));
+      renderCustomers(data.customers || []);
+    }
+
+    async function loadCustomerDetail(id, name) {
+      const detailEl = document.getElementById('cust-detail');
+      const nameEl = document.getElementById('cust-detail-name');
+      const bodyEl = document.getElementById('cust-detail-body');
+      detailEl.style.display = '';
+      nameEl.textContent = name;
+      bodyEl.innerHTML = '<span class="muted">Loading…</span>';
+      detailEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      const data = await fetch('/api/admin/customers/' + id + '/bookings').then(r => r.json()).catch(() => null);
+      if (!data) { bodyEl.innerHTML = '<span class="muted">Could not load history.</span>'; return; }
+      const c = data.customer;
+      const bks = data.bookings || [];
+      bodyEl.innerHTML = `
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:.8rem;font-size:.88rem">
+          ${c.email ? `<span><strong>Email:</strong> ${esc(c.email)}</span>` : ''}
+          <span><strong>Points:</strong> ${c.points || 0}</span>
+          <span><strong>Total bookings:</strong> ${bks.length}</span>
+        </div>
+        ${bks.length ? `<div style="overflow-x:auto"><table class="bookings" style="font-size:.85rem">
+          <thead><tr><th>Date</th><th>Service</th><th>Artist</th><th>Status</th><th>Price</th><th>Ref</th></tr></thead>
+          <tbody>${bks.map(b => `<tr>
+            <td>${b.date}</td>
+            <td>${esc(b.serviceName)}</td>
+            <td>${esc(b.staffName || '—')}</td>
+            <td><span class="status ${b.status}">${b.status}</span></td>
+            <td>${money(b.price)}</td>
+            <td style="font-size:.78rem">${esc(b.ref)}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>` : '<p class="muted" style="margin:0">No bookings yet.</p>'}`;
+    }
+    window.loadCustomerDetail = loadCustomerDetail;
+
     async function loadBackups() {
       const data = await fetch('/api/admin/backups').then(r => r.json()).catch(() => ({ backups: [] }));
       const el = document.getElementById('backup-list');
@@ -1735,6 +1814,15 @@
         setTimeout(() => { msg.textContent = ''; }, 4000);
       });
       document.getElementById('audit-refresh').addEventListener('click', loadAuditLog);
+      document.getElementById('cust-search-btn').addEventListener('click', () => {
+        loadCustomers(document.getElementById('cust-search').value.trim());
+      });
+      document.getElementById('cust-search').addEventListener('keydown', e => {
+        if (e.key === 'Enter') loadCustomers(e.target.value.trim());
+      });
+      document.getElementById('cust-detail-close').addEventListener('click', () => {
+        document.getElementById('cust-detail').style.display = 'none';
+      });
       document.getElementById('daily-date').value = todayISO();
       document.getElementById('daily-view').addEventListener('click', viewDailySheet);
       document.getElementById('daily-print').addEventListener('click', () => window.print());
