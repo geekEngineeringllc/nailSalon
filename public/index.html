@@ -235,6 +235,18 @@
         ? items.map((item, i) => galleryTile(item, i)).join('')
         : Array.from({length:8}, (_,i) => `<a class="tile" href="gallery.html" style="background:linear-gradient(135deg,${GRADS[i]},${GRADS[(i+3)%GRADS.length]})">✨</a>`).join('');
 
+      // AggregateRating JSON-LD (dynamic — bots that execute JS benefit; static bots get the base BeautySalon block)
+      if (stats && stats.avgRating != null && stats.totalReviews > 0) {
+        const ld = document.createElement('script');
+        ld.type = 'application/ld+json';
+        ld.textContent = JSON.stringify({
+          '@context': 'https://schema.org', '@type': 'BeautySalon',
+          'name': 'Lumière Beauty & Nail Studio',
+          'aggregateRating': { '@type': 'AggregateRating', 'ratingValue': String(stats.avgRating), 'reviewCount': String(stats.totalReviews) }
+        });
+        document.head.appendChild(ld);
+      }
+
       // visit section — address, phone, email, hours table
       const s = cfg.salon || {};
       const fmtTime = t => { const [h, m] = (t||'').split(':'); const hr = +h; return (hr%12||12) + (m&&m!=='00' ? ':'+m : '') + (hr<12?'am':'pm'); };

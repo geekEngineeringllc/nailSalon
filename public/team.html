@@ -50,6 +50,17 @@
         });
       });
 
+      // Person JSON-LD for each staff member
+      const personLd = document.createElement('script');
+      personLd.type = 'application/ld+json';
+      personLd.textContent = JSON.stringify(CFG.staff.map(p => ({
+        '@context': 'https://schema.org', '@type': 'Person',
+        'name': p.name, 'jobTitle': p.title,
+        'worksFor': { '@type': 'BeautySalon', 'name': 'Lumière Beauty & Nail Studio' },
+        ...(p.specialties && p.specialties.length ? { 'knowsAbout': p.specialties } : {})
+      })));
+      document.head.appendChild(personLd);
+
       document.getElementById('team').innerHTML = CFG.staff.map(p => {
         const initials = p.name.split(' ').map(w => w[0]).join('');
         const firstName = p.name.split(' ')[0];
