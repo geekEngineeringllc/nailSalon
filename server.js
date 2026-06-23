@@ -259,7 +259,8 @@ function serveStatic(req, res) {
     }
     const ext  = path.extname(filePath);
     const mime = MIME[ext] || 'application/octet-stream';
-    const cc   = CACHE_CTRL[ext] || 'no-cache';
+    // Service worker must not be cached to allow prompt updates
+    const cc   = urlPath === '/sw.js' ? 'no-store' : (CACHE_CTRL[ext] || 'no-cache');
     const wantsGzip = (req.headers['accept-encoding'] || '').includes('gzip');
     if (wantsGzip && COMPRESSIBLE.has(mime)) {
       zlib.gzip(data, (e, gz) => {
@@ -2619,6 +2620,29 @@ async function handleAPI(req, res, url) {
       return res.end(header + csv);
     }
     return sendJSON(res, 200, { rows, totals, from, to });
+  }
+
+  // GET /api/admin/reports/chart?days=N — daily revenue + booking counts for chart
+  if (req.method === 'GET' && url.pathname === '/api/admin/reports/chart') {
+    const days = Math.min(90, Math.max(7, parseInt(q.get('days') || '30', 10)));
+    const today = new Date(); today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+    const todayStr = today.toISOString().slice(0, 10);
+    const startDate = new Date(today); startDate.setDate(startDate.getDate() - (days - 1));
+    const startStr = startDate.toISOString().slice(0, 10);
+    const byDate = {};
+    for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+      byDate[d.toISOString().slice(0, 10)] = { revenue: 0, tips: 0, bookings: 0 };
+    }
+    (db.bookings || []).forEach((b) => {
+      if (b.status !== 'completed') return;
+      if (b.date < startStr || b.date > todayStr) return;
+      if (!byDate[b.date]) return;
+      byDate[b.date].revenue = Math.round((byDate[b.date].revenue + (b.price || 0)) * 100) / 100;
+      byDate[b.date].tips = Math.round((byDate[b.date].tips + (b.tip || 0)) * 100) / 100;
+      byDate[b.date].bookings += 1;
+    });
+    const points = Object.entries(byDate).map(([date, v]) => ({ date, ...v, total: Math.round((v.revenue + v.tips) * 100) / 100 }));
+    return sendJSON(res, 200, { points, days });
   }
 
   // POST /api/admin/backup — trigger a manual backup immediately

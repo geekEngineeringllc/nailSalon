@@ -467,3 +467,7 @@ async function renderChrome() {
 }
 
 document.addEventListener('DOMContentLoaded', renderChrome);
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}

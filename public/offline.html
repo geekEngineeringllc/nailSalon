@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offline — Lumière Beauty &amp; Nail Studio</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#b0657a">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <style>
+    .offline-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; text-align:center; padding:3rem 1.5rem; }
+    .offline-icon { font-size:3rem; margin-bottom:1rem; }
+  </style>
+</head>
+<body>
+  <header class="site-header" id="site-header"></header>
+  <main>
+    <div class="offline-wrap">
+      <div class="offline-icon">📡</div>
+      <h2>You're offline</h2>
+      <p class="muted" style="max-width:26rem;margin-bottom:1.6rem">
+        It looks like you've lost your internet connection. Check your Wi-Fi or mobile data, then try again.
+      </p>
+      <div style="display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center">
+        <button class="btn btn-primary" onclick="window.location.reload()">Try again</button>
+        <a class="btn btn-ghost" href="/">Go home</a>
+      </div>
+      <p class="muted" style="font-size:.83rem;margin-top:2rem">
+        To book or manage your appointment by phone, call us at <span id="offline-phone">the salon</span>.
+      </p>
+    </div>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="/js/common.js?v=6"></script>
+  <script>
+    // Try to show the salon phone number from the cached config
+    caches.match('/api/config').then(async r => {
+      if (!r) return;
+      const cfg = await r.json().catch(() => null);
+      if (cfg && cfg.salon && cfg.salon.phone) {
+        const el = document.getElementById('offline-phone');
+        if (el) el.innerHTML = `<a href="tel:${cfg.salon.phone.replace(/\D/g,'')}" style="color:var(--rose-deep)">${cfg.salon.phone}</a>`;
+      }
+    }).catch(() => {});
+  </script>
+</body>
+</html>
