@@ -677,7 +677,7 @@
       renderReferrals(refData.referrals || []);
       renderBroadcasts(bcData.broadcasts || []);
       renderReviews(rvData.reviews || []);
-      renderWaitlist(wlData.waitlist || []);
+      renderWaitlist(wlData.waitlist || [], cfg);
       renderGallery(gallData.gallery || []);
       window._products = prodData.products || [];
       renderProducts(window._products);
@@ -1423,19 +1423,25 @@
         : '<tr><td colspan="5" class="muted" style="text-align:center;padding:1.5rem">No referrals yet.</td></tr>';
     }
 
-    function renderWaitlist(entries) {
+    function renderWaitlist(entries, cfg) {
       const STATUS_LABEL = { waiting: 'Waiting', notified: 'Notified' };
       const STATUS_CLS   = { waiting: 'status', notified: 'status confirmed' };
+      const svcMap  = {}; ((cfg || window.__CFG__ || {}).services || []).forEach(s => { svcMap[s.id] = s.name; });
+      const staffMap = {}; ((cfg || window.__CFG__ || {}).staff || []).forEach(p => { staffMap[p.id] = p.name; });
+      const today = new Date().toISOString().slice(0, 10);
       document.getElementById('wlRows').innerHTML = entries.length
-        ? entries.map(w => `<tr>
-            <td style="white-space:nowrap">${w.date}</td>
-            <td style="font-size:.85rem">${esc(w.serviceId)}</td>
-            <td style="font-size:.85rem">${w.staffId === 'any' ? '<span class="muted">Any</span>' : esc(w.staffId)}</td>
-            <td style="font-size:.85rem">${esc(w.customer.name)}</td>
-            <td style="font-size:.82rem">${esc(w.customer.phone)}${w.customer.email ? '<br><span class="muted">'+esc(w.customer.email)+'</span>' : ''}</td>
-            <td><span class="${STATUS_CLS[w.status] || 'status'}">${STATUS_LABEL[w.status] || w.status}</span>${w.notifiedAt ? '<br><span class="muted" style="font-size:.78rem">'+w.notifiedAt.slice(0,10)+'</span>' : ''}</td>
-            <td><button class="btn btn-ghost btn-sm" style="color:var(--rose-deep)" onclick="dismissWL('${w.id}')">Dismiss</button></td>
-          </tr>`).join('')
+        ? entries.map(w => {
+            const isPast = w.date < today;
+            return `<tr${isPast ? ' style="opacity:.55"' : ''}>
+              <td style="white-space:nowrap">${w.date}${isPast ? ' <span class="muted" style="font-size:.75rem">(past)</span>' : ''}</td>
+              <td style="font-size:.85rem">${esc(svcMap[w.serviceId] || w.serviceId)}</td>
+              <td style="font-size:.85rem">${w.staffId === 'any' ? '<span class="muted">Any</span>' : esc(staffMap[w.staffId] || w.staffId)}</td>
+              <td style="font-size:.85rem">${esc(w.customer.name)}</td>
+              <td style="font-size:.82rem">${esc(w.customer.phone)}${w.customer.email ? '<br><span class="muted">'+esc(w.customer.email)+'</span>' : ''}</td>
+              <td><span class="${STATUS_CLS[w.status] || 'status'}">${STATUS_LABEL[w.status] || w.status}</span>${w.notifiedAt ? '<br><span class="muted" style="font-size:.78rem">'+w.notifiedAt.slice(0,10)+'</span>' : ''}</td>
+              <td><button class="btn btn-ghost btn-sm" style="color:var(--rose-deep)" onclick="dismissWL('${w.id}')">Dismiss</button></td>
+            </tr>`;
+          }).join('')
         : '<tr><td colspan="7" class="muted" style="text-align:center;padding:1.5rem">No waitlist entries.</td></tr>';
     }
     async function dismissWL(id) {
