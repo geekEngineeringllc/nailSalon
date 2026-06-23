@@ -47,6 +47,7 @@
       en: {
         eyebrow: 'Book in 4 steps', title: 'Reserve your visit',
         s1: 'Service', s2: 'Artist', s3: 'Date & time', s4: 'Details',
+        lastVisit: svc => `Pre-selected ${svc} from your last visit — change anytime.`,
         // Step 1
         chooseService: 'Choose your service(s)',
         chooseServiceSub: 'Select up to 3 services for this visit.',
@@ -145,6 +146,7 @@
       es: {
         eyebrow: 'Reserva en 4 pasos', title: 'Reserva tu visita',
         s1: 'Servicio', s2: 'Artista', s3: 'Fecha y hora', s4: 'Datos',
+        lastVisit: svc => `Preseleccionamos ${svc} de tu visita anterior — cambia si quieres.`,
         // Step 1
         chooseService: 'Elige tu(s) servicio(s)',
         chooseServiceSub: 'Selecciona hasta 3 servicios para esta visita.',
@@ -266,7 +268,8 @@
                     recurring: { on:false, cadence:'biweekly', count:4 },
                     giftCardCode: '', giftCardInfo: null,
                     usePackageId: null, _mePackages: [],
-                    pointsToRedeem: 0, _mePoints: 0 };
+                    pointsToRedeem: 0, _mePoints: 0,
+                    _lastServiceHint: null };
 
     const todayISO = () => {
       const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -312,6 +315,7 @@
       const price = combined.reduce((s, v) => s + v.price, 0);
       panel.innerHTML = `<h3>${t.chooseService}</h3>
         <p class="muted" style="margin-top:-.4rem">${t.chooseServiceSub}</p>
+        ${state._lastServiceHint ? `<div style="background:var(--rose-deep)0d;border:1px solid var(--rose)40;border-radius:10px;padding:.6rem 1rem;margin-bottom:.4rem;font-size:.85rem;color:var(--rose-deep)">✨ ${t.lastVisit(esc(state._lastServiceHint))}</div>` : ''}
         ${CFG.categories.map(c => `
           <p class="eyebrow" style="margin-top:1.4rem">${c.name}</p>
           <div class="option-grid">
@@ -337,6 +341,7 @@
         } else if (state.serviceIds.length < 3) {
           state.serviceIds = [...state.serviceIds, id];
         }
+        state._lastServiceHint = null;
         state.staffId = null; state.time = null;
         render();
       }));
@@ -728,6 +733,20 @@
         state.customer.email = me.data.customer.email || '';
         state._mePackages = (me.data.customer.packages || []).filter(p => p.paymentStatus === 'paid' && p.remaining > 0);
         state._mePoints = me.data.customer.points || 0;
+        // Pre-select last booked service when no ?service= URL param was provided
+        if (!pre && me.data.bookings && me.data.bookings.length) {
+          const past = me.data.bookings
+            .filter(b => b.status !== 'cancelled')
+            .sort((a, b) => b.date.localeCompare(a.date) || (b.time || '').localeCompare(a.time || ''));
+          if (past.length) {
+            const svcId = (past[0].serviceIds && past[0].serviceIds[0]) || past[0].serviceId;
+            const lastSvc = svcId && CFG.services.find(s => s.id === svcId);
+            if (lastSvc) {
+              state.serviceIds = [lastSvc.id];
+              state._lastServiceHint = lastSvc.name;
+            }
+          }
+        }
       }
       render();
     });
