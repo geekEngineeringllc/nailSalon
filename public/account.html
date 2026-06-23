@@ -16,19 +16,25 @@
     <section class="container" id="content" style="min-height:50vh"></section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js?v=4"></script>
+  <script src="js/common.js?v=5"></script>
   <script>
     const todayISO = () => { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
     function bookingCard(b, allowManage) {
       const actions = allowManage
-        ? `<a class="btn btn-ghost btn-sm" href="manage.html">Manage</a>`
+        ? `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:.5rem">
+             <div class="price">${money(b.price)}</div>
+             <div style="display:flex;gap:.4rem;flex-wrap:wrap;justify-content:flex-end">
+               <button class="btn btn-ghost btn-sm" onclick="openReschedule('${b.id}','${esc(b.serviceName)}','${b.date}','${b.staffId || ''}','${b.serviceId || ''}')">Reschedule</button>
+               <button class="btn btn-ghost btn-sm" style="color:#b94646" onclick="cancelBooking('${b.id}','${esc(b.ref)}')">Cancel</button>
+             </div>
+           </div>`
         : `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem">
              <div class="price">${money(b.price)}</div>
              ${b.status !== 'cancelled' && b.serviceId
                ? `<a class="btn btn-ghost btn-sm" href="booking.html?service=${b.serviceId}">Rebook →</a>`
                : ''}
            </div>`;
-      return `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+      return `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap" id="bcard-${b.id}">
         <div>
           <div style="font-family:var(--font-display);font-size:1.2rem">${esc(b.serviceName)}</div>
           <div class="muted" style="font-size:.9rem">${b.date} · ${b.time} · with ${esc(b.staffName)}</div>
@@ -101,6 +107,7 @@
           <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
             <code style="background:var(--bg-soft);padding:.5rem 1rem;border-radius:8px;font-size:1.1rem;letter-spacing:.1em">${esc(refData.referralCode)}</code>
             <button class="btn btn-ghost btn-sm" id="copyRef">Copy code</button>
+            <button class="btn btn-ghost btn-sm" id="shareRef">Share link</button>
           </div>
           ${refData.totalReferred > 0 ? `<p class="muted" style="font-size:.85rem;margin-bottom:0;margin-top:.8rem">${refData.claimedReferrals} of ${refData.totalReferred} referral${refData.totalReferred!==1?'s':''} redeemed · ${refData.pendingReferrals} pending</p>` : ''}
         </div>` : ''}
@@ -182,6 +189,16 @@
       if (copyBtn) copyBtn.addEventListener('click', () => {
         navigator.clipboard.writeText(copyBtn.closest('.card').querySelector('code').textContent).then(() => toast('Code copied!')).catch(() => toast('Select and copy the code manually.'));
       });
+      const shareBtn = document.getElementById('shareRef');
+      if (shareBtn) shareBtn.addEventListener('click', () => {
+        const code = shareBtn.closest('.card').querySelector('code').textContent.trim();
+        const url = location.origin + '/register.html?ref=' + encodeURIComponent(code);
+        if (navigator.share) {
+          navigator.share({ title: 'Join Lumière Beauty & Nail Studio', text: 'Sign up for Lumière and get 100 bonus reward points! Use my referral link:', url });
+        } else {
+          navigator.clipboard.writeText(url).then(() => toast('Referral link copied!')).catch(() => toast('Copy this link: ' + url));
+        }
+      });
       const mktOptoutBtn = document.getElementById('mktOptout');
       if (mktOptoutBtn) mktOptoutBtn.addEventListener('click', async () => {
         const r = await api.marketingOptout();
@@ -203,12 +220,115 @@
         });
       });
     }
+
+    // ---- Inline booking management ----
+
+    async function cancelBooking(id, ref) {
+      if (!confirm(`Cancel booking ${ref}? This cannot be undone.`)) return;
+      const card = document.getElementById('bcard-' + id);
+      if (card) { card.style.opacity = '.5'; card.style.pointerEvents = 'none'; }
+      const r = await api.cancel(id);
+      if (r.ok) {
+        toast('Booking cancelled.');
+        if (card) {
+          card.style.opacity = '1'; card.style.pointerEvents = '';
+          const statusEl = card.querySelector('.status');
+          if (statusEl) { statusEl.className = 'status cancelled'; statusEl.textContent = 'cancelled'; }
+          const btns = card.querySelectorAll('button');
+          btns.forEach(b => b.remove());
+        }
+      } else {
+        if (card) { card.style.opacity = '1'; card.style.pointerEvents = ''; }
+        toast(r.data && r.data.error || 'Could not cancel. Please call us.');
+      }
+    }
+
+    let _rsBookingId = null;
+    function openReschedule(id, name, currentDate, staffId, serviceId) {
+      _rsBookingId = id;
+      document.getElementById('rs-title').textContent = name;
+      document.getElementById('rs-date').value = currentDate;
+      document.getElementById('rs-slots').innerHTML = '';
+      document.getElementById('rs-confirm').disabled = true;
+      document.getElementById('rs-svcId').value = serviceId || '';
+      document.getElementById('rs-staffId').value = staffId || '';
+      document.getElementById('rs-modal').style.display = 'flex';
+      loadRsSlots();
+    }
+
+    async function loadRsSlots() {
+      const date = document.getElementById('rs-date').value;
+      const svcId = document.getElementById('rs-svcId').value;
+      const staffId = document.getElementById('rs-staffId').value;
+      if (!date || !svcId) return;
+      document.getElementById('rs-slots').innerHTML = '<span class="muted" style="font-size:.85rem">Loading slots…</span>';
+      document.getElementById('rs-confirm').disabled = true;
+      const data = await api.availability(svcId, staffId || 'any', date).catch(() => null);
+      const slots = data && data.slots ? data.slots.filter(s => s.available) : [];
+      if (!slots.length) {
+        document.getElementById('rs-slots').innerHTML = '<span class="muted" style="font-size:.85rem">No availability on this date.</span>';
+        return;
+      }
+      document.getElementById('rs-slots').innerHTML = slots.map(s =>
+        `<button class="btn btn-ghost btn-sm rs-slot" data-time="${s.time}" style="font-size:.82rem">${s.time}</button>`
+      ).join('');
+      document.querySelectorAll('.rs-slot').forEach(btn => btn.addEventListener('click', () => {
+        document.querySelectorAll('.rs-slot').forEach(x => x.style.background = '');
+        btn.style.background = 'var(--rose)'; btn.style.color = '#fff';
+        document.getElementById('rs-confirm').dataset.time = btn.dataset.time;
+        document.getElementById('rs-confirm').disabled = false;
+      }));
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       const [meRes, cfg] = await Promise.all([api.me(), api.config()]);
       if (!meRes.ok) { location.assign('login.html'); return; }
       const refData = await fetch('/api/referral').then(r => r.json()).catch(() => null);
       render(meRes.data, cfg, refData);
+
+      document.getElementById('rs-date').addEventListener('change', loadRsSlots);
+      document.getElementById('rs-close').addEventListener('click', () => {
+        document.getElementById('rs-modal').style.display = 'none';
+        _rsBookingId = null;
+      });
+      document.getElementById('rs-confirm').addEventListener('click', async () => {
+        const date = document.getElementById('rs-date').value;
+        const time = document.getElementById('rs-confirm').dataset.time;
+        if (!date || !time || !_rsBookingId) return;
+        document.getElementById('rs-confirm').disabled = true;
+        document.getElementById('rs-confirm').textContent = 'Saving…';
+        const r = await api.reschedule(_rsBookingId, date, time);
+        if (r.ok) {
+          toast('Booking rescheduled to ' + date + ' at ' + time + '.');
+          document.getElementById('rs-modal').style.display = 'none';
+          location.reload();
+        } else {
+          document.getElementById('rs-confirm').disabled = false;
+          document.getElementById('rs-confirm').textContent = 'Confirm reschedule';
+          toast(r.data && r.data.error || 'Could not reschedule. Please call us.');
+        }
+      });
     });
+
+    window.cancelBooking = cancelBooking;
+    window.openReschedule = openReschedule;
   </script>
+
+  <!-- Reschedule modal -->
+  <div id="rs-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;padding:2rem;width:min(440px,92vw);max-height:90vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
+        <h3 style="margin:0;font-size:1.1rem">Reschedule</h3>
+        <button id="rs-close" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--muted);line-height:1">&times;</button>
+      </div>
+      <p class="muted" style="margin:0 0 1rem;font-size:.9rem" id="rs-title"></p>
+      <input type="hidden" id="rs-svcId"><input type="hidden" id="rs-staffId">
+      <label style="display:block;font-size:.85rem;font-weight:600;margin-bottom:.35rem">New date</label>
+      <input type="date" id="rs-date" style="width:100%;box-sizing:border-box;padding:.55rem .8rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:.9rem;margin-bottom:1rem">
+      <label style="display:block;font-size:.85rem;font-weight:600;margin-bottom:.5rem">Available times</label>
+      <div id="rs-slots" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.2rem"></div>
+      <button id="rs-confirm" class="btn btn-primary" style="width:100%" disabled>Confirm reschedule</button>
+    </div>
+  </div>
 </body>
 </html>
