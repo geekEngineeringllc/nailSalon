@@ -8,70 +8,478 @@
     "instagram": "https://www.instagram.com/lumierestudio",
     "facebook": "https://www.facebook.com/lumierestudio",
     "hours": [
-      { "day": "Monday", "open": "09:00", "close": "18:00" },
-      { "day": "Tuesday", "open": "09:00", "close": "18:00" },
-      { "day": "Wednesday", "open": "09:00", "close": "19:00" },
-      { "day": "Thursday", "open": "09:00", "close": "19:00" },
-      { "day": "Friday", "open": "09:00", "close": "20:00" },
-      { "day": "Saturday", "open": "08:00", "close": "18:00" },
-      { "day": "Sunday", "open": "10:00", "close": "16:00" }
-    ]
+      {
+        "day": "Monday",
+        "open": "09:00",
+        "close": "18:00"
+      },
+      {
+        "day": "Tuesday",
+        "open": "09:00",
+        "close": "18:00"
+      },
+      {
+        "day": "Wednesday",
+        "open": "09:00",
+        "close": "19:00"
+      },
+      {
+        "day": "Thursday",
+        "open": "09:00",
+        "close": "19:00"
+      },
+      {
+        "day": "Friday",
+        "open": "09:00",
+        "close": "20:00"
+      },
+      {
+        "day": "Saturday",
+        "open": "08:00",
+        "close": "18:00"
+      },
+      {
+        "day": "Sunday",
+        "open": "10:00",
+        "close": "16:00"
+      }
+    ],
+    "city": "Riverside",
+    "region": "CA",
+    "country": "US",
+    "postalCode": ""
   },
   "categories": [
-    { "id": "nails", "name": "Nails", "blurb": "Manicures, pedicures, gel, acrylic & nail art." },
-    { "id": "hair", "name": "Hair", "blurb": "Cuts, color, treatments & event styling." },
-    { "id": "skin", "name": "Skin & Brows", "blurb": "Facials, waxing, threading, lashes & brows." },
-    { "id": "makeup", "name": "Makeup", "blurb": "Everyday glam, bridal & special events." }
+    {
+      "id": "nails",
+      "name": "Nails",
+      "blurb": "Manicures, pedicures, gel, acrylic & nail art."
+    },
+    {
+      "id": "hair",
+      "name": "Hair",
+      "blurb": "Cuts, color, treatments & event styling."
+    },
+    {
+      "id": "skin",
+      "name": "Skin & Brows",
+      "blurb": "Facials, waxing, threading, lashes & brows."
+    },
+    {
+      "id": "makeup",
+      "name": "Makeup",
+      "blurb": "Everyday glam, bridal & special events."
+    }
   ],
   "services": [
-    { "id": "classic-mani", "category": "nails", "name": "Classic Manicure", "duration": 30, "price": 28, "description": "Shape, cuticle care, buff, and a flawless polish of your choice.", "staffIds": ["ava", "noor", "lily"] },
-    { "id": "gel-mani", "category": "nails", "name": "Gel Manicure", "duration": 45, "price": 42, "description": "Long-lasting, high-shine gel color cured to a chip-free finish.", "staffIds": ["ava", "noor", "lily"] },
-    { "id": "deluxe-pedi", "category": "nails", "name": "Deluxe Spa Pedicure", "duration": 60, "price": 58, "description": "Warm soak, exfoliating scrub, paraffin, massage, and polish.", "staffIds": ["noor", "lily"], "resourceId": "pedi-chairs" },
-    { "id": "acrylic-full", "category": "nails", "name": "Acrylic Full Set", "duration": 75, "price": 65, "description": "Custom-sculpted acrylic extensions in your chosen shape and length.", "staffIds": ["ava", "lily"] },
-    { "id": "nail-art", "category": "nails", "name": "Nail Art (per nail)", "duration": 15, "price": 8, "description": "Hand-painted designs, chrome, foils, gems and seasonal looks.", "staffIds": ["lily"] },
-    { "id": "haircut-style", "category": "hair", "name": "Cut & Style", "duration": 45, "price": 55, "description": "Consultation, precision cut, and a finished blow-dry style.", "staffIds": ["maya", "ava"] },
-    { "id": "full-color", "category": "hair", "name": "Full Color", "duration": 120, "price": 110, "description": "All-over permanent color with gloss and conditioning finish.", "staffIds": ["maya"], "depositRequired": true },
-    { "id": "balayage", "category": "hair", "name": "Balayage", "duration": 180, "price": 185, "description": "Hand-painted, sun-kissed dimension tailored to your tone.", "staffIds": ["maya"], "depositRequired": true },
-    { "id": "blowout", "category": "hair", "name": "Blowout", "duration": 40, "price": 45, "description": "Smooth, voluminous, camera-ready finish for any occasion.", "staffIds": ["maya", "ava"] },
-    { "id": "signature-facial", "category": "skin", "name": "Signature Facial", "duration": 60, "price": 75, "description": "Cleanse, exfoliate, extract, mask and massage for glowing skin.", "staffIds": ["noor"], "resourceId": "facial-room", "depositRequired": true },
-    { "id": "brow-shape", "category": "skin", "name": "Brow Shape & Tint", "duration": 30, "price": 32, "description": "Threading or waxing plus tint for defined, polished brows.", "staffIds": ["noor", "lily"] },
-    { "id": "lash-lift", "category": "skin", "name": "Lash Lift & Tint", "duration": 50, "price": 68, "description": "Lifted, darkened lashes for an effortless wide-awake look.", "staffIds": ["noor"] },
-    { "id": "leg-wax", "category": "skin", "name": "Full Leg Wax", "duration": 45, "price": 60, "description": "Smooth, long-lasting results with gentle premium wax.", "staffIds": ["noor", "lily"] },
-    { "id": "event-makeup", "category": "makeup", "name": "Event Makeup", "duration": 60, "price": 85, "description": "Custom glam for parties, photoshoots and nights out.", "staffIds": ["ava", "maya"], "depositRequired": true },
-    { "id": "bridal-makeup", "category": "makeup", "name": "Bridal Makeup Trial", "duration": 90, "price": 140, "description": "A relaxed trial to perfect your wedding-day look in advance.", "staffIds": ["ava"], "depositRequired": true }
+    {
+      "id": "classic-mani",
+      "category": "nails",
+      "name": "Classic Manicure",
+      "duration": 30,
+      "price": 28,
+      "description": "Shape, cuticle care, buff, and a flawless polish of your choice.",
+      "staffIds": [
+        "ava",
+        "noor",
+        "lily"
+      ]
+    },
+    {
+      "id": "gel-mani",
+      "category": "nails",
+      "name": "Gel Manicure",
+      "duration": 45,
+      "price": 42,
+      "description": "Long-lasting, high-shine gel color cured to a chip-free finish.",
+      "staffIds": [
+        "ava",
+        "noor",
+        "lily"
+      ]
+    },
+    {
+      "id": "deluxe-pedi",
+      "category": "nails",
+      "name": "Deluxe Spa Pedicure",
+      "duration": 60,
+      "price": 58,
+      "description": "Warm soak, exfoliating scrub, paraffin, massage, and polish.",
+      "staffIds": [
+        "noor",
+        "lily"
+      ],
+      "resourceId": "pedi-chairs"
+    },
+    {
+      "id": "acrylic-full",
+      "category": "nails",
+      "name": "Acrylic Full Set",
+      "duration": 75,
+      "price": 65,
+      "description": "Custom-sculpted acrylic extensions in your chosen shape and length.",
+      "staffIds": [
+        "ava",
+        "lily"
+      ]
+    },
+    {
+      "id": "nail-art",
+      "category": "nails",
+      "name": "Nail Art (per nail)",
+      "duration": 15,
+      "price": 8,
+      "description": "Hand-painted designs, chrome, foils, gems and seasonal looks.",
+      "staffIds": [
+        "lily"
+      ]
+    },
+    {
+      "id": "haircut-style",
+      "category": "hair",
+      "name": "Cut & Style",
+      "duration": 45,
+      "price": 55,
+      "description": "Consultation, precision cut, and a finished blow-dry style.",
+      "staffIds": [
+        "maya",
+        "ava"
+      ]
+    },
+    {
+      "id": "full-color",
+      "category": "hair",
+      "name": "Full Color",
+      "duration": 120,
+      "price": 110,
+      "description": "All-over permanent color with gloss and conditioning finish.",
+      "staffIds": [
+        "maya"
+      ],
+      "depositRequired": true
+    },
+    {
+      "id": "balayage",
+      "category": "hair",
+      "name": "Balayage",
+      "duration": 180,
+      "price": 185,
+      "description": "Hand-painted, sun-kissed dimension tailored to your tone.",
+      "staffIds": [
+        "maya"
+      ],
+      "depositRequired": true
+    },
+    {
+      "id": "blowout",
+      "category": "hair",
+      "name": "Blowout",
+      "duration": 40,
+      "price": 45,
+      "description": "Smooth, voluminous, camera-ready finish for any occasion.",
+      "staffIds": [
+        "maya",
+        "ava"
+      ]
+    },
+    {
+      "id": "signature-facial",
+      "category": "skin",
+      "name": "Signature Facial",
+      "duration": 60,
+      "price": 75,
+      "description": "Cleanse, exfoliate, extract, mask and massage for glowing skin.",
+      "staffIds": [
+        "noor"
+      ],
+      "resourceId": "facial-room",
+      "depositRequired": true
+    },
+    {
+      "id": "brow-shape",
+      "category": "skin",
+      "name": "Brow Shape & Tint",
+      "duration": 30,
+      "price": 32,
+      "description": "Threading or waxing plus tint for defined, polished brows.",
+      "staffIds": [
+        "noor",
+        "lily"
+      ]
+    },
+    {
+      "id": "lash-lift",
+      "category": "skin",
+      "name": "Lash Lift & Tint",
+      "duration": 50,
+      "price": 68,
+      "description": "Lifted, darkened lashes for an effortless wide-awake look.",
+      "staffIds": [
+        "noor"
+      ]
+    },
+    {
+      "id": "leg-wax",
+      "category": "skin",
+      "name": "Full Leg Wax",
+      "duration": 45,
+      "price": 60,
+      "description": "Smooth, long-lasting results with gentle premium wax.",
+      "staffIds": [
+        "noor",
+        "lily"
+      ]
+    },
+    {
+      "id": "event-makeup",
+      "category": "makeup",
+      "name": "Event Makeup",
+      "duration": 60,
+      "price": 85,
+      "description": "Custom glam for parties, photoshoots and nights out.",
+      "staffIds": [
+        "ava",
+        "maya"
+      ],
+      "depositRequired": true
+    },
+    {
+      "id": "bridal-makeup",
+      "category": "makeup",
+      "name": "Bridal Makeup Trial",
+      "duration": 90,
+      "price": 140,
+      "description": "A relaxed trial to perfect your wedding-day look in advance.",
+      "staffIds": [
+        "ava"
+      ],
+      "depositRequired": true
+    }
   ],
   "staff": [
-    { "id": "ava", "name": "Ava Bennett", "title": "Senior Nail & Makeup Artist", "bio": "Ten years turning nails and faces into art. Loves clean lines and bold color.", "specialties": ["Acrylics", "Nail Art", "Glam Makeup"] },
-    { "id": "noor", "name": "Noor Haddad", "title": "Esthetician & Nail Tech", "bio": "Skin-first philosophy with a gentle, calming touch your face will thank you for.", "specialties": ["Facials", "Lashes", "Pedicures"] },
-    { "id": "lily", "name": "Lily Tran", "title": "Nail Artist", "bio": "The designs on your feed? She can do those. Detail obsessed and proud of it.", "specialties": ["Nail Art", "Gel", "Brows"] },
-    { "id": "maya", "name": "Maya Rivera", "title": "Master Colorist & Stylist", "bio": "Balayage specialist who treats every head of hair like a personal canvas.", "specialties": ["Balayage", "Color", "Blowouts"] }
+    {
+      "id": "ava",
+      "name": "Ava Bennett",
+      "title": "Senior Nail & Makeup Artist",
+      "bio": "Ten years turning nails and faces into art. Loves clean lines and bold color.",
+      "specialties": [
+        "Acrylics",
+        "Nail Art",
+        "Glam Makeup"
+      ]
+    },
+    {
+      "id": "noor",
+      "name": "Noor Haddad",
+      "title": "Esthetician & Nail Tech",
+      "bio": "Skin-first philosophy with a gentle, calming touch your face will thank you for.",
+      "specialties": [
+        "Facials",
+        "Lashes",
+        "Pedicures"
+      ]
+    },
+    {
+      "id": "lily",
+      "name": "Lily Tran",
+      "title": "Nail Artist",
+      "bio": "The designs on your feed? She can do those. Detail obsessed and proud of it.",
+      "specialties": [
+        "Nail Art",
+        "Gel",
+        "Brows"
+      ]
+    },
+    {
+      "id": "maya",
+      "name": "Maya Rivera",
+      "title": "Master Colorist & Stylist",
+      "bio": "Balayage specialist who treats every head of hair like a personal canvas.",
+      "specialties": [
+        "Balayage",
+        "Color",
+        "Blowouts"
+      ]
+    }
   ],
   "resources": [
-    { "id": "pedi-chairs", "name": "Pedicure chairs", "capacity": 2 },
-    { "id": "facial-room", "name": "Facial room", "capacity": 1 }
+    {
+      "id": "pedi-chairs",
+      "name": "Pedicure chairs",
+      "capacity": 2
+    },
+    {
+      "id": "facial-room",
+      "name": "Facial room",
+      "capacity": 1
+    }
   ],
   "packages": [
-    { "id": "gel-6pack", "name": "Gel Mani 6-Pack", "serviceId": "gel-mani", "sessions": 6, "price": 210, "description": "Six gel manicures — save $42 versus paying each visit.", "active": true },
-    { "id": "facial-trio", "name": "Glow Facial Trio", "serviceId": "signature-facial", "sessions": 3, "price": 195, "description": "Three signature facials at a members' rate.", "active": true }
+    {
+      "id": "gel-6pack",
+      "name": "Gel Mani 6-Pack",
+      "serviceId": "gel-mani",
+      "sessions": 6,
+      "price": 210,
+      "description": "Six gel manicures — save $42 versus paying each visit.",
+      "active": true
+    },
+    {
+      "id": "facial-trio",
+      "name": "Glow Facial Trio",
+      "serviceId": "signature-facial",
+      "sessions": 3,
+      "price": 195,
+      "description": "Three signature facials at a members' rate.",
+      "active": true
+    }
   ],
   "bookings": [],
   "giftCards": [],
   "gallery": [
-    { "id": "g1", "category": "nails", "title": "Chrome ombré",       "emoji": "💅", "imageUrl": "", "caption": "Mirror-finish ombré with a soft rose-to-silver fade.", "sortOrder": 1 },
-    { "id": "g2", "category": "nails", "title": "Soft floral art",    "emoji": "🌸", "imageUrl": "", "caption": "Hand-painted spring blooms on nude gel.", "sortOrder": 2 },
-    { "id": "g3", "category": "nails", "title": "French with foils",  "emoji": "✨", "imageUrl": "", "caption": "Classic French tip elevated with gold foil accents.", "sortOrder": 3 },
-    { "id": "g4", "category": "nails", "title": "Jelly pink gel",     "emoji": "💖", "imageUrl": "", "caption": "Translucent jelly finish — effortlessly fresh.", "sortOrder": 4 },
-    { "id": "g5", "category": "hair",  "title": "Honey balayage",     "emoji": "💇‍♀️", "imageUrl": "", "caption": "Sun-kissed honey tones hand-painted through brunette hair.", "sortOrder": 5 },
-    { "id": "g6", "category": "hair",  "title": "Glossy blowout",     "emoji": "🌟", "imageUrl": "", "caption": "Salon-smooth finish with bounce and shine.", "sortOrder": 6 },
-    { "id": "g7", "category": "hair",  "title": "Event updo",         "emoji": "🎀", "imageUrl": "", "caption": "Romantic twisted updo for weddings and formal events.", "sortOrder": 7 },
-    { "id": "g8", "category": "hair",  "title": "Rich brunette",      "emoji": "🤎", "imageUrl": "", "caption": "Deep, glossy brunette with a full-colour refresh.", "sortOrder": 8 },
-    { "id": "g9", "category": "skin",  "title": "Glow facial",        "emoji": "🧖‍♀️", "imageUrl": "", "caption": "Hydrating glow treatment with vitamin C and hyaluronic.", "sortOrder": 9 },
-    { "id": "g10","category": "skin",  "title": "Lash lift",          "emoji": "👀", "imageUrl": "", "caption": "Lifted, curled lashes that last up to 8 weeks.", "sortOrder": 10 },
-    { "id": "g11","category": "skin",  "title": "Brow shape",         "emoji": "🪶", "imageUrl": "", "caption": "Wax and thread shaping for perfectly arched brows.", "sortOrder": 11 },
-    { "id": "g12","category": "skin",  "title": "Calm & clear",       "emoji": "🌿", "imageUrl": "", "caption": "Purifying facial for sensitive and blemish-prone skin.", "sortOrder": 12 },
-    { "id": "g13","category": "makeup","title": "Soft glam",          "emoji": "💄", "imageUrl": "", "caption": "Neutral tones with a glossy finish — perfect for any occasion.", "sortOrder": 13 },
-    { "id": "g14","category": "makeup","title": "Bridal trial",       "emoji": "👰", "imageUrl": "", "caption": "Flawless all-day bridal look, tested before the big day.", "sortOrder": 14 },
-    { "id": "g15","category": "makeup","title": "Bold lip",           "emoji": "🌹", "imageUrl": "", "caption": "Classic red lip with clean liner and a matte finish.", "sortOrder": 15 },
-    { "id": "g16","category": "makeup","title": "Evening eyes",       "emoji": "🌙", "imageUrl": "", "caption": "Smoky liner and shimmer lid for a show-stopping evening look.", "sortOrder": 16 }
+    {
+      "id": "g1",
+      "category": "nails",
+      "title": "Chrome ombré",
+      "emoji": "💅",
+      "imageUrl": "",
+      "caption": "Mirror-finish ombré with a soft rose-to-silver fade.",
+      "sortOrder": 1
+    },
+    {
+      "id": "g2",
+      "category": "nails",
+      "title": "Soft floral art",
+      "emoji": "🌸",
+      "imageUrl": "",
+      "caption": "Hand-painted spring blooms on nude gel.",
+      "sortOrder": 2
+    },
+    {
+      "id": "g3",
+      "category": "nails",
+      "title": "French with foils",
+      "emoji": "✨",
+      "imageUrl": "",
+      "caption": "Classic French tip elevated with gold foil accents.",
+      "sortOrder": 3
+    },
+    {
+      "id": "g4",
+      "category": "nails",
+      "title": "Jelly pink gel",
+      "emoji": "💖",
+      "imageUrl": "",
+      "caption": "Translucent jelly finish — effortlessly fresh.",
+      "sortOrder": 4
+    },
+    {
+      "id": "g5",
+      "category": "hair",
+      "title": "Honey balayage",
+      "emoji": "💇‍♀️",
+      "imageUrl": "",
+      "caption": "Sun-kissed honey tones hand-painted through brunette hair.",
+      "sortOrder": 5
+    },
+    {
+      "id": "g6",
+      "category": "hair",
+      "title": "Glossy blowout",
+      "emoji": "🌟",
+      "imageUrl": "",
+      "caption": "Salon-smooth finish with bounce and shine.",
+      "sortOrder": 6
+    },
+    {
+      "id": "g7",
+      "category": "hair",
+      "title": "Event updo",
+      "emoji": "🎀",
+      "imageUrl": "",
+      "caption": "Romantic twisted updo for weddings and formal events.",
+      "sortOrder": 7
+    },
+    {
+      "id": "g8",
+      "category": "hair",
+      "title": "Rich brunette",
+      "emoji": "🤎",
+      "imageUrl": "",
+      "caption": "Deep, glossy brunette with a full-colour refresh.",
+      "sortOrder": 8
+    },
+    {
+      "id": "g9",
+      "category": "skin",
+      "title": "Glow facial",
+      "emoji": "🧖‍♀️",
+      "imageUrl": "",
+      "caption": "Hydrating glow treatment with vitamin C and hyaluronic.",
+      "sortOrder": 9
+    },
+    {
+      "id": "g10",
+      "category": "skin",
+      "title": "Lash lift",
+      "emoji": "👀",
+      "imageUrl": "",
+      "caption": "Lifted, curled lashes that last up to 8 weeks.",
+      "sortOrder": 10
+    },
+    {
+      "id": "g11",
+      "category": "skin",
+      "title": "Brow shape",
+      "emoji": "🪶",
+      "imageUrl": "",
+      "caption": "Wax and thread shaping for perfectly arched brows.",
+      "sortOrder": 11
+    },
+    {
+      "id": "g12",
+      "category": "skin",
+      "title": "Calm & clear",
+      "emoji": "🌿",
+      "imageUrl": "",
+      "caption": "Purifying facial for sensitive and blemish-prone skin.",
+      "sortOrder": 12
+    },
+    {
+      "id": "g13",
+      "category": "makeup",
+      "title": "Soft glam",
+      "emoji": "💄",
+      "imageUrl": "",
+      "caption": "Neutral tones with a glossy finish — perfect for any occasion.",
+      "sortOrder": 13
+    },
+    {
+      "id": "g14",
+      "category": "makeup",
+      "title": "Bridal trial",
+      "emoji": "👰",
+      "imageUrl": "",
+      "caption": "Flawless all-day bridal look, tested before the big day.",
+      "sortOrder": 14
+    },
+    {
+      "id": "g15",
+      "category": "makeup",
+      "title": "Bold lip",
+      "emoji": "🌹",
+      "imageUrl": "",
+      "caption": "Classic red lip with clean liner and a matte finish.",
+      "sortOrder": 15
+    },
+    {
+      "id": "g16",
+      "category": "makeup",
+      "title": "Evening eyes",
+      "emoji": "🌙",
+      "imageUrl": "",
+      "caption": "Smoky liner and shimmer lid for a show-stopping evening look.",
+      "sortOrder": 16
+    }
   ]
 }

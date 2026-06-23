@@ -242,6 +242,226 @@ const COMPRESSIBLE = new Set([
   'image/svg+xml',
 ]);
 
+// ---- Dynamic, area-based SEO ------------------------------------------------
+// Public marketing pages get their <title>, description, keywords, canonical,
+// Open Graph / Twitter tags and JSON-LD generated server-side from the LIVE
+// salon settings + service catalog + area — so editing Salon Settings updates
+// search results automatically and nothing is hardcoded in the page heads.
+
+function reqBase(req) {
+  const proto = (req.headers['x-forwarded-proto'] || 'http').split(',')[0].trim();
+  return `${proto}://${req.headers.host || 'localhost'}`;
+}
+function seoEsc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function deriveCity(address) {
+  const parts = String(address || '').split(',').map((s) => s.trim()).filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : '';
+}
+function streetOf(address, city) {
+  if (!address) return '';
+  const parts = String(address).split(',').map((s) => s.trim()).filter(Boolean);
+  if (city && parts.length > 1 && parts[parts.length - 1].toLowerCase() === city.toLowerCase()) parts.pop();
+  return parts.join(', ');
+}
+function humanList(arr) {
+  const a = (arr || []).filter(Boolean);
+  if (!a.length) return 'nails, hair, skin & makeup';
+  if (a.length === 1) return a[0];
+  return a.slice(0, -1).join(', ') + ' & ' + a[a.length - 1];
+}
+// Recursively drop undefined / null / '' / empty-array values for clean JSON-LD.
+function prune(v) {
+  if (Array.isArray(v)) return v.map(prune).filter((x) => x !== undefined);
+  if (v && typeof v === 'object') {
+    const out = {};
+    for (const k of Object.keys(v)) {
+      const pv = prune(v[k]);
+      if (pv === undefined || pv === null || pv === '' || (Array.isArray(pv) && pv.length === 0)) continue;
+      out[k] = pv;
+    }
+    return out;
+  }
+  return v;
+}
+function pageKey(urlPath) {
+  if (urlPath === '/' || urlPath === '/index.html') return 'home';
+  return urlPath.replace(/^\//, '').replace(/\.html$/, '');
+}
+
+const PAGE_SEO = {
+  home:     { title: '{brand} — Beauty & Nail Salon in {city}',
+              desc: '{brand} is a beauty parlor & nail salon in {cityRegion} offering {services}. Book your appointment online in seconds.',
+              type: 'website', themes: ['beauty salon', 'nail salon', 'beauty parlor', 'spa'],
+              crumbs: [['Home', '/']] },
+  services: { title: 'Services & Pricing — {brand} ({city})',
+              desc: "Explore {brand}'s full menu in {city}: {services}. Transparent pricing — book any service online.",
+              type: 'website', themes: ['services', 'pricing', 'manicure', 'pedicure', 'gel nails', 'facial', 'waxing'],
+              crumbs: [['Home', '/'], ['Services', '/services.html']] },
+  booking:  { title: 'Book an Appointment — {brand} in {city}',
+              desc: 'Book your nail, hair, skin or makeup appointment at {brand} in {city} in under a minute.',
+              type: 'website', themes: ['book appointment', 'online booking', 'nail appointment'],
+              crumbs: [['Home', '/'], ['Book', '/booking.html']] },
+  gallery:  { title: 'Gallery — {brand} in {city}',
+              desc: 'Recent nail art, hair color, makeup and skin work from {brand} in {city}.',
+              type: 'website', themes: ['nail art', 'gallery', 'hair color', 'before and after'],
+              crumbs: [['Home', '/'], ['Gallery', '/gallery.html']] },
+  team:     { title: 'Our Team — {brand} in {city}',
+              desc: 'Meet the licensed nail, hair, skin and makeup artists at {brand} in {city}. Book directly with your favorite.',
+              type: 'website', themes: ['nail technician', 'hair stylist', 'beauty artists'],
+              crumbs: [['Home', '/'], ['Team', '/team.html']] },
+  reviews:  { title: 'Guest Reviews — {brand} in {city}',
+              desc: 'Read verified guest reviews for {brand}, a beauty & nail salon in {cityRegion}.',
+              type: 'website', themes: ['reviews', 'ratings', 'testimonials'],
+              crumbs: [['Home', '/'], ['Reviews', '/reviews.html']] },
+  faq:      { title: 'FAQ — {brand} in {city}',
+              desc: 'Answers about booking, services, pricing and policies at {brand} in {city}.',
+              type: 'website', themes: ['faq', 'questions', 'policies'],
+              crumbs: [['Home', '/'], ['FAQ', '/faq.html']] },
+  location: { title: 'Location & Hours — {brand} in {city}',
+              desc: 'Find {brand} in {cityRegion}. Address, opening hours, parking, phone and directions.',
+              type: 'website', themes: ['location', 'hours', 'directions', 'near me'],
+              crumbs: [['Home', '/'], ['Location', '/location.html']] },
+  giftcard: { title: 'Gift Cards — {brand} in {city}',
+              desc: 'Buy or check the balance of a {brand} gift card — the perfect beauty gift in {city}.',
+              type: 'website', themes: ['gift card', 'gift voucher', 'beauty gift'],
+              crumbs: [['Home', '/'], ['Gift Cards', '/giftcard.html']] },
+};
+
+// Local-intent + service-based + global keywords, de-duped and capped.
+function buildKeywords(pageCfg, db, city, region, brand) {
+  const set = new Set();
+  const add = (s) => { const v = String(s || '').trim().toLowerCase(); if (v) set.add(v); };
+  add(brand);
+  ['beauty salon', 'nail salon', 'beauty parlor', 'spa', 'manicure', 'pedicure'].forEach(add);
+  (pageCfg.themes || []).forEach(add);
+  const cats = (db.categories || []).map((c) => (c.name || '').toLowerCase()).filter(Boolean);
+  ['beauty salon', 'nail salon', ...cats.slice(0, 4)].forEach((thing) => {
+    add(`${thing} near me`);
+    if (city) { add(`${thing} ${city}`); add(`${thing} in ${city}`); }
+  });
+  if (city && region) add(`beauty salon ${city} ${region}`);
+  (db.services || []).slice(0, 6).forEach((s) => {
+    add(s.name);
+    if (city) add(`${s.name} ${city}`);
+  });
+  return Array.from(set).slice(0, 24).join(', ');
+}
+
+function buildOfferCatalog(db) {
+  const items = (db.services || []).map((s) => prune({
+    '@type': 'Offer',
+    itemOffered: prune({ '@type': 'Service', name: s.name, description: s.description, category: s.category }),
+    price: s.price != null ? String(s.price) : undefined,
+    priceCurrency: 'USD',
+  }));
+  if (!items.length) return undefined;
+  return { '@type': 'OfferCatalog', name: 'Services', itemListElement: items };
+}
+
+function buildJsonLd(pageCfg, db, base, ctx) {
+  const salon = db.salon || {};
+  const reviewed = (db.bookings || []).filter((b) => b.review && typeof b.review.rating === 'number');
+  let aggregateRating;
+  if (reviewed.length) {
+    const avg = Math.round((reviewed.reduce((s, b) => s + b.review.rating, 0) / reviewed.length) * 10) / 10;
+    aggregateRating = { '@type': 'AggregateRating', ratingValue: String(avg), reviewCount: String(reviewed.length), bestRating: '5', worstRating: '1' };
+  }
+  const biz = prune({
+    '@type': 'BeautySalon',
+    '@id': base + '/#business',
+    name: salon.name,
+    description: ctx.description,
+    url: base + '/',
+    telephone: salon.phone,
+    email: salon.email,
+    image: base + '/favicon.svg',
+    priceRange: '$$',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: streetOf(salon.address, ctx.city),
+      addressLocality: ctx.city,
+      addressRegion: salon.region,
+      postalCode: salon.postalCode,
+      addressCountry: salon.country,
+    },
+    areaServed: ctx.city ? { '@type': 'City', name: ctx.city } : undefined,
+    openingHoursSpecification: (salon.hours || []).map((h) => ({
+      '@type': 'OpeningHoursSpecification', dayOfWeek: h.day, opens: h.open, closes: h.close,
+    })),
+    sameAs: [salon.instagram, salon.facebook].filter(Boolean),
+    hasOfferCatalog: buildOfferCatalog(db),
+    aggregateRating,
+  });
+  const graph = [biz];
+  if (pageCfg.crumbs) {
+    graph.push({
+      '@type': 'BreadcrumbList',
+      itemListElement: pageCfg.crumbs.map((c, i) => ({
+        '@type': 'ListItem', position: i + 1, name: c[0], item: base + (c[1] === '/' ? '/' : c[1]),
+      })),
+    });
+  }
+  return { '@context': 'https://schema.org', '@graph': graph };
+}
+
+// Returns the <head> SEO block for a page, or null if the page isn't a public
+// marketing page we generate SEO for.
+function buildSEO(urlPath, db, base) {
+  const pageCfg = PAGE_SEO[pageKey(urlPath)];
+  if (!pageCfg) return null;
+  const salon = db.salon || {};
+  const brand = salon.name || 'Our Salon';
+  const city = salon.city || deriveCity(salon.address) || '';
+  const region = salon.region || '';
+  const cityRegion = [city, region].filter(Boolean).join(', ') || city || 'our area';
+  // Use each category's primary word so "Skin & Brows" doesn't yield an awkward
+  // "skin & brows & makeup" — the human-readable phrase reads "skin & makeup".
+  const servicesPhrase = humanList((db.categories || []).map((c) => (c.name || '').split(/\s*&\s*|\s+and\s+/i)[0].trim().toLowerCase()));
+  const tokens = { brand, city: city || 'your area', region, cityRegion, services: servicesPhrase };
+  const fill = (s) => String(s).replace(/\{(\w+)\}/g, (_, k) => (tokens[k] != null ? tokens[k] : '')).replace(/\s+/g, ' ').trim();
+  const title = fill(pageCfg.title);
+  const description = fill(pageCfg.desc);
+  const canonical = base + (pageKey(urlPath) === 'home' ? '/' : urlPath);
+  const keywords = buildKeywords(pageCfg, db, city, region, brand);
+  // Escape "<" so the JSON-LD can't break out of the <script> element.
+  const jsonLd = JSON.stringify(buildJsonLd(pageCfg, db, base, { description, city })).replace(/</g, '\\u003c');
+  return [
+    `<title>${seoEsc(title)}</title>`,
+    `<meta name="description" content="${seoEsc(description)}">`,
+    `<meta name="keywords" content="${seoEsc(keywords)}">`,
+    `<link rel="canonical" href="${seoEsc(canonical)}">`,
+    `<meta property="og:type" content="${pageCfg.type || 'website'}">`,
+    `<meta property="og:site_name" content="${seoEsc(brand)}">`,
+    `<meta property="og:title" content="${seoEsc(title)}">`,
+    `<meta property="og:description" content="${seoEsc(description)}">`,
+    `<meta property="og:url" content="${seoEsc(canonical)}">`,
+    `<meta property="og:locale" content="en_US">`,
+    `<meta name="twitter:card" content="summary">`,
+    `<meta name="twitter:title" content="${seoEsc(title)}">`,
+    `<meta name="twitter:description" content="${seoEsc(description)}">`,
+    `<script type="application/ld+json">${jsonLd}</script>`,
+  ].join('\n  ');
+}
+
+// Strip any static title/description/keywords/og/twitter/JSON-LD from the head,
+// then inject the freshly generated block. Pages not in PAGE_SEO pass through.
+function injectSEO(html, urlPath, db, base) {
+  const block = buildSEO(urlPath, db, base);
+  if (!block) return html;
+  const out = html
+    .replace(/\s*<title>[\s\S]*?<\/title>/i, '')
+    .replace(/\s*<meta\s+name=["']description["'][^>]*>/ig, '')
+    .replace(/\s*<meta\s+name=["']keywords["'][^>]*>/ig, '')
+    .replace(/\s*<meta\s+property=["']og:[^"']*["'][^>]*>/ig, '')
+    .replace(/\s*<meta\s+name=["']twitter:[^"']*["'][^>]*>/ig, '')
+    .replace(/\s*<link\s+rel=["']canonical["'][^>]*>/ig, '')
+    .replace(/\s*<script\s+type=["']application\/ld\+json["'][\s\S]*?<\/script>/ig, '');
+  return out.replace(/<head([^>]*)>/i, (m) => `${m}\n  <!-- dynamic SEO (server-rendered from salon settings) -->\n  ${block}`);
+}
+
 function serveStatic(req, res) {
   let urlPath = decodeURIComponent(req.url.split('?')[0]);
   if (urlPath === '/') urlPath = '/index.html';
@@ -261,16 +481,22 @@ function serveStatic(req, res) {
     const mime = MIME[ext] || 'application/octet-stream';
     // Service worker must not be cached to allow prompt updates
     const cc   = urlPath === '/sw.js' ? 'no-store' : (CACHE_CTRL[ext] || 'no-cache');
+    // Inject dynamic, area-based SEO into public marketing pages.
+    let payload = data;
+    if (ext === '.html' && PAGE_SEO[pageKey(urlPath)]) {
+      try { payload = Buffer.from(injectSEO(data.toString('utf8'), urlPath, loadDB(), reqBase(req)), 'utf8'); }
+      catch (e) { payload = data; }
+    }
     const wantsGzip = (req.headers['accept-encoding'] || '').includes('gzip');
     if (wantsGzip && COMPRESSIBLE.has(mime)) {
-      zlib.gzip(data, (e, gz) => {
-        if (e) { res.writeHead(200, { 'Content-Type': mime, 'Cache-Control': cc }); res.end(data); return; }
+      zlib.gzip(payload, (e, gz) => {
+        if (e) { res.writeHead(200, { 'Content-Type': mime, 'Cache-Control': cc }); res.end(payload); return; }
         res.writeHead(200, { 'Content-Type': mime, 'Cache-Control': cc, 'Content-Encoding': 'gzip', 'Vary': 'Accept-Encoding' });
         res.end(gz);
       });
     } else {
       res.writeHead(200, { 'Content-Type': mime, 'Cache-Control': cc });
-      res.end(data);
+      res.end(payload);
     }
   });
 }
@@ -2452,7 +2678,7 @@ async function handleAPI(req, res, url) {
     const myBookings = (db.bookings || [])
       .filter((b) => b.customerId === custId)
       .sort((a, b) => b.date.localeCompare(a.date));
-    return sendJSON(res, 200, { customer: { id: cust.id, name: cust.name, phone: cust.phone, email: cust.email, points: cust.points, birthday: cust.birthday || null }, bookings: myBookings });
+    return sendJSON(res, 200, { customer: { id: cust.id, name: cust.name, phone: cust.phone, email: cust.email, points: cust.points, birthday: cust.birthday || null, adminNotes: cust.adminNotes || '' }, bookings: myBookings });
   }
 
   // POST /api/admin/customers/:id/points { delta, reason } — manual points adjustment
@@ -2470,6 +2696,21 @@ async function handleAPI(req, res, url) {
       saveDB(fresh);
       audit(req, 'points.adjust', { customerId: cust.id, name: cust.name, delta: d, before, after: cust.points, reason: reason || '' });
       return sendJSON(res, 200, { ok: true, customerId: cust.id, points: cust.points, delta: d });
+    });
+  }
+
+  // PATCH /api/admin/customers/:id/notes { notes } — save freeform customer notes
+  if (req.method === 'PATCH' && /^\/api\/admin\/customers\/[^/]+\/notes$/.test(url.pathname)) {
+    const custId = url.pathname.split('/')[4];
+    const { notes } = await readBody(req);
+    return withLock(() => {
+      const fresh = loadDB();
+      const cust = (fresh.customers || []).find((c) => c.id === custId);
+      if (!cust) return sendJSON(res, 404, { error: 'Customer not found.' });
+      cust.adminNotes = typeof notes === 'string' ? notes.trim() : '';
+      saveDB(fresh);
+      audit(req, 'customer.notes', { customerId: cust.id, name: cust.name });
+      return sendJSON(res, 200, { ok: true });
     });
   }
 
@@ -2743,6 +2984,24 @@ async function handleAPI(req, res, url) {
     return sendJSON(res, 200, { entries });
   }
 
+  // PATCH /api/admin/salon — update salon contact info, tagline, social links
+  if (req.method === 'PATCH' && url.pathname === '/api/admin/salon') {
+    const body = await readBody(req);
+    const ALLOWED = ['name', 'tagline', 'phone', 'email', 'address', 'city', 'region', 'country', 'postalCode', 'instagram', 'facebook'];
+    const updates = {};
+    for (const k of ALLOWED) {
+      if (typeof body[k] === 'string') updates[k] = body[k].trim();
+    }
+    if (!updates.name || updates.name.length < 2) return sendJSON(res, 400, { error: 'Salon name is required.' });
+    return withLock(() => {
+      const fresh = loadDB();
+      Object.assign(fresh.salon, updates);
+      saveDB(fresh);
+      audit(req, 'admin.salon.update', updates);
+      return sendJSON(res, 200, { ok: true, salon: fresh.salon });
+    });
+  }
+
   return sendJSON(res, 404, { error: 'Unknown API route.' });
 }
 
@@ -2765,10 +3024,12 @@ const server = http.createServer((req, res) => {
     }
   }
 
-  if (req.method === 'GET' && url.pathname === '/sitemap.xml') {
-    const proto = (req.headers['x-forwarded-proto'] || 'http').split(',')[0].trim();
-    const host  = req.headers.host || 'localhost';
-    const base  = `${proto}://${host}`;
+  if (req.method === 'GET' && url.pathname === '/robots.txt') {
+    const body = `User-agent: *\nAllow: /\nDisallow: /admin.html\nDisallow: /account.html\nDisallow: /api/\n\nSitemap: ${reqBase(req)}/sitemap.xml\n`;
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400' });
+    res.end(body);
+  } else if (req.method === 'GET' && url.pathname === '/sitemap.xml') {
+    const base  = reqBase(req);
     const today = new Date().toISOString().slice(0, 10);
     const pages = [
       { loc: '/',              freq: 'weekly',  pri: '1.0' },
@@ -2776,6 +3037,10 @@ const server = http.createServer((req, res) => {
       { loc: '/booking.html',  freq: 'monthly', pri: '0.8' },
       { loc: '/gallery.html',  freq: 'monthly', pri: '0.7' },
       { loc: '/team.html',     freq: 'monthly', pri: '0.6' },
+      { loc: '/reviews.html',  freq: 'weekly',  pri: '0.6' },
+      { loc: '/location.html', freq: 'monthly', pri: '0.6' },
+      { loc: '/faq.html',      freq: 'monthly', pri: '0.5' },
+      { loc: '/giftcard.html', freq: 'monthly', pri: '0.5' },
       { loc: '/privacy.html',     freq: 'yearly',  pri: '0.3' },
       { loc: '/terms.html',       freq: 'yearly',  pri: '0.3' },
       { loc: '/sms-consent.html', freq: 'yearly',  pri: '0.3' },
@@ -2839,24 +3104,6 @@ function processBirthdayBonuses() {
     process.stderr.write(`[birthday] ERROR: ${e.message}\n`);
   }
 }
-
-  // PATCH /api/admin/salon — update salon contact info, tagline, social links
-  if (req.method === 'PATCH' && url.pathname === '/api/admin/salon') {
-    const body = await readBody(req);
-    const ALLOWED = ['name', 'tagline', 'phone', 'email', 'address', 'instagram', 'facebook'];
-    const updates = {};
-    for (const k of ALLOWED) {
-      if (typeof body[k] === 'string') updates[k] = body[k].trim();
-    }
-    if (!updates.name || updates.name.length < 2) return sendJSON(res, 400, { error: 'Salon name is required.' });
-    return withLock(() => {
-      const fresh = loadDB();
-      Object.assign(fresh.salon, updates);
-      saveDB(fresh);
-      audit(req, 'admin.salon.update', updates);
-      return sendJSON(res, 200, { ok: true, salon: fresh.salon });
-    });
-  }
 
 server.listen(PORT, () => {
   console.log(`\n  Lumière Studio running →  http://localhost:${PORT}\n`);
