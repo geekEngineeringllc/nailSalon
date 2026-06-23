@@ -454,6 +454,7 @@ async function renderChrome() {
           <h4>${t('footer.visit')}</h4>
           <p style="font-size:.9rem"><a href="location.html" style="color:inherit;text-decoration:none">${esc(s.address)}</a></p>
           <p style="font-size:.9rem"><a href="tel:${(s.phone||'').replace(/\D/g,'')}" style="color:inherit;text-decoration:none">${esc(s.phone)}</a><br><a href="mailto:${esc(s.email)}" style="color:#b3a59c;text-decoration:none">${esc(s.email)}</a></p>
+          ${(s.instagram || s.facebook) ? `<p style="display:flex;gap:.9rem;margin-top:.6rem">${s.instagram ? `<a href="${esc(s.instagram)}" target="_blank" rel="noopener noreferrer" aria-label="Instagram" style="color:#b3a59c;text-decoration:none;font-size:.85rem">Instagram</a>` : ''}${s.facebook ? `<a href="${esc(s.facebook)}" target="_blank" rel="noopener noreferrer" aria-label="Facebook" style="color:#b3a59c;text-decoration:none;font-size:.85rem">Facebook</a>` : ''}</p>` : ''}
         </div>
         <div>
           <h4>${t('footer.hours')}</h4>

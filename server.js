@@ -2301,26 +2301,31 @@ async function handleAPI(req, res, url) {
     });
   }
 
-  // PATCH /api/me — update profile (name, email)
+  // PATCH /api/me — update profile (name, email, birthday)
   if (req.method === 'PATCH' && url.pathname === '/api/me') {
     const sess = getSession(req);
     if (!sess) return sendJSON(res, 401, { error: 'Please log in.' });
-    const { name, email } = await readBody(req);
-    const trimName  = typeof name  === 'string' ? name.trim()  : null;
-    const trimEmail = typeof email === 'string' ? email.trim() : null;
+    const { name, email, birthday } = await readBody(req);
+    const trimName     = typeof name     === 'string' ? name.trim()     : null;
+    const trimEmail    = typeof email    === 'string' ? email.trim()    : null;
+    const trimBirthday = typeof birthday === 'string' ? birthday.trim() : null;
     if (trimName !== null && trimName.length < 2) return sendJSON(res, 400, { error: 'Name must be at least 2 characters.' });
     if (trimEmail !== null && trimEmail.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimEmail)) {
       return sendJSON(res, 400, { error: 'Invalid email address.' });
+    }
+    if (trimBirthday !== null && trimBirthday !== '' && !/^\d{2}-\d{2}$/.test(trimBirthday)) {
+      return sendJSON(res, 400, { error: 'birthday must be MM-DD format.' });
     }
     return withLock(() => {
       const fresh = loadDB();
       const cust = (fresh.customers || []).find((c) => c.id === sess.customerId);
       if (!cust) return sendJSON(res, 401, { error: 'Not logged in.' });
-      if (trimName  !== null) cust.name  = trimName;
-      if (trimEmail !== null) cust.email = trimEmail;
+      if (trimName     !== null) cust.name     = trimName;
+      if (trimEmail    !== null) cust.email    = trimEmail;
+      if (trimBirthday !== null) cust.birthday = trimBirthday || null;
       saveDB(fresh);
       audit(req, 'profile.update', { id: cust.id, name: cust.name });
-      return sendJSON(res, 200, { ok: true, customer: { name: cust.name, email: cust.email } });
+      return sendJSON(res, 200, { ok: true, customer: { name: cust.name, email: cust.email, birthday: cust.birthday || null } });
     });
   }
 
@@ -2412,6 +2417,7 @@ async function handleAPI(req, res, url) {
         lastVisit: lastVisit ? lastVisit.date : null,
         totalSpent: Math.round(completed.reduce((s, b) => s + (b.price || 0), 0) * 100) / 100,
         marketingOptOut: c.marketingOptOut || false,
+        birthday: c.birthday || null,
         membership: c.membership ? { planName: c.membership.planName, status: c.membership.status } : null,
         createdAt: c.createdAt || null,
       };
@@ -2435,7 +2441,7 @@ async function handleAPI(req, res, url) {
     const myBookings = (db.bookings || [])
       .filter((b) => b.customerId === custId)
       .sort((a, b) => b.date.localeCompare(a.date));
-    return sendJSON(res, 200, { customer: { id: cust.id, name: cust.name, phone: cust.phone, email: cust.email, points: cust.points }, bookings: myBookings });
+    return sendJSON(res, 200, { customer: { id: cust.id, name: cust.name, phone: cust.phone, email: cust.email, points: cust.points, birthday: cust.birthday || null }, bookings: myBookings });
   }
 
   // POST /api/admin/customers/:id/points { delta, reason } — manual points adjustment
@@ -2788,11 +2794,49 @@ try {
   process.exit(1);
 }
 
+// ---- Birthday bonus scheduler -----------------------------------------------
+const BIRTHDAY_BONUS_PTS = 200;
+function processBirthdayBonuses() {
+  try {
+    const db = loadDB();
+    const today = new Date(); today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+    const todayStr = today.toISOString().slice(0, 10);   // YYYY-MM-DD
+    const todayMMDD = todayStr.slice(5);                  // MM-DD
+    const thisYear = todayStr.slice(0, 4);
+    let changed = false;
+    (db.customers || []).forEach((c) => {
+      if (!c.birthday || c.birthday !== todayMMDD) return;
+      if (c.lastBirthdayBonus === thisYear) return;  // already awarded this year
+      c.points = (c.points || 0) + BIRTHDAY_BONUS_PTS;
+      c.lastBirthdayBonus = thisYear;
+      changed = true;
+      if (!db.notifications) db.notifications = [];
+      const toAddr = c.email || '';
+      if (toAddr && process.env.SMTP_HOST) {
+        db.notifications.push({
+          id: crypto.randomBytes(4).toString('hex'),
+          to: toAddr, toName: c.name, channel: 'email', type: 'birthday',
+          subject: `Happy birthday, ${c.name.split(' ')[0]}! 🎉 — Lumière`,
+          message: `Hi ${c.name.split(' ')[0]},\n\nWishing you a wonderful birthday! We've added ${BIRTHDAY_BONUS_PTS} bonus reward points to your account as a birthday gift.\n\nCome celebrate with us — book your visit at any time.\n\nWith love,\nLumière Beauty & Nail Studio`,
+          status: 'scheduled', scheduledFor: new Date().toISOString()
+        });
+      }
+      process.stdout.write(`[birthday] Awarded ${BIRTHDAY_BONUS_PTS} pts to ${c.name}\n`);
+    });
+    if (changed) saveDB(db);
+  } catch (e) {
+    process.stderr.write(`[birthday] ERROR: ${e.message}\n`);
+  }
+}
+
 server.listen(PORT, () => {
   console.log(`\n  Lumière Studio running →  http://localhost:${PORT}\n`);
   // Run notification delivery immediately, then every 60 s
   processNotifications();
   setInterval(processNotifications, 60000);
+  // Run birthday bonuses once at startup, then every 24 h
+  processBirthdayBonuses();
+  setInterval(processBirthdayBonuses, 24 * 60 * 60 * 1000);
   // Run db backup on startup then every 24 h
   scheduleDailyBackup();
 });

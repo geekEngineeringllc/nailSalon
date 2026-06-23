@@ -500,7 +500,7 @@
     </section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js?v=7"></script>
+  <script src="js/common.js?v=8"></script>
   <script>
     function bars(obj, labels) {
       const entries = Object.entries(obj);
@@ -1704,8 +1704,9 @@
       const tbody = document.getElementById('custRows');
       if (!tbody) return;
       if (!customers.length) { tbody.innerHTML = '<tr><td colspan="8" class="muted" style="text-align:center;padding:1.5rem">No customers found.</td></tr>'; return; }
+      const todayMMDD = (() => { const t = new Date(); t.setMinutes(t.getMinutes() - t.getTimezoneOffset()); return t.toISOString().slice(5, 10); })();
       tbody.innerHTML = customers.map(c => `<tr style="cursor:pointer" onclick="loadCustomerDetail('${c.id}','${esc(c.name)}')">
-        <td><strong>${esc(c.name)}</strong></td>
+        <td><strong>${esc(c.name)}</strong>${c.birthday === todayMMDD ? ' <span title="Birthday today!">🎂</span>' : ''}</td>
         <td>${esc(c.phone)}</td>
         <td style="text-align:right">${c.points}</td>
         <td style="text-align:right">${c.completedVisits}${c.upcomingCount > 0 ? ` <span style="font-size:.75rem;color:#2f7a45">(+${c.upcomingCount} upcoming)</span>` : ''}</td>
@@ -1737,6 +1738,7 @@
       bodyEl.innerHTML = `
         <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:1rem;font-size:.88rem;align-items:center">
           ${c.email ? `<span><strong>Email:</strong> ${esc(c.email)}</span>` : ''}
+          ${c.birthday ? `<span><strong>Birthday:</strong> ${esc(c.birthday)}</span>` : ''}
           <span><strong>Points:</strong> <span id="cd-pts">${c.points || 0}</span></span>
           <span><strong>Total bookings:</strong> ${bks.length}</span>
         </div>

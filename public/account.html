@@ -16,7 +16,7 @@
     <section class="container" id="content" style="min-height:50vh"></section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js?v=7"></script>
+  <script src="js/common.js?v=8"></script>
   <script>
     const todayISO = () => { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
     function bookingCard(b, allowManage) {
@@ -195,10 +195,27 @@
           </div>`;
         })()}
 
+        ${(() => {
+          const today = new Date(); today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+          const todayMMDD = today.toISOString().slice(5, 10);
+          if (c.birthday && c.birthday === todayMMDD) {
+            return `<div style="background:linear-gradient(135deg,#fce7f3,#fdf4ff);border-radius:14px;padding:1.1rem 1.4rem;margin-bottom:1.6rem;display:flex;align-items:center;gap:.8rem">
+              <span style="font-size:1.6rem">🎂</span>
+              <div><div style="font-weight:700;font-family:var(--font-display);font-size:1.05rem">Happy Birthday, ${esc(c.name.split(' ')[0])}!</div>
+              <div class="muted" style="font-size:.88rem">We've added 200 bonus points to your account today as our gift to you.</div></div>
+            </div>`;
+          }
+          return '';
+        })()}
         <h3 style="margin-top:2rem">Edit profile</h3>
         <div class="card" style="margin-bottom:1.4rem">
           <div class="field" style="max-width:400px"><label>Full name</label><input id="prof-name" value="${esc(c.name)}" maxlength="80"></div>
           <div class="field" style="max-width:400px"><label>Email <span class="muted">(optional)</span></label><input id="prof-email" type="email" value="${esc(c.email || '')}" maxlength="120" placeholder="your@email.com"></div>
+          <div class="field" style="max-width:280px">
+            <label>Birthday <span class="muted">(optional — earn 200 bonus pts!)</span></label>
+            <input id="prof-birthday" type="date" value="${c.birthday ? new Date().getFullYear() + '-' + c.birthday : ''}" style="width:100%">
+            <p class="muted" style="font-size:.78rem;margin:.3rem 0 0">We only store the month and day, not the year.</p>
+          </div>
           <button class="btn btn-ghost btn-sm" id="prof-save">Save changes</button>
         </div>
 
@@ -234,8 +251,11 @@
         const name  = document.getElementById('prof-name').value.trim();
         const email = document.getElementById('prof-email').value.trim();
         if (!name) { toast('Name cannot be empty.'); return; }
+        const bdInput = document.getElementById('prof-birthday');
+        const bdVal = bdInput ? bdInput.value : '';
+        const birthday = bdVal ? bdVal.slice(5) : '';  // YYYY-MM-DD → MM-DD
         profSaveBtn.disabled = true; profSaveBtn.textContent = 'Saving…';
-        const r = await api.updateProfile({ name, email });
+        const r = await api.updateProfile({ name, email, birthday });
         profSaveBtn.disabled = false; profSaveBtn.textContent = 'Save changes';
         if (r.ok) toast('Profile updated!');
         else toast(r.data.error || 'Could not save.');
