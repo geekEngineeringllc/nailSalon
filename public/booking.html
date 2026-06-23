@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Book an Appointment — Lumière Beauty & Nail Studio</title>
+  <title>Book an Appointment — Lumière Beauty &amp; Nail Studio</title>
   <meta name="description" content="Book your nail, hair, skin or makeup appointment at Lumière in four quick steps." />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#b0657a">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Lumière Beauty & Nail Studio">
-  <meta property="og:title" content="Book an Appointment — Lumière Beauty & Nail Studio">
+  <meta property="og:site_name" content="Lumière Beauty &amp; Nail Studio">
+  <meta property="og:title" content="Book an Appointment — Lumière Beauty &amp; Nail Studio">
   <meta property="og:description" content="Book your nail, hair, skin or makeup appointment at Lumière in four quick steps.">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -20,16 +20,20 @@
   <header class="site-header" id="site-header"></header>
   <main id="main-content">
     <section class="container wizard">
-      <div class="section-head">
-        <p class="eyebrow">Book in 4 steps</p>
-        <h2>Reserve your visit</h2>
+      <div class="section-head" style="position:relative">
+        <p class="eyebrow" id="sh-eyebrow">Book in 4 steps</p>
+        <h2 id="sh-title">Reserve your visit</h2>
+        <div style="position:absolute;top:0;right:0;display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:.8rem">
+          <button id="lang-en" onclick="setLang('en')" style="padding:.3rem .7rem;border:none;cursor:pointer;background:var(--rose);color:#fff;font-family:inherit;font-weight:600">EN</button>
+          <button id="lang-es" onclick="setLang('es')" style="padding:.3rem .7rem;border:none;cursor:pointer;background:transparent;font-family:inherit">ES</button>
+        </div>
       </div>
 
       <div class="steps" id="steps">
-        <div class="step" data-s="1"><span class="num">1</span> Service</div><div class="bar"></div>
-        <div class="step" data-s="2"><span class="num">2</span> Artist</div><div class="bar"></div>
-        <div class="step" data-s="3"><span class="num">3</span> Date & time</div><div class="bar"></div>
-        <div class="step" data-s="4"><span class="num">4</span> Details</div>
+        <div class="step" data-s="1"><span class="num">1</span> <span class="step-lbl" data-key="s1"></span></div><div class="bar"></div>
+        <div class="step" data-s="2"><span class="num">2</span> <span class="step-lbl" data-key="s2"></span></div><div class="bar"></div>
+        <div class="step" data-s="3"><span class="num">3</span> <span class="step-lbl" data-key="s3"></span></div><div class="bar"></div>
+        <div class="step" data-s="4"><span class="num">4</span> <span class="step-lbl" data-key="s4"></span></div>
       </div>
 
       <div class="panel" id="panel"></div>
@@ -38,6 +42,224 @@
   <footer class="site-footer" id="site-footer"></footer>
   <script src="js/common.js?v=7"></script>
   <script>
+    // ─── i18n ────────────────────────────────────────────────────────────────
+    const STRINGS = {
+      en: {
+        eyebrow: 'Book in 4 steps', title: 'Reserve your visit',
+        s1: 'Service', s2: 'Artist', s3: 'Date & time', s4: 'Details',
+        // Step 1
+        chooseService: 'Choose your service(s)',
+        chooseServiceSub: 'Select up to 3 services for this visit.',
+        selected: n => `Selected (${n}/3)`,
+        total: 'Total',
+        nextArtist: 'Next: choose artist →',
+        // Step 2
+        chooseArtist: 'Choose your artist',
+        forYour: svc => `For your <strong>${svc}</strong>.`,
+        anyArtist: '✨ Any available',
+        anyArtistSub: 'Soonest opening across the team',
+        noArtist: 'No artist can perform all selected services. Please adjust your selection.',
+        nextTime: 'Next: pick a time →',
+        // Step 3
+        pickTime: 'Pick a date & time',
+        dateLabel: 'Date',
+        loadingTimes: 'Loading times…',
+        noOpenings: 'No openings that day — try another date, or join the waitlist and we\'ll contact you if a spot opens up.',
+        waitlistFor: date => `Join the waitlist for ${date}`,
+        nameLabel: 'Full name *',
+        phoneLabel: 'Phone *',
+        emailOptional: 'Email (optional)',
+        joinWaitlist: 'Join waitlist',
+        joining: 'Joining…',
+        namePhoneRequired: 'Name and phone are required.',
+        somethingWrong: 'Something went wrong.',
+        onWaitlist: phone => `You're on the waitlist! ✓ We'll reach out at ${phone} if a spot opens.`,
+        nextDetails: 'Next: your details →',
+        bookAria: (t, n) => `Book ${t} with ${n}`,
+        // Step 4
+        yourDetails: 'Your details',
+        emailLabel: 'Email',
+        notesLabel: 'Notes for your artist',
+        notesPh: 'Almond shape, soft pink, allergic to acetone…',
+        serviceLabel: 'Service',
+        artistLabel: 'Artist',
+        whenLabel: 'When',
+        durationLabel: 'Duration',
+        totalLabel: 'Total',
+        depositNote: '<strong>Deposit required</strong> — A deposit will be collected at your appointment to secure this booking.',
+        giftCardLabel: 'Have a gift card?',
+        gcApply: 'Apply',
+        gcChecking: 'Checking…',
+        gcNotFound: 'Gift card not found.',
+        gcUnpaid: 'That gift card has not been paid for yet.',
+        gcEmpty: 'That gift card has no remaining balance.',
+        gcOk: saves => `✓ Gift card accepted — ${saves} will be applied at checkout.`,
+        pointsLabel: 'Use reward points?',
+        pointsAvail: (pts, val) => `${pts} pts available = ${val} off`,
+        ptsNone: 'None',
+        ptsOpt: (p, val) => `${p} pts = ${val} off`,
+        ptsApplied: (val, rem) => `✓ ${val} will be deducted at checkout · ${rem} pts remaining after`,
+        pkgLabel: 'Use a prepaid package?',
+        pkgNormal: '— Pay normally —',
+        pkgSessions: (n) => `${n} session${n !== 1 ? 's' : ''} left`,
+        pkgNote: 'Selecting a package makes this visit <strong>$0</strong> at checkout.',
+        recurLabel: 'Make this a recurring visit',
+        recurRepeat: 'Repeat',
+        weekly: 'Every week',
+        biweekly: 'Every 2 weeks',
+        every4: 'Every 4 weeks',
+        howMany: 'How many',
+        visits: n => `${n} visits`,
+        recurNote: artist => `Same artist (${artist}) and time on each date. We'll flag any date that's unavailable.`,
+        confirm: 'Confirm booking ✓',
+        back: '← Back',
+        bookingNow: 'Booking…',
+        namePh: 'Jordan Avery',
+        phonePh: '(555) 123-4567',
+        emailPh: 'you@email.com',
+        namePhoneErr: 'Please add your name and phone.',
+        // Success
+        bookedTitle: name => `You're booked, ${name}!`,
+        bookedSub: 'We\'ve reserved your spot. A reminder will be sent before your visit.',
+        depositPending: 'your artist will collect a deposit when you arrive.',
+        listPrice: 'List price',
+        giftCardLine: code => `Gift card (${code})`,
+        pointsLine: pts => `Reward points (${pts} pts)`,
+        dueAtSalon: 'Due at salon',
+        addCal: 'Add to Calendar',
+        addCalSeries: ref => `Add ${ref} to Calendar`,
+        bookAnother: 'Book another',
+        backHome: 'Back home',
+        seriesBooked: (n, artist) => `We reserved ${n} visit${n > 1 ? 's' : ''} with ${artist}. A reminder is sent before each one.`,
+        seriesSkipped: n => `<strong>Heads up</strong> — we couldn't book ${n} date${n > 1 ? 's' : ''}.`,
+        pkgDepositRequired: '<strong>Deposit required</strong> — your artist will collect a deposit when you arrive.',
+        referralTitle: 'Loved your visit? Tell a friend',
+        referralSub: 'Share your code and both of you earn bonus reward points when they book.',
+        shareLink: 'Share link',
+        referralShareMsg: 'Sign up and get 100 bonus points!',
+        referralCopied: 'Referral link copied!',
+        couldNotBook: 'Could not book — please try again.',
+        couldNotBookSeries: 'Could not book the series — please try again.',
+        slotTaken: 'That slot was just taken — please pick another time.',
+      },
+      es: {
+        eyebrow: 'Reserva en 4 pasos', title: 'Reserva tu visita',
+        s1: 'Servicio', s2: 'Artista', s3: 'Fecha y hora', s4: 'Datos',
+        // Step 1
+        chooseService: 'Elige tu(s) servicio(s)',
+        chooseServiceSub: 'Selecciona hasta 3 servicios para esta visita.',
+        selected: n => `Seleccionado (${n}/3)`,
+        total: 'Total',
+        nextArtist: 'Siguiente: elige artista →',
+        // Step 2
+        chooseArtist: 'Elige tu artista',
+        forYour: svc => `Para tu <strong>${svc}</strong>.`,
+        anyArtist: '✨ Cualquier artista',
+        anyArtistSub: 'El primer horario disponible del equipo',
+        noArtist: 'Ningún artista puede realizar todos los servicios. Ajusta tu selección.',
+        nextTime: 'Siguiente: elige un horario →',
+        // Step 3
+        pickTime: 'Elige fecha y hora',
+        dateLabel: 'Fecha',
+        loadingTimes: 'Cargando horarios…',
+        noOpenings: 'No hay disponibilidad ese día — prueba otra fecha o únete a la lista de espera.',
+        waitlistFor: date => `Lista de espera para ${date}`,
+        nameLabel: 'Nombre completo *',
+        phoneLabel: 'Teléfono *',
+        emailOptional: 'Correo electrónico (opcional)',
+        joinWaitlist: 'Unirse a la lista',
+        joining: 'Uniéndose…',
+        namePhoneRequired: 'Se requiere nombre y teléfono.',
+        somethingWrong: 'Algo salió mal.',
+        onWaitlist: phone => `¡Estás en la lista de espera! ✓ Te contactaremos al ${phone} si hay disponibilidad.`,
+        nextDetails: 'Siguiente: tus datos →',
+        bookAria: (t, n) => `Reservar ${t} con ${n}`,
+        // Step 4
+        yourDetails: 'Tus datos',
+        emailLabel: 'Correo electrónico',
+        notesLabel: 'Notas para tu artista',
+        notesPh: 'Forma almendra, rosa suave, alérgica a la acetona…',
+        serviceLabel: 'Servicio',
+        artistLabel: 'Artista',
+        whenLabel: 'Cuándo',
+        durationLabel: 'Duración',
+        totalLabel: 'Total',
+        depositNote: '<strong>Depósito requerido</strong> — Se recogerá un depósito al llegar a tu cita.',
+        giftCardLabel: '¿Tienes una tarjeta de regalo?',
+        gcApply: 'Aplicar',
+        gcChecking: 'Verificando…',
+        gcNotFound: 'Tarjeta de regalo no encontrada.',
+        gcUnpaid: 'Esa tarjeta de regalo aún no ha sido pagada.',
+        gcEmpty: 'Esa tarjeta de regalo no tiene saldo.',
+        gcOk: saves => `✓ Tarjeta aceptada — ${saves} se descontarán al pagar.`,
+        pointsLabel: '¿Usar puntos de recompensa?',
+        pointsAvail: (pts, val) => `${pts} pts disponibles = ${val} de descuento`,
+        ptsNone: 'Ninguno',
+        ptsOpt: (p, val) => `${p} pts = ${val} de descuento`,
+        ptsApplied: (val, rem) => `✓ ${val} se descontarán al pagar · ${rem} pts restantes`,
+        pkgLabel: '¿Usar un paquete prepagado?',
+        pkgNormal: '— Pagar normalmente —',
+        pkgSessions: (n) => `${n} sesión${n !== 1 ? 'es' : ''} restante${n !== 1 ? 's' : ''}`,
+        pkgNote: 'Seleccionar un paquete hace esta visita <strong>$0</strong> al pagar.',
+        recurLabel: 'Hacer esta visita recurrente',
+        recurRepeat: 'Frecuencia',
+        weekly: 'Cada semana',
+        biweekly: 'Cada 2 semanas',
+        every4: 'Cada 4 semanas',
+        howMany: '¿Cuántas?',
+        visits: n => `${n} visitas`,
+        recurNote: artist => `Mismo artista (${artist}) y horario en cada fecha. Indicaremos las fechas no disponibles.`,
+        confirm: 'Confirmar reserva ✓',
+        back: '← Atrás',
+        bookingNow: 'Reservando…',
+        namePh: 'Jordan Avery',
+        phonePh: '(555) 123-4567',
+        emailPh: 'tu@correo.com',
+        namePhoneErr: 'Por favor ingresa tu nombre y teléfono.',
+        // Success
+        bookedTitle: name => `¡Tu reserva está confirmada, ${name}!`,
+        bookedSub: 'Hemos reservado tu lugar. Enviaremos un recordatorio antes de tu visita.',
+        depositPending: 'tu artista recogerá un depósito al llegar.',
+        listPrice: 'Precio de lista',
+        giftCardLine: code => `Tarjeta de regalo (${code})`,
+        pointsLine: pts => `Puntos de recompensa (${pts} pts)`,
+        dueAtSalon: 'A pagar en el salón',
+        addCal: 'Agregar al calendario',
+        addCalSeries: ref => `Agregar ${ref} al calendario`,
+        bookAnother: 'Reservar otro',
+        backHome: 'Volver al inicio',
+        seriesBooked: (n, artist) => `Reservamos ${n} visita${n > 1 ? 's' : ''} con ${artist}. Enviaremos un recordatorio antes de cada una.`,
+        seriesSkipped: n => `<strong>Atención</strong> — no pudimos reservar ${n} fecha${n > 1 ? 's' : ''}.`,
+        pkgDepositRequired: '<strong>Depósito requerido</strong> — tu artista recogerá un depósito al llegar.',
+        referralTitle: '¿Te gustó tu visita? Cuéntale a un amigo',
+        referralSub: 'Comparte tu código y ambos ganan puntos al reservar.',
+        shareLink: 'Compartir enlace',
+        referralShareMsg: '¡Regístrate y obtén 100 puntos de bienvenida!',
+        referralCopied: '¡Enlace de referido copiado!',
+        couldNotBook: 'No se pudo reservar — por favor inténtalo de nuevo.',
+        couldNotBookSeries: 'No se pudo reservar la serie — inténtalo de nuevo.',
+        slotTaken: 'Ese horario ya fue tomado — elige otro.',
+      },
+    };
+
+    let lang = (localStorage.getItem('lumLang') || navigator.language || 'en').startsWith('es') ? 'es' : 'en';
+    const T = () => STRINGS[lang];
+
+    function setLang(l) {
+      lang = l;
+      localStorage.setItem('lumLang', l);
+      document.documentElement.lang = l;
+      document.getElementById('sh-eyebrow').textContent = T().eyebrow;
+      document.getElementById('sh-title').textContent = T().title;
+      document.querySelectorAll('.step-lbl').forEach(el => { el.textContent = T()[el.dataset.key]; });
+      document.getElementById('lang-en').style.background = l === 'en' ? 'var(--rose)' : 'transparent';
+      document.getElementById('lang-en').style.color = l === 'en' ? '#fff' : '';
+      document.getElementById('lang-es').style.background = l === 'es' ? 'var(--rose)' : 'transparent';
+      document.getElementById('lang-es').style.color = l === 'es' ? '#fff' : '';
+      render();
+    }
+
+    // ─── app state ───────────────────────────────────────────────────────────
     let CFG;
     const state = { step: 1, serviceIds: [], staffId: null, date: null, time: null,
                     customer: { name:'', phone:'', email:'', notes:'' },
@@ -73,21 +295,23 @@
     }
 
     function navButtons(backStep, nextLabel, nextFn, nextEnabled) {
+      const t = T();
       return `<div class="wizard-nav">
-        ${backStep ? `<button class="btn btn-ghost" onclick="go(${backStep})">← Back</button>` : '<span></span>'}
-        ${nextLabel ? `<button class="btn btn-primary" id="nextBtn" ${nextEnabled?'':'disabled style=\"opacity:.5;cursor:not-allowed\"'}>${nextLabel}</button>` : ''}
+        ${backStep ? `<button class="btn btn-ghost" onclick="go(${backStep})">${t.back}</button>` : '<span></span>'}
+        ${nextLabel ? `<button class="btn btn-primary" id="nextBtn" ${nextEnabled?'':'disabled style="opacity:.5;cursor:not-allowed"'}>${nextLabel}</button>` : ''}
       </div>`;
     }
 
     function renderService(panel) {
+      const t = T();
       const byCat = {};
       CFG.services.forEach(s => (byCat[s.category] = byCat[s.category] || []).push(s));
       const selected = state.serviceIds;
       const combined = svcs();
       const dur = combined.reduce((s, v) => s + v.duration, 0);
       const price = combined.reduce((s, v) => s + v.price, 0);
-      panel.innerHTML = `<h3>Choose your service(s)</h3>
-        <p class="muted" style="margin-top:-.4rem">Select up to 3 services for this visit.</p>
+      panel.innerHTML = `<h3>${t.chooseService}</h3>
+        <p class="muted" style="margin-top:-.4rem">${t.chooseServiceSub}</p>
         ${CFG.categories.map(c => `
           <p class="eyebrow" style="margin-top:1.4rem">${c.name}</p>
           <div class="option-grid">
@@ -99,13 +323,13 @@
           </div>`).join('')}
         ${selected.length > 0 ? `
           <div style="background:var(--bg-soft);border-radius:12px;padding:1rem;margin-top:1.4rem">
-            <div style="font-weight:600;margin-bottom:.4rem">Selected (${selected.length}/3)</div>
+            <div style="font-weight:600;margin-bottom:.4rem">${t.selected(selected.length)}</div>
             ${combined.map(s => `<div style="display:flex;justify-content:space-between;font-size:.9rem;margin:.2rem 0">
               <span>${s.name}</span><span class="muted">${s.duration} min · ${money(s.price)}</span></div>`).join('')}
             ${selected.length > 1 ? `<div style="border-top:1px solid var(--line);margin-top:.6rem;padding-top:.6rem;display:flex;justify-content:space-between;font-weight:600;font-size:.9rem">
-              <span>Total</span><span>${dur} min · ${money(price)}</span></div>` : ''}
+              <span>${t.total}</span><span>${dur} min · ${money(price)}</span></div>` : ''}
           </div>` : ''}
-        ${navButtons(null, 'Next: choose artist →', null, selected.length > 0)}`;
+        ${navButtons(null, t.nextArtist, null, selected.length > 0)}`;
       panel.querySelectorAll('.option').forEach(o => o.addEventListener('click', () => {
         const id = o.dataset.id;
         if (state.serviceIds.includes(id)) {
@@ -121,20 +345,20 @@
     }
 
     function renderStaff(panel) {
+      const t = T();
       const selected = svcs();
       const label = selected.map(s => s.name).join(' + ');
-      // Pool = artists qualified for ALL selected services
       const qualifiedIds = selected.reduce(
         (pool, s) => pool.filter(id => s.staffIds.includes(id)),
         selected[0].staffIds
       );
       const pool = qualifiedIds.map(id => CFG.staff.find(p => p.id === id)).filter(Boolean);
-      panel.innerHTML = `<h3>Choose your artist</h3>
-        <p class="muted" style="margin-top:-.4rem">For your <strong>${label}</strong>.</p>
+      panel.innerHTML = `<h3>${t.chooseArtist}</h3>
+        <p class="muted" style="margin-top:-.4rem">${t.forYour(label)}</p>
         <div class="option-grid" style="margin-top:1rem">
           <div class="option ${state.staffId==='any'?'selected':''}" data-id="any" tabindex="0" role="button" aria-pressed="${state.staffId==='any'}">
-            <div class="o-name">✨ Any available</div>
-            <div class="o-sub">Soonest opening across the team</div>
+            <div class="o-name">${t.anyArtist}</div>
+            <div class="o-sub">${t.anyArtistSub}</div>
           </div>
           ${pool.map(p => `
             <div class="option ${state.staffId===p.id?'selected':''}" data-id="${p.id}" tabindex="0" role="button" aria-pressed="${state.staffId===p.id}">
@@ -142,8 +366,8 @@
               <div class="o-sub">${p.title}</div>
             </div>`).join('')}
         </div>
-        ${pool.length === 0 ? '<p class="muted" style="color:var(--rose-deep)">No artist can perform all selected services. Please adjust your selection.</p>' : ''}
-        ${navButtons(1, 'Next: pick a time →', null, !!state.staffId)}`;
+        ${pool.length === 0 ? `<p class="muted" style="color:var(--rose-deep)">${t.noArtist}</p>` : ''}
+        ${navButtons(1, t.nextTime, null, !!state.staffId)}`;
       panel.querySelectorAll('.option').forEach(o => o.addEventListener('click', () => {
         state.staffId = o.dataset.id; state.time = null; render();
       }));
@@ -152,14 +376,15 @@
     }
 
     async function renderTime(panel) {
+      const t = T();
       if (!state.date) state.date = todayISO();
-      panel.innerHTML = `<h3>Pick a date & time</h3>
+      panel.innerHTML = `<h3>${t.pickTime}</h3>
         <div class="field" style="max-width:240px">
-          <label>Date</label>
+          <label>${t.dateLabel}</label>
           <input type="date" id="dateInput" value="${state.date}" min="${todayISO()}">
         </div>
-        <div id="slotArea" aria-live="polite"><p class="muted">Loading times…</p></div>
-        ${navButtons(2, 'Next: your details →', null, !!state.time)}`;
+        <div id="slotArea" aria-live="polite"><p class="muted">${t.loadingTimes}</p></div>
+        ${navButtons(2, t.nextDetails, null, !!state.time)}`;
       const dateInput = panel.querySelector('#dateInput');
       dateInput.addEventListener('change', () => { state.date = dateInput.value; state.time = null; loadSlots(); });
       const nb = panel.querySelector('#nextBtn');
@@ -168,30 +393,32 @@
     }
 
     async function loadSlots() {
+      const t = T();
       const area = document.getElementById('slotArea');
-      area.innerHTML = '<p class="muted">Loading times…</p>';
+      area.innerHTML = `<p class="muted">${t.loadingTimes}</p>`;
       const res = await api.availability(state.serviceIds, state.staffId, state.date);
       const opts = (res.options || []).filter(o => o.slots.length);
       if (!opts.length) {
         const c = state.customer;
         area.innerHTML = `
-          <p class="muted" style="margin-bottom:1rem">No openings that day — try another date, or join the waitlist and we'll contact you if a spot opens up.</p>
+          <p class="muted" style="margin-bottom:1rem">${t.noOpenings}</p>
           <div id="wl-form" style="background:var(--bg-soft);border-radius:12px;padding:1.2rem">
-            <p class="eyebrow" style="margin:0 0 .8rem">Join the waitlist for ${state.date}</p>
-            <div class="field" style="margin-bottom:.6rem"><label>Full name *</label><input id="wl-name" value="${esc(c.name)}" placeholder="Jordan Avery"></div>
-            <div class="field" style="margin-bottom:.6rem"><label>Phone *</label><input id="wl-phone" value="${esc(c.phone)}" placeholder="(555) 123-4567"></div>
-            <div class="field" style="margin-bottom:.8rem"><label>Email (optional)</label><input id="wl-email" value="${esc(c.email)}" placeholder="you@email.com"></div>
-            <button class="btn btn-primary btn-sm" id="wl-submit">Join waitlist</button>
+            <p class="eyebrow" style="margin:0 0 .8rem">${t.waitlistFor(state.date)}</p>
+            <div class="field" style="margin-bottom:.6rem"><label>${t.nameLabel}</label><input id="wl-name" value="${esc(c.name)}" placeholder="${t.namePh}"></div>
+            <div class="field" style="margin-bottom:.6rem"><label>${t.phoneLabel}</label><input id="wl-phone" value="${esc(c.phone)}" placeholder="${t.phonePh}"></div>
+            <div class="field" style="margin-bottom:.8rem"><label>${t.emailOptional}</label><input id="wl-email" value="${esc(c.email)}" placeholder="${t.emailPh}"></div>
+            <button class="btn btn-primary btn-sm" id="wl-submit">${t.joinWaitlist}</button>
             <div id="wl-msg" style="margin-top:.6rem;font-size:.85rem"></div>
           </div>`;
         area.querySelector('#wl-submit').addEventListener('click', async () => {
+          const tt = T();
           const name  = area.querySelector('#wl-name').value.trim();
           const phone = area.querySelector('#wl-phone').value.trim();
           const email = area.querySelector('#wl-email').value.trim();
           const msg   = area.querySelector('#wl-msg');
-          if (!name || !phone) { msg.style.color = 'var(--rose-deep)'; msg.textContent = 'Name and phone are required.'; return; }
+          if (!name || !phone) { msg.style.color = 'var(--rose-deep)'; msg.textContent = tt.namePhoneRequired; return; }
           const btn = area.querySelector('#wl-submit');
-          btn.disabled = true; btn.textContent = 'Joining…';
+          btn.disabled = true; btn.textContent = tt.joining;
           const r = await api.joinWaitlist({
             serviceId: state.serviceIds[0] || state.serviceIds,
             staffId: state.staffId || 'any',
@@ -199,10 +426,10 @@
             name, phone, email: email || undefined
           });
           if (r.ok) {
-            area.querySelector('#wl-form').innerHTML = `<p style="color:var(--rose-deep);font-weight:600">You're on the waitlist! ✓</p><p class="muted" style="font-size:.88rem">We'll reach out at ${esc(phone)} if a spot opens on ${state.date}.</p>`;
+            area.querySelector('#wl-form').innerHTML = `<p style="color:var(--rose-deep);font-weight:600">${tt.onWaitlist(esc(phone))}</p>`;
           } else {
-            btn.disabled = false; btn.textContent = 'Join waitlist';
-            msg.style.color = 'var(--rose-deep)'; msg.textContent = r.data.error || 'Something went wrong.';
+            btn.disabled = false; btn.textContent = tt.joinWaitlist;
+            msg.style.color = 'var(--rose-deep)'; msg.textContent = r.data.error || tt.somethingWrong;
           }
         });
         return;
@@ -210,12 +437,12 @@
       area.innerHTML = opts.map(o => `
         <p class="eyebrow" style="margin-top:1.2rem">${o.staffName}</p>
         <div class="slots">
-          ${o.slots.map(t => `<div class="slot ${state.time===t && state.staffId===o.staffId?'selected':''}"
-              data-time="${t}" data-staff="${o.staffId}" tabindex="0" role="button" aria-label="Book ${t} with ${o.staffName}">${t}</div>`).join('')}
+          ${o.slots.map(sl => `<div class="slot ${state.time===sl && state.staffId===o.staffId?'selected':''}"
+              data-time="${sl}" data-staff="${o.staffId}" tabindex="0" role="button" aria-label="${t.bookAria(sl, o.staffName)}">${sl}</div>`).join('')}
         </div>`).join('');
       area.querySelectorAll('.slot').forEach(sl => sl.addEventListener('click', () => {
         state.time = sl.dataset.time;
-        state.chosenStaff = sl.dataset.staff; // resolve "any" to the real artist
+        state.chosenStaff = sl.dataset.staff;
         area.querySelectorAll('.slot').forEach(x => x.classList.remove('selected'));
         sl.classList.add('selected');
         const nb = document.querySelector('#nextBtn');
@@ -224,34 +451,35 @@
     }
 
     function renderDetails(panel) {
+      const t = T();
       const selected = svcs();
       const staffId = state.chosenStaff || state.staffId;
       const staffName = (CFG.staff.find(p => p.id === staffId) || {}).name || 'Any artist';
       const c = state.customer;
       const dur = totalDuration(), price = totalPrice();
-      panel.innerHTML = `<h3>Your details</h3>
-        <div class="field"><label>Full name *</label><input id="f-name" value="${esc(c.name)}" placeholder="Jordan Avery"></div>
-        <div class="field"><label>Phone *</label><input id="f-phone" value="${esc(c.phone)}" placeholder="(555) 123-4567"></div>
-        <div class="field"><label>Email</label><input id="f-email" value="${esc(c.email)}" placeholder="you@email.com"></div>
-        <div class="field"><label>Notes for your artist</label><textarea id="f-notes" rows="3" placeholder="Almond shape, soft pink, allergic to acetone…">${esc(c.notes)}</textarea></div>
+      panel.innerHTML = `<h3>${t.yourDetails}</h3>
+        <div class="field"><label>${t.nameLabel}</label><input id="f-name" value="${esc(c.name)}" placeholder="${t.namePh}"></div>
+        <div class="field"><label>${t.phoneLabel}</label><input id="f-phone" value="${esc(c.phone)}" placeholder="${t.phonePh}"></div>
+        <div class="field"><label>${t.emailLabel}</label><input id="f-email" value="${esc(c.email)}" placeholder="${t.emailPh}"></div>
+        <div class="field"><label>${t.notesLabel}</label><textarea id="f-notes" rows="3" placeholder="${t.notesPh}">${esc(c.notes)}</textarea></div>
         <div style="background:var(--bg-soft);border-radius:12px;padding:1.2rem;margin-top:1rem">
           ${selected.length === 1
-            ? `<div class="summary-line"><span>Service</span><strong>${selected[0].name}</strong></div>`
+            ? `<div class="summary-line"><span>${t.serviceLabel}</span><strong>${selected[0].name}</strong></div>`
             : selected.map(s => `<div class="summary-line"><span>${s.name}</span><strong>${s.duration} min · ${money(s.price)}</strong></div>`).join('')}
-          <div class="summary-line"><span>Artist</span><strong>${staffName}</strong></div>
-          <div class="summary-line"><span>When</span><strong>${state.date} · ${state.time}</strong></div>
-          <div class="summary-line"><span>Duration</span><strong>${dur} min</strong></div>
-          <div class="summary-line"><span>Total</span><strong>${money(price)}</strong></div>
+          <div class="summary-line"><span>${t.artistLabel}</span><strong>${staffName}</strong></div>
+          <div class="summary-line"><span>${t.whenLabel}</span><strong>${state.date} · ${state.time}</strong></div>
+          <div class="summary-line"><span>${t.durationLabel}</span><strong>${dur} min</strong></div>
+          <div class="summary-line"><span>${t.totalLabel}</span><strong>${money(price)}</strong></div>
         </div>
         ${selected.some(s => s.depositRequired) ? `
           <div style="background:#fff3cd;border-radius:10px;padding:.9rem 1.2rem;margin-top:1rem;font-size:.9rem">
-            <strong>Deposit required</strong> — A deposit will be collected at your appointment to secure this booking.
+            ${t.depositNote}
           </div>` : ''}
         <div style="background:var(--bg-soft);border-radius:12px;padding:1rem 1.2rem;margin-top:1rem">
-          <label style="font-weight:600;display:block;margin-bottom:.4rem">Have a gift card?</label>
+          <label style="font-weight:600;display:block;margin-bottom:.4rem">${t.giftCardLabel}</label>
           <div style="display:flex;gap:.5rem">
             <input id="f-giftcode" style="flex:1;padding:.65rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:.95rem" placeholder="LUM-GIFT-XXXX-XXXX" value="${esc(state.giftCardCode)}">
-            <button class="btn btn-ghost btn-sm" id="gc-apply" style="white-space:nowrap">Apply</button>
+            <button class="btn btn-ghost btn-sm" id="gc-apply" style="white-space:nowrap">${t.gcApply}</button>
           </div>
           <div id="gc-msg" style="margin-top:.4rem;font-size:.85rem"></div>
         </div>
@@ -263,14 +491,14 @@
           const dollarValue = state.pointsToRedeem / 100;
           return `<div style="background:var(--bg-soft);border-radius:12px;padding:1rem 1.2rem;margin-top:1rem">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
-              <label style="font-weight:600">Use reward points?</label>
-              <span style="font-size:.82rem;color:var(--muted)">${state._mePoints} pts available = ${money(Math.floor(state._mePoints/100))} off</span>
+              <label style="font-weight:600">${t.pointsLabel}</label>
+              <span style="font-size:.82rem;color:var(--muted)">${t.pointsAvail(state._mePoints, money(Math.floor(state._mePoints/100)))}</span>
             </div>
             <div style="display:flex;gap:.4rem;flex-wrap:wrap">
-              <button class="pts-opt ${state.pointsToRedeem===0?'active':''}" data-pts="0" style="padding:.35rem .75rem;border-radius:8px;border:1.5px solid var(--line);background:${state.pointsToRedeem===0?'var(--rose)':'#fff'};color:${state.pointsToRedeem===0?'#fff':'inherit'};cursor:pointer;font-family:inherit;font-size:.85rem">None</button>
-              ${steps.map(p => `<button class="pts-opt ${state.pointsToRedeem===p?'active':''}" data-pts="${p}" style="padding:.35rem .75rem;border-radius:8px;border:1.5px solid var(--line);background:${state.pointsToRedeem===p?'var(--rose)':'#fff'};color:${state.pointsToRedeem===p?'#fff':'inherit'};cursor:pointer;font-family:inherit;font-size:.85rem">${p} pts = ${money(p/100)} off</button>`).join('')}
+              <button class="pts-opt ${state.pointsToRedeem===0?'active':''}" data-pts="0" style="padding:.35rem .75rem;border-radius:8px;border:1.5px solid var(--line);background:${state.pointsToRedeem===0?'var(--rose)':'#fff'};color:${state.pointsToRedeem===0?'#fff':'inherit'};cursor:pointer;font-family:inherit;font-size:.85rem">${t.ptsNone}</button>
+              ${steps.map(p => `<button class="pts-opt ${state.pointsToRedeem===p?'active':''}" data-pts="${p}" style="padding:.35rem .75rem;border-radius:8px;border:1.5px solid var(--line);background:${state.pointsToRedeem===p?'var(--rose)':'#fff'};color:${state.pointsToRedeem===p?'#fff':'inherit'};cursor:pointer;font-family:inherit;font-size:.85rem">${t.ptsOpt(p, money(p/100))}</button>`).join('')}
             </div>
-            ${state.pointsToRedeem > 0 ? `<div style="margin-top:.5rem;font-size:.85rem;color:#2f7a45">✓ ${money(dollarValue)} will be deducted at checkout · ${state._mePoints - state.pointsToRedeem} pts remaining after</div>` : ''}
+            ${state.pointsToRedeem > 0 ? `<div style="margin-top:.5rem;font-size:.85rem;color:#2f7a45">✓ ${t.ptsApplied(money(dollarValue), state._mePoints - state.pointsToRedeem)}</div>` : ''}
           </div>`;
         })() : ''}
         ${(() => {
@@ -278,33 +506,33 @@
           const eligible = state._mePackages.filter(p => p.serviceId === state.serviceIds[0]);
           if (!eligible.length) return '';
           return `<div style="background:var(--bg-soft);border-radius:12px;padding:1rem 1.2rem;margin-top:1rem">
-            <label style="font-weight:600;display:block;margin-bottom:.6rem">Use a prepaid package?</label>
+            <label style="font-weight:600;display:block;margin-bottom:.6rem">${t.pkgLabel}</label>
             <select id="pkg-sel" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit">
-              <option value="">— Pay normally —</option>
-              ${eligible.map(p => `<option value="${p.id}" ${state.usePackageId===p.id?'selected':''}>${esc(p.name)} (${p.remaining} session${p.remaining!==1?'s':''} left)</option>`).join('')}
+              <option value="">${t.pkgNormal}</option>
+              ${eligible.map(p => `<option value="${p.id}" ${state.usePackageId===p.id?'selected':''}>${esc(p.name)} (${t.pkgSessions(p.remaining)})</option>`).join('')}
             </select>
-            <div class="muted" style="font-size:.82rem;margin-top:.4rem">Selecting a package makes this visit <strong>$0</strong> at checkout.</div>
+            <div class="muted" style="font-size:.82rem;margin-top:.4rem">${t.pkgNote}</div>
           </div>`;
         })()}
         <div style="background:var(--bg-soft);border-radius:12px;padding:1rem 1.2rem;margin-top:1rem">
           <label style="display:flex;gap:.6rem;align-items:center;font-weight:600;cursor:pointer">
-            <input type="checkbox" id="rec-on" ${state.recurring.on?'checked':''}> Make this a recurring visit
+            <input type="checkbox" id="rec-on" ${state.recurring.on?'checked':''}> ${t.recurLabel}
           </label>
           <div id="rec-opts" style="${state.recurring.on?'display:flex':'display:none'};margin-top:.8rem;gap:1rem;flex-wrap:wrap">
-            <div class="field" style="margin:0;flex:1;min-width:160px"><label>Repeat</label>
+            <div class="field" style="margin:0;flex:1;min-width:160px"><label>${t.recurRepeat}</label>
               <select id="rec-cadence" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px">
-                <option value="weekly">Every week</option>
-                <option value="biweekly">Every 2 weeks</option>
-                <option value="every4weeks">Every 4 weeks</option>
+                <option value="weekly">${t.weekly}</option>
+                <option value="biweekly">${t.biweekly}</option>
+                <option value="every4weeks">${t.every4}</option>
               </select></div>
-            <div class="field" style="margin:0;width:140px"><label>How many</label>
+            <div class="field" style="margin:0;width:140px"><label>${t.howMany}</label>
               <select id="rec-count" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px">
-                ${[2,3,4,5,6,8,10,12].map(n=>`<option value="${n}">${n} visits</option>`).join('')}
+                ${[2,3,4,5,6,8,10,12].map(n=>`<option value="${n}">${t.visits(n)}</option>`).join('')}
               </select></div>
           </div>
-          <p class="muted" style="font-size:.8rem;margin:.6rem 0 0">Same artist (${esc(staffName)}) and time on each date. We'll flag any date that's unavailable.</p>
+          <p class="muted" style="font-size:.8rem;margin:.6rem 0 0">${t.recurNote(esc(staffName))}</p>
         </div>
-        ${navButtons(3, 'Confirm booking ✓', null, true)}`;
+        ${navButtons(3, t.confirm, null, true)}`;
       const nb = panel.querySelector('#nextBtn');
       nb.addEventListener('click', submitBooking);
       ['name','phone','email','notes'].forEach(k => {
@@ -314,26 +542,27 @@
       const gcMsg = panel.querySelector('#gc-msg');
       gcInput.addEventListener('input', e => { state.giftCardCode = e.target.value; state.giftCardInfo = null; gcMsg.textContent = ''; });
       panel.querySelector('#gc-apply').addEventListener('click', async () => {
+        const tt = T();
         const code = state.giftCardCode.trim();
         if (!code) return;
-        gcMsg.textContent = 'Checking…'; gcMsg.style.color = 'var(--muted)';
+        gcMsg.textContent = tt.gcChecking; gcMsg.style.color = 'var(--muted)';
         const res = await api.giftCardLookup(code);
         if (!res.ok) {
-          gcMsg.textContent = res.data.error || 'Gift card not found.';
+          gcMsg.textContent = res.data.error || tt.gcNotFound;
           gcMsg.style.color = 'var(--rose-deep)';
           state.giftCardInfo = null;
         } else if (res.data.paymentStatus !== 'paid') {
-          gcMsg.textContent = 'That gift card has not been paid for yet.';
+          gcMsg.textContent = tt.gcUnpaid;
           gcMsg.style.color = 'var(--rose-deep)';
           state.giftCardInfo = null;
         } else if (res.data.status === 'void' || res.data.balance <= 0) {
-          gcMsg.textContent = 'That gift card has no remaining balance.';
+          gcMsg.textContent = tt.gcEmpty;
           gcMsg.style.color = 'var(--rose-deep)';
           state.giftCardInfo = null;
         } else {
           state.giftCardInfo = res.data;
           const saves = Math.min(res.data.balance, totalPrice());
-          gcMsg.innerHTML = `✓ Gift card accepted — ${money(saves)} will be applied at checkout.`;
+          gcMsg.innerHTML = tt.gcOk(money(saves));
           gcMsg.style.color = '#2f7a45';
         }
       });
@@ -358,10 +587,11 @@
     }
 
     async function submitBooking() {
+      const t = T();
       const c = state.customer;
-      if (!c.name.trim() || !c.phone.trim()) { toast('Please add your name and phone.'); return; }
+      if (!c.name.trim() || !c.phone.trim()) { toast(t.namePhoneErr); return; }
       const nb = document.querySelector('#nextBtn');
-      nb.disabled = true; nb.textContent = 'Booking…';
+      nb.disabled = true; nb.textContent = t.bookingNow;
       const staffId = state.chosenStaff || state.staffId;
 
       if (state.recurring.on) {
@@ -370,8 +600,8 @@
           customer: c, cadence: state.recurring.cadence, count: state.recurring.count
         });
         if (!res.ok) {
-          toast(res.data.error || 'Could not book the series — please try again.');
-          nb.disabled = false; nb.textContent = 'Confirm booking ✓';
+          toast(res.data.error || t.couldNotBookSeries);
+          nb.disabled = false; nb.textContent = t.confirm;
           return;
         }
         renderSeriesSuccess(res.data);
@@ -384,31 +614,32 @@
       if (state.pointsToRedeem > 0) bookPayload.pointsToRedeem = state.pointsToRedeem;
       const res = await api.book(bookPayload);
       if (!res.ok) {
-        toast(res.data.error || 'Could not book — please try again.');
-        nb.disabled = false; nb.textContent = 'Confirm booking ✓';
-        if (res.status === 409) go(3); // slot taken — back to time picker
+        toast(res.data.error || t.couldNotBook);
+        nb.disabled = false; nb.textContent = t.confirm;
+        if (res.status === 409) go(3);
         return;
       }
       renderSuccess(res.data.booking);
     }
 
     function renderSeriesSuccess(d) {
+      const t = T();
       document.querySelectorAll('.step').forEach(el => el.classList.add('done'));
       const first = d.booked[0];
       document.getElementById('panel').innerHTML = `
         <div class="success">
           <div class="check">✓</div>
-          <h2>You're booked, ${esc(first.customer.name.split(' ')[0])}!</h2>
-          <p class="muted">We reserved ${d.booked.length} visit${d.booked.length>1?'s':''} with ${esc(first.staffName)}. A reminder is sent before each one.</p>
+          <h2>${t.bookedTitle(esc(first.customer.name.split(' ')[0]))}</h2>
+          <p class="muted">${t.seriesBooked(d.booked.length, esc(first.staffName))}</p>
           <div style="background:var(--bg-soft);border-radius:12px;padding:1.2rem;margin:1.4rem auto 0;max-width:460px;text-align:left">
             ${d.booked.map(b => `<div class="summary-line"><span>${b.date} · ${b.time}</span><strong>${b.ref}</strong></div>`).join('')}
           </div>
           ${d.skipped && d.skipped.length ? `<div style="background:#fff3cd;border-radius:10px;padding:.8rem 1.2rem;font-size:.85rem;margin:1rem auto 0;max-width:460px;text-align:left">
-            <strong>Heads up</strong> — we couldn't book ${d.skipped.length} date${d.skipped.length>1?'s':''} (${d.skipped.map(s=>s.date).join(', ')}). Book those individually if you'd like.</div>` : ''}
+            ${t.seriesSkipped(d.skipped.length)} (${d.skipped.map(s=>s.date).join(', ')})</div>` : ''}
           <div style="margin-top:1.8rem;display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap">
-            ${d.booked.map(b => `<a class="btn btn-ghost" href="/api/bookings/ics?ref=${b.ref}&phone=${encodeURIComponent(first.customer.phone)}" download>📅 Add ${b.ref} to Calendar</a>`).join('')}
-            <a class="btn btn-primary" href="booking.html">Book another</a>
-            <a class="btn btn-ghost" href="index.html">Back home</a>
+            ${d.booked.map(b => `<a class="btn btn-ghost" href="/api/bookings/ics?ref=${b.ref}&phone=${encodeURIComponent(first.customer.phone)}" download>📅 ${t.addCalSeries(b.ref)}</a>`).join('')}
+            <a class="btn btn-primary" href="booking.html">${t.bookAnother}</a>
+            <a class="btn btn-ghost" href="index.html">${t.backHome}</a>
           </div>
         </div>`;
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -416,61 +647,62 @@
     }
 
     function renderSuccess(b) {
+      const t = T();
       document.querySelectorAll('.step').forEach(el => el.classList.add('done'));
       document.getElementById('panel').innerHTML = `
         <div class="success">
           <div class="check">✓</div>
-          <h2>You're booked, ${esc(b.customer.name.split(' ')[0])}!</h2>
-          <p class="muted">We've reserved your spot. A reminder will be sent before your visit.</p>
-          ${b.depositStatus === 'pending' ? `<p style="background:#fff3cd;border-radius:10px;padding:.7rem 1.2rem;font-size:.9rem;margin:.6rem auto;max-width:420px"><strong>Deposit required</strong> — your artist will collect a deposit when you arrive.</p>` : ''}
+          <h2>${t.bookedTitle(esc(b.customer.name.split(' ')[0]))}</h2>
+          <p class="muted">${t.bookedSub}</p>
+          ${b.depositStatus === 'pending' ? `<p style="background:#fff3cd;border-radius:10px;padding:.7rem 1.2rem;font-size:.9rem;margin:.6rem auto;max-width:420px"><strong>${t.pkgDepositRequired}</strong> — ${t.depositPending}</p>` : ''}
           <div class="ref-box">${b.ref}</div>
           <div style="background:var(--bg-soft);border-radius:12px;padding:1.2rem;margin:1.6rem auto 0;max-width:420px;text-align:left">
-            <div class="summary-line"><span>Service</span><strong>${esc(b.serviceName)}</strong></div>
-            <div class="summary-line"><span>Artist</span><strong>${esc(b.staffName)}</strong></div>
-            <div class="summary-line"><span>When</span><strong>${b.date} · ${b.time}</strong></div>
-            ${b.packageRedemption ? `<div class="summary-line"><span>List price</span><strong>${money(b.listPrice)}</strong></div>
-            <div class="summary-line"><span>Package (${esc(b.packageRedemption.packageName)})</span><strong style="color:#2f7a45">Prepaid</strong></div>` : ''}
-            ${b.giftCardApplied ? `${!b.packageRedemption ? `<div class="summary-line"><span>List price</span><strong>${money(b.listPrice)}</strong></div>` : ''}
-            <div class="summary-line"><span>Gift card (${esc(b.giftCardApplied.code)})</span><strong style="color:#2f7a45">− ${money(b.giftCardApplied.amount)}</strong></div>` : ''}
-            ${b.pointsRedeemed ? `${b.listPrice != null && !b.giftCardApplied && !b.packageRedemption ? `<div class="summary-line"><span>List price</span><strong>${money(b.listPrice)}</strong></div>` : ''}
-            <div class="summary-line"><span>Reward points (${b.pointsRedeemed.points} pts)</span><strong style="color:#2f7a45">− ${money(b.pointsRedeemed.savedAmount)}</strong></div>` : ''}
-            <div class="summary-line"><span>Due at salon</span><strong>${money(b.price)}</strong></div>
+            <div class="summary-line"><span>${t.serviceLabel}</span><strong>${esc(b.serviceName)}</strong></div>
+            <div class="summary-line"><span>${t.artistLabel}</span><strong>${esc(b.staffName)}</strong></div>
+            <div class="summary-line"><span>${t.whenLabel}</span><strong>${b.date} · ${b.time}</strong></div>
+            ${b.packageRedemption ? `<div class="summary-line"><span>${t.listPrice}</span><strong>${money(b.listPrice)}</strong></div>
+            <div class="summary-line"><span>${esc(b.packageRedemption.packageName)}</span><strong style="color:#2f7a45">Prepaid</strong></div>` : ''}
+            ${b.giftCardApplied ? `${!b.packageRedemption ? `<div class="summary-line"><span>${t.listPrice}</span><strong>${money(b.listPrice)}</strong></div>` : ''}
+            <div class="summary-line"><span>${t.giftCardLine(esc(b.giftCardApplied.code))}</span><strong style="color:#2f7a45">− ${money(b.giftCardApplied.amount)}</strong></div>` : ''}
+            ${b.pointsRedeemed ? `${b.listPrice != null && !b.giftCardApplied && !b.packageRedemption ? `<div class="summary-line"><span>${t.listPrice}</span><strong>${money(b.listPrice)}</strong></div>` : ''}
+            <div class="summary-line"><span>${t.pointsLine(b.pointsRedeemed.points)}</span><strong style="color:#2f7a45">− ${money(b.pointsRedeemed.savedAmount)}</strong></div>` : ''}
+            <div class="summary-line"><span>${t.dueAtSalon}</span><strong>${money(b.price)}</strong></div>
           </div>
           <div style="margin-top:1.8rem;display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap">
-            <a class="btn btn-ghost" href="/api/bookings/ics?ref=${b.ref}&phone=${encodeURIComponent(b.customer.phone)}" download>📅 Add to Calendar</a>
-            <a class="btn btn-primary" href="booking.html">Book another</a>
-            <a class="btn btn-ghost" href="index.html">Back home</a>
+            <a class="btn btn-ghost" href="/api/bookings/ics?ref=${b.ref}&phone=${encodeURIComponent(b.customer.phone)}" download>📅 ${t.addCal}</a>
+            <a class="btn btn-primary" href="booking.html">${t.bookAnother}</a>
+            <a class="btn btn-ghost" href="index.html">${t.backHome}</a>
           </div>
           <div id="ref-nudge" style="margin-top:1.6rem"></div>
         </div>`;
       window.scrollTo({ top: 0, behavior: 'smooth' });
       focusPanelHeading(document.getElementById('panel'));
-      // Async: inject referral card for logged-in customers
       Promise.all([api.me(), fetch('/api/referral').then(r => r.ok ? r.json() : null).catch(() => null)]).then(([me, ref]) => {
+        const tt = T();
         const nudge = document.getElementById('ref-nudge');
         if (!nudge || !me.ok || !ref || !ref.referralCode) return;
         const url = location.origin + '/register.html?ref=' + encodeURIComponent(ref.referralCode);
         nudge.innerHTML = `
           <div style="background:var(--bg-soft);border-radius:14px;padding:1.2rem 1.4rem;max-width:420px;margin:0 auto;text-align:left">
-            <p style="font-weight:600;margin:0 0 .3rem;font-size:.95rem">Loved your visit? Tell a friend</p>
-            <p class="muted" style="font-size:.85rem;margin:0 0 .9rem">Share your code and both of you earn bonus reward points when they book.</p>
+            <p style="font-weight:600;margin:0 0 .3rem;font-size:.95rem">${tt.referralTitle}</p>
+            <p class="muted" style="font-size:.85rem;margin:0 0 .9rem">${tt.referralSub}</p>
             <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
               <code style="background:#fff;padding:.35rem .8rem;border-radius:8px;font-size:.95rem;letter-spacing:.07em;border:1px solid var(--line)">${esc(ref.referralCode)}</code>
-              <button class="btn btn-ghost btn-sm" id="nudge-share">Share link</button>
+              <button class="btn btn-ghost btn-sm" id="nudge-share">${tt.shareLink}</button>
             </div>
           </div>`;
         document.getElementById('nudge-share').addEventListener('click', () => {
+          const ttt = T();
           if (navigator.share) {
-            navigator.share({ title: 'Join Lumière Beauty & Nail Studio', text: 'Sign up and get 100 bonus points!', url });
+            navigator.share({ title: 'Join Lumière Beauty & Nail Studio', text: ttt.referralShareMsg, url });
           } else {
-            navigator.clipboard.writeText(url).then(() => toast('Referral link copied!')).catch(() => toast('Your link: ' + url));
+            navigator.clipboard.writeText(url).then(() => toast(ttt.referralCopied)).catch(() => toast('Your link: ' + url));
           }
         });
       });
     }
 
     function go(step) {
-      // guard forward navigation
       if (step >= 2 && state.serviceIds.length === 0) return;
       if (step >= 3 && !state.staffId) return;
       if (step >= 4 && !state.time) return;
@@ -481,13 +713,14 @@
     window.go = go;
 
     document.addEventListener('DOMContentLoaded', async () => {
+      // Apply initial lang
+      setLang(lang);
       CFG = window.__CFG__ || (window.__CFG__ = await api.config());
       const params = new URLSearchParams(location.search);
       const pre = params.get('service');
       if (pre && CFG.services.some(s => s.id === pre)) { state.serviceIds = [pre]; }
       const preStaff = params.get('staff');
       if (preStaff && CFG.staff.some(p => p.id === preStaff)) { state.staffId = preStaff; }
-      // Pre-fill contact details for logged-in customers; cache their packages.
       const me = await api.me();
       if (me.ok) {
         state.customer.name = me.data.customer.name || '';
