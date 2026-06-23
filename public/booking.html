@@ -34,7 +34,7 @@
     </section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js"></script>
+  <script src="js/common.js?v=2"></script>
   <script>
     let CFG;
     const state = { step: 1, serviceIds: [], staffId: null, date: null, time: null,
@@ -429,8 +429,11 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       CFG = window.__CFG__ || (window.__CFG__ = await api.config());
-      const pre = new URLSearchParams(location.search).get('service');
+      const params = new URLSearchParams(location.search);
+      const pre = params.get('service');
       if (pre && CFG.services.some(s => s.id === pre)) { state.serviceIds = [pre]; }
+      const preStaff = params.get('staff');
+      if (preStaff && CFG.staff.some(p => p.id === preStaff)) { state.staffId = preStaff; }
       // Pre-fill contact details for logged-in customers; cache their packages.
       const me = await api.me();
       if (me.ok) {

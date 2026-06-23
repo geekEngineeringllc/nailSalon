@@ -23,23 +23,58 @@
         <h2>Meet the team</h2>
         <p class="muted">Every artist at Lumière is a specialist. Read their story, then book the hands you trust.</p>
       </div>
-      <div class="grid grid-4" id="team"></div>
+      <div class="grid grid-2" id="team" style="max-width:900px;margin-inline:auto"></div>
     </section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
   <script src="js/common.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
-      const CFG = window.__CFG__ || (window.__CFG__ = await api.config());
+      const [CFG, rvData] = await Promise.all([
+        window.__CFG__ || api.config().then(c => (window.__CFG__ = c)),
+        api.reviews(),
+      ]);
+
+      // Build per-staff avg rating from reviews joined through bookings
+      // Reviews carry serviceId; use them per-artist via their service list
+      const staffRatings = {};
+      (rvData.reviews || []).forEach(r => {
+        const svc = (CFG.services || []).find(s => s.id === r.serviceId);
+        if (!svc) return;
+        (svc.staffIds || []).forEach(sid => {
+          if (!staffRatings[sid]) staffRatings[sid] = { sum: 0, count: 0 };
+          staffRatings[sid].sum += r.rating;
+          staffRatings[sid].count += 1;
+        });
+      });
+
       document.getElementById('team').innerHTML = CFG.staff.map(p => {
-        const svcs = CFG.services.filter(s => s.staffIds.includes(p.id)).slice(0,3).map(s=>s.name);
-        return `<div class="card team-card">
-          <div class="avatar">${p.name.split(' ').map(w=>w[0]).join('')}</div>
-          <h3>${p.name}</h3>
-          <p class="muted" style="font-size:.85rem;margin-bottom:.6rem">${p.title}</p>
-          <p style="font-size:.9rem">${p.bio}</p>
-          <div class="tags">${p.specialties.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
-          <a class="btn btn-ghost btn-sm" style="margin-top:1rem" href="booking.html">Book with ${p.name.split(' ')[0]}</a>
+        const initials = p.name.split(' ').map(w => w[0]).join('');
+        const firstName = p.name.split(' ')[0];
+        const svcs = CFG.services.filter(s => (s.staffIds || []).includes(p.id));
+        const svcNames = svcs.slice(0, 3).map(s => esc(s.name));
+        const moreCount = svcs.length - 3;
+        const sr = staffRatings[p.id];
+        const ratingHtml = sr
+          ? `<div style="font-size:.82rem;color:#c6960a;margin:.4rem 0">
+               ${'★'.repeat(Math.round(sr.sum / sr.count))}${'☆'.repeat(5 - Math.round(sr.sum / sr.count))}
+               <span style="color:var(--text-muted);font-size:.78rem">${(sr.sum / sr.count).toFixed(1)} (${sr.count} review${sr.count > 1 ? 's' : ''})</span>
+             </div>`
+          : '';
+        return `<div class="card team-card" style="display:flex;gap:1.4rem;align-items:flex-start;text-align:left">
+          <div class="avatar" style="flex-shrink:0;width:3.2rem;height:3.2rem;font-size:1.1rem">${esc(initials)}</div>
+          <div style="flex:1;min-width:0">
+            <h3 style="margin:0 0 .15rem">${esc(p.name)}</h3>
+            <p class="muted" style="font-size:.82rem;margin:0 0 .5rem">${esc(p.title)}</p>
+            ${ratingHtml}
+            <p style="font-size:.88rem;margin:0 0 .7rem;line-height:1.55">${esc(p.bio)}</p>
+            ${svcs.length ? `<div style="font-size:.8rem;color:var(--text-muted);margin-bottom:.7rem">
+              <strong style="color:var(--text);font-size:.78rem;text-transform:uppercase;letter-spacing:.06em">Services</strong><br>
+              ${svcNames.join(' · ')}${moreCount > 0 ? ` <span class="muted">+${moreCount} more</span>` : ''}
+            </div>` : ''}
+            <div class="tags" style="margin-bottom:.9rem">${(p.specialties || []).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
+            <a class="btn btn-primary btn-sm" href="booking.html?staff=${p.id}">Book with ${esc(firstName)}</a>
+          </div>
         </div>`;
       }).join('');
     });
