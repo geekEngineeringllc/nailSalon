@@ -535,22 +535,25 @@ async function renderChrome() {
     const meRes = await api.me();
     const cust = meRes.ok ? meRes.data.customer : null;
     const authLink = cust
-      ? `<li><a href="account.html" class="${page === 'account.html' ? 'active' : ''}">${t('nav.hi', esc(cust.name.split(' ')[0]))}</a></li>`
-      : `<li><a href="login.html" class="${page === 'login.html' ? 'active' : ''}">${t('nav.login')}</a></li>`;
+      ? `<li><a href="account.html" class="${page === 'account.html' ? 'active' : ''}"${page === 'account.html' ? ' aria-current="page"' : ''}>${t('nav.hi', esc(cust.name.split(' ')[0]))}</a></li>`
+      : `<li><a href="login.html" class="${page === 'login.html' ? 'active' : ''}"${page === 'login.html' ? ' aria-current="page"' : ''}>${t('nav.login')}</a></li>`;
     header.innerHTML = `
       <a class="skip-link" href="#main-content">Skip to main content</a>
       <div class="container nav">
         <a class="brand" href="index.html">Lumière<span>.</span></a>
-        <button class="nav-toggle" aria-label="${t('nav.menu')}">☰</button>
-        <ul class="nav-links">
-          ${NAV.map(([h, k]) => `<li><a href="${h}" class="${h === page ? 'active' : ''}">${t(k)}</a></li>`).join('')}
+        <button class="nav-toggle" aria-label="${t('nav.menu')}" aria-expanded="false" aria-controls="primary-nav">☰</button>
+        <ul class="nav-links" id="primary-nav">
+          ${NAV.map(([h, k]) => `<li><a href="${h}" class="${h === page ? 'active' : ''}"${h === page ? ' aria-current="page"' : ''}>${t(k)}</a></li>`).join('')}
           ${authLink}
           <li><button type="button" class="theme-toggle" data-theme-toggle></button></li>
           <li><a class="btn btn-primary btn-sm" href="booking.html">${t('nav.book-now')}</a></li>
         </ul>
       </div>`;
     const toggle = header.querySelector('.nav-toggle');
-    toggle.addEventListener('click', () => header.querySelector('.nav-links').classList.toggle('open'));
+    toggle.addEventListener('click', () => {
+      const open = header.querySelector('.nav-links').classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
   }
 
   const footer = document.getElementById('site-footer');

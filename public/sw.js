@@ -1,7 +1,7 @@
-const CACHE = 'lumiere-v4';
+const CACHE = 'lumiere-v5';
 const SHELL = [
   '/css/styles.css',
-  '/js/common.js?v=10',
+  '/js/common.js?v=11',
   '/offline.html',
   '/favicon.svg',
 ];
