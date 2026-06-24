@@ -542,10 +542,33 @@
           <span id="sl-msg" style="font-size:.85rem"></span>
         </div>
       </div>
+
+      <!-- Homepage sections -->
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin:2rem 0 .4rem">
+        <h3 style="margin:0">Homepage sections</h3>
+      </div>
+      <div class="card" style="padding:1.6rem;max-width:680px">
+        <p class="muted" style="font-size:.85rem;margin:0 0 1.2rem">Tick the blocks you want shown on the public homepage. The hero banner always shows.</p>
+        <div class="grid grid-2" style="gap:.55rem 1.4rem">
+          <label style="display:flex;align-items:center;gap:.55rem;font-size:.92rem;cursor:pointer"><input type="checkbox" id="hs-valueProps"> Feature cards (why book)</label>
+          <label style="display:flex;align-items:center;gap:.55rem;font-size:.92rem;cursor:pointer"><input type="checkbox" id="hs-services"> Services preview</label>
+          <label style="display:flex;align-items:center;gap:.55rem;font-size:.92rem;cursor:pointer"><input type="checkbox" id="hs-trust"> Trust badges</label>
+          <label style="display:flex;align-items:center;gap:.55rem;font-size:.92rem;cursor:pointer"><input type="checkbox" id="hs-team"> Team preview</label>
+          <label style="display:flex;align-items:center;gap:.55rem;font-size:.92rem;cursor:pointer"><input type="checkbox" id="hs-gallery"> Gallery preview</label>
+          <label style="display:flex;align-items:center;gap:.55rem;font-size:.92rem;cursor:pointer"><input type="checkbox" id="hs-testimonials"> Testimonials</label>
+          <label style="display:flex;align-items:center;gap:.55rem;font-size:.92rem;cursor:pointer"><input type="checkbox" id="hs-visit"> Visit &amp; hours</label>
+          <label style="display:flex;align-items:center;gap:.55rem;font-size:.92rem;cursor:pointer"><input type="checkbox" id="hs-cta"> Closing call-to-action</label>
+        </div>
+        <div class="field" style="margin:1.1rem 0 0;max-width:300px"><label>Gallery preview — number of images</label><input id="hs-count" type="number" min="1" max="24" style="width:100%;padding:.6rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"></div>
+        <div style="margin-top:1.2rem;display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" id="hs-save">Save homepage</button>
+          <span id="hs-msg" style="font-size:.85rem"></span>
+        </div>
+      </div>
     </section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js?v=11"></script>
+  <script src="js/common.js?v=12"></script>
   <script>
     function bars(obj, labels) {
       const entries = Object.entries(obj);
@@ -2283,6 +2306,31 @@
           window.__CFG__ = null; // bust cached config so next page load picks up changes
         } else {
           msg.style.color = 'var(--rose-deep)'; msg.textContent = r.data.error || 'Could not save.';
+        }
+        setTimeout(() => { msg.textContent = ''; }, 4000);
+      });
+
+      // Homepage sections — populate checkboxes + count, then save
+      const HS_KEYS = ['valueProps','services','trust','team','gallery','testimonials','visit','cta'];
+      api.config().then(cfg => {
+        const hs = (cfg.salon && cfg.salon.homeSections) || {};
+        HS_KEYS.forEach(k => { const el = document.getElementById('hs-' + k); if (el) el.checked = hs[k] !== false; });
+        const cnt = document.getElementById('hs-count'); if (cnt) cnt.value = (cfg.salon && cfg.salon.galleryPreviewCount) || 8;
+      });
+      document.getElementById('hs-save').addEventListener('click', async () => {
+        const saveBtn = document.getElementById('hs-save');
+        const msg = document.getElementById('hs-msg');
+        const sections = {};
+        HS_KEYS.forEach(k => { sections[k] = !!(document.getElementById('hs-' + k) || {}).checked; });
+        const galleryPreviewCount = parseInt((document.getElementById('hs-count') || {}).value, 10) || 8;
+        saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+        const r = await api.updateHomeSections({ sections, galleryPreviewCount });
+        saveBtn.disabled = false; saveBtn.textContent = 'Save homepage';
+        if (r.ok) {
+          msg.style.color = '#2f7a45'; msg.textContent = '✓ Homepage updated.';
+          window.__CFG__ = null; // bust cached config so the homepage picks up changes
+        } else {
+          msg.style.color = 'var(--rose-deep)'; msg.textContent = (r.data && r.data.error) || 'Could not save.';
         }
         setTimeout(() => { msg.textContent = ''; }, 4000);
       });

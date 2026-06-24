@@ -47,7 +47,18 @@
     "city": "Riverside",
     "region": "CA",
     "country": "US",
-    "postalCode": ""
+    "postalCode": "",
+    "homeSections": {
+      "valueProps": true,
+      "services": true,
+      "trust": true,
+      "team": true,
+      "gallery": true,
+      "testimonials": true,
+      "visit": true,
+      "cta": true
+    },
+    "galleryPreviewCount": 8
   },
   "categories": [
     {

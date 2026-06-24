@@ -3003,6 +3003,24 @@ async function handleAPI(req, res, url) {
     });
   }
 
+  // PATCH /api/admin/home-sections — show/hide homepage sections + gallery preview count
+  if (req.method === 'PATCH' && url.pathname === '/api/admin/home-sections') {
+    const HOME_SECTION_KEYS = ['valueProps', 'services', 'trust', 'team', 'gallery', 'testimonials', 'visit', 'cta'];
+    const body = await readBody(req);
+    const sections = {};
+    const src = body.sections && typeof body.sections === 'object' ? body.sections : {};
+    for (const k of HOME_SECTION_KEYS) sections[k] = src[k] !== false;  // default visible
+    const count = Math.max(1, Math.min(24, parseInt(body.galleryPreviewCount, 10) || 8));
+    return withLock(() => {
+      const fresh = loadDB();
+      fresh.salon.homeSections = sections;
+      fresh.salon.galleryPreviewCount = count;
+      saveDB(fresh);
+      audit(req, 'admin.home-sections.update', { hidden: HOME_SECTION_KEYS.filter((k) => !sections[k]), galleryPreviewCount: count });
+      return sendJSON(res, 200, { ok: true, homeSections: sections, galleryPreviewCount: count });
+    });
+  }
+
   return sendJSON(res, 404, { error: 'Unknown API route.' });
 }
 
