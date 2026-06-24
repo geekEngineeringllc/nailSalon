@@ -10,6 +10,30 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    /* Admin section quick-nav (sticky scroll-spy bar) */
+    #admin-secnav {
+      position: sticky; top: 56px; z-index: 40;
+      display: flex; gap: .4rem; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      padding: .6rem 0; margin: 0 0 1.8rem;
+      background: var(--header-bg); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line); scrollbar-width: thin;
+    }
+    #admin-secnav a {
+      flex: 0 0 auto; padding: .42rem .9rem; border-radius: 999px;
+      font-size: .82rem; font-weight: 500; color: var(--ink-soft); text-decoration: none;
+      border: 1.5px solid var(--line); background: var(--surface); white-space: nowrap;
+      transition: background .2s, color .2s, border-color .2s;
+    }
+    #admin-secnav a:hover { border-color: var(--rose); color: var(--ink); }
+    #admin-secnav a.active { background: var(--rose-deep); border-color: var(--rose-deep); color: #fff; }
+    [id^="asec-"] { scroll-margin-top: 112px; }
+    /* The admin has many inline-styled inputs with no background — make them all
+       theme-aware so dark mode doesn't render white boxes on a dark page. */
+    #main-content input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    #main-content textarea,
+    #main-content select { background: var(--surface); color: var(--ink); }
+  </style>
 </head>
 <body>
   <!-- Admin login gate — shown only when ADMIN_PASSWORD is configured and session has expired -->
@@ -32,11 +56,13 @@
       <div class="section-head" style="text-align:left;margin-bottom:2rem;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem">
         <div>
           <p class="eyebrow">Owner dashboard</p>
-          <h2 style="margin:0">Today at Lumière</h2>
+          <h2 style="margin:0" id="asec-dashboard">Today at Lumière</h2>
           <p class="muted">Live view of bookings, revenue and staff load.</p>
         </div>
         <button id="admin-logout" class="btn btn-ghost btn-sm" style="display:none;margin-top:.5rem">Sign out</button>
       </div>
+
+      <nav id="admin-secnav" aria-label="Jump to admin section"></nav>
 
       <div class="stat-grid" id="stats"></div>
 
@@ -159,7 +185,7 @@
 
       <!-- Weekly schedule calendar -->
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.6rem;margin-bottom:.6rem">
-        <h3 style="margin:0">Weekly schedule</h3>
+        <h3 style="margin:0" id="asec-schedule">Weekly schedule</h3>
         <div style="display:flex;gap:.5rem;align-items:center">
           <button class="btn btn-ghost btn-sm" id="week-prev">&#8249; Prev</button>
           <span id="week-label" style="font-size:.88rem;font-weight:600;min-width:180px;text-align:center"></span>
@@ -172,7 +198,7 @@
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
-        <h3 style="margin:0">All appointments</h3>
+        <h3 style="margin:0" id="asec-bookings">All appointments</h3>
         <div style="display:flex;gap:.6rem;flex-wrap:wrap">
           <button class="btn btn-ghost btn-sm" id="groupBtn">+ Group / bridal party</button>
           <button class="btn btn-primary btn-sm" id="walkInBtn">+ Walk-in / phone booking</button>
@@ -269,7 +295,7 @@
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
-        <h3 style="margin:0">Marketing broadcasts</h3>
+        <h3 style="margin:0" id="asec-marketing">Marketing broadcasts</h3>
       </div>
       <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Send a one-off email or SMS to all opted-in customers. Use <code>{name}</code> for a personalised greeting. Customers can unsubscribe via the link added automatically to each email.</p>
       <div id="bcForm" style="background:var(--bg-soft);border-radius:12px;padding:1.2rem;margin-bottom:1rem">
@@ -301,7 +327,7 @@
         </table>
       </div>
 
-      <h3 style="margin-top:2.5rem;margin-bottom:.3rem">Customer reviews</h3>
+      <h3 style="margin-top:2.5rem;margin-bottom:.3rem" id="asec-reviews">Customer reviews</h3>
       <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Reviews submitted via the post-visit review link (ref-gated, no login required).</p>
       <div style="overflow-x:auto">
         <table class="bookings">
@@ -311,7 +337,7 @@
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
-        <h3 style="margin:0">Waitlist</h3>
+        <h3 style="margin:0" id="asec-waitlist">Waitlist</h3>
       </div>
       <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Customers who joined the waitlist for a specific date and service. When a booking is cancelled the first matching customer is notified automatically. Dismiss entries once resolved.</p>
       <div style="overflow-x:auto">
@@ -323,7 +349,7 @@
 
       <!-- Customer CRM -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
-        <h3 style="margin:0">Customers</h3>
+        <h3 style="margin:0" id="asec-customers">Customers</h3>
       </div>
       <p class="muted" style="margin-top:-.4rem;font-size:.9rem">All registered customers with booking stats, points balance, and spend. Click a row to view full history.</p>
       <div style="display:flex;gap:.6rem;margin-bottom:.8rem;flex-wrap:wrap;align-items:center">
@@ -352,7 +378,7 @@
 
       <!-- Retail store + inventory -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
-        <h3 style="margin:0">Retail products</h3>
+        <h3 style="margin:0" id="asec-retail">Retail products</h3>
         <button class="btn btn-primary btn-sm" id="addProduct">+ Add product</button>
       </div>
       <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Track retail inventory (polishes, skincare, tools). Record sales at the desk to keep stock counts accurate. Items at or below their low-stock threshold are highlighted.</p>
@@ -427,7 +453,7 @@
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
-        <h3 style="margin:0">Service menu</h3>
+        <h3 style="margin:0" id="asec-services">Service menu</h3>
         <button class="btn btn-primary btn-sm" id="addSvc">+ Add service</button>
       </div>
       <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Add, edit or remove services. Changes appear on the public menu immediately. Past bookings keep their original price.</p>
@@ -453,7 +479,7 @@
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;flex-wrap:wrap;gap:1rem">
-        <h3 style="margin:0">Team</h3>
+        <h3 style="margin:0" id="asec-team">Team</h3>
         <button class="btn btn-primary btn-sm" id="addStaff">+ Add artist</button>
       </div>
       <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Onboard or update artists. You can't remove an artist who is the only one assigned to a service — reassign it first.</p>
@@ -484,7 +510,7 @@
         </table>
       </div>
 
-      <h3 style="margin-top:2.5rem">Gallery</h3>
+      <h3 style="margin-top:2.5rem" id="asec-gallery">Gallery</h3>
       <p class="muted" style="margin-top:-.4rem;font-size:.9rem">Photos and emoji tiles shown on the public gallery page. Add an <em>Image URL</em> to show a real photo; leave blank to show the emoji tile.</p>
       <div style="overflow-x:auto;margin-bottom:1rem">
         <table class="bookings" id="galleryTable">
@@ -515,7 +541,7 @@
 
       <!-- Salon settings -->
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:.4rem">
-        <h3 style="margin:0">Salon settings</h3>
+        <h3 style="margin:0" id="asec-website">Salon settings</h3>
       </div>
       <div class="card" style="padding:1.6rem;max-width:680px">
         <p class="muted" style="font-size:.85rem;margin:0 0 1.2rem">These details appear in the footer, contact page, confirmation emails, and search results.</p>
@@ -2464,6 +2490,32 @@
       });
       } // end initDashboard
     });
+  </script>
+  <script>
+    // Admin section quick-nav with scroll-spy
+    (function () {
+      const SECTIONS = [
+        ['asec-dashboard', 'Dashboard'], ['asec-schedule', 'Schedule'], ['asec-bookings', 'Bookings'],
+        ['asec-waitlist', 'Waitlist'], ['asec-customers', 'Customers'], ['asec-reviews', 'Reviews'],
+        ['asec-marketing', 'Marketing'], ['asec-services', 'Services'], ['asec-team', 'Team'],
+        ['asec-gallery', 'Gallery'], ['asec-retail', 'Retail'], ['asec-website', 'Website'],
+      ];
+      const nav = document.getElementById('admin-secnav');
+      if (!nav) return;
+      const present = SECTIONS.filter(([id]) => document.getElementById(id));
+      nav.innerHTML = present.map(([id, label]) => `<a href="#${id}">${label}</a>`).join('');
+      const links = new Map(present.map(([id]) => [id, nav.querySelector(`a[href="#${id}"]`)]));
+      if ('IntersectionObserver' in window) {
+        const obs = new IntersectionObserver((entries) => {
+          entries.forEach((e) => {
+            if (!e.isIntersecting) return;
+            links.forEach((a) => a && a.classList.remove('active'));
+            const a = links.get(e.target.id); if (a) a.classList.add('active');
+          });
+        }, { rootMargin: '-112px 0px -70% 0px' });
+        present.forEach(([id]) => obs.observe(document.getElementById(id)));
+      }
+    })();
   </script>
 </body>
 </html>
