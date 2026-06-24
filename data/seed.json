@@ -58,7 +58,15 @@
       "visit": true,
       "cta": true
     },
-    "galleryPreviewCount": 8
+    "galleryPreviewCount": 8,
+    "navPages": {
+      "gallery": true,
+      "team": true,
+      "reviews": true,
+      "faq": true,
+      "giftcard": true,
+      "location": true
+    }
   },
   "categories": [
     {

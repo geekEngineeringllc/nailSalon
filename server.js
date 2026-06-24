@@ -292,6 +292,9 @@ function pageKey(urlPath) {
   return urlPath.replace(/^\//, '').replace(/\.html$/, '');
 }
 
+// Marketing pages the admin can show/hide in nav, footer and sitemap.
+const NAV_PAGE_KEYS = ['gallery', 'team', 'reviews', 'faq', 'giftcard', 'location'];
+
 const PAGE_SEO = {
   home:     { title: '{brand} — Beauty & Nail Salon in {city}',
               desc: '{brand} is a beauty parlor & nail salon in {cityRegion} offering {services}. Book your appointment online in seconds.',
@@ -3021,6 +3024,21 @@ async function handleAPI(req, res, url) {
     });
   }
 
+  // PATCH /api/admin/nav-pages — show/hide marketing pages in nav, footer & sitemap
+  if (req.method === 'PATCH' && url.pathname === '/api/admin/nav-pages') {
+    const body = await readBody(req);
+    const pages = {};
+    const src = body.pages && typeof body.pages === 'object' ? body.pages : {};
+    for (const k of NAV_PAGE_KEYS) pages[k] = src[k] !== false;  // default visible
+    return withLock(() => {
+      const fresh = loadDB();
+      fresh.salon.navPages = pages;
+      saveDB(fresh);
+      audit(req, 'admin.nav-pages.update', { hidden: NAV_PAGE_KEYS.filter((k) => !pages[k]) });
+      return sendJSON(res, 200, { ok: true, navPages: pages });
+    });
+  }
+
   return sendJSON(res, 404, { error: 'Unknown API route.' });
 }
 
@@ -3064,8 +3082,14 @@ const server = http.createServer((req, res) => {
       { loc: '/terms.html',       freq: 'yearly',  pri: '0.3' },
       { loc: '/sms-consent.html', freq: 'yearly',  pri: '0.3' },
     ];
+    // Drop admin-hidden marketing pages from the sitemap.
+    const navPages = (loadDB().salon || {}).navPages || {};
+    const visiblePages = pages.filter((p) => {
+      const key = p.loc.replace(/^\//, '').replace(/\.html$/, '');
+      return !(NAV_PAGE_KEYS.includes(key) && navPages[key] === false);
+    });
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${
-      pages.map(p => `  <url><loc>${base}${p.loc}</loc><lastmod>${today}</lastmod><changefreq>${p.freq}</changefreq><priority>${p.pri}</priority></url>`).join('\n')
+      visiblePages.map(p => `  <url><loc>${base}${p.loc}</loc><lastmod>${today}</lastmod><changefreq>${p.freq}</changefreq><priority>${p.pri}</priority></url>`).join('\n')
     }\n</urlset>\n`;
     res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=86400' });
     res.end(xml);

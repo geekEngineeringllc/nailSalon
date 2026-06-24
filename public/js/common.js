@@ -272,6 +272,7 @@ const api = {
   async updateProfile(payload) { const r = await fetch('/api/me', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async updateSalon(payload) { const r = await fetch('/api/admin/salon', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async updateHomeSections(payload) { const r = await fetch('/api/admin/home-sections', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); return { ok: r.ok, status: r.status, data: await r.json() }; },
+  async updateNavPages(payload) { const r = await fetch('/api/admin/nav-pages', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async marketingOptout() { const r = await fetch('/api/marketing/optout', { method: 'POST' }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async marketingOptin() { const r = await fetch('/api/marketing/optin', { method: 'POST' }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async adminBroadcasts() { return (await fetch('/api/admin/broadcasts')).json(); },
@@ -523,6 +524,11 @@ async function renderChrome() {
   const cfg = window.__CFG__ || (window.__CFG__ = await api.config());
   const page = location.pathname.split('/').pop() || 'index.html';
 
+  // Admin page visibility — hide toggled-off marketing pages from nav & footer.
+  const navPages = (cfg.salon && cfg.salon.navPages) || {};
+  const pageHidden = (key) => navPages[key] === false;
+  const NAV_KEY_BY_HREF = { 'gallery.html': 'gallery', 'team.html': 'team', 'reviews.html': 'reviews' };
+
   // Canonical URL — strip query params to prevent duplicate-content issues
   if (!document.querySelector('link[rel="canonical"]')) {
     const el = document.createElement('link');
@@ -544,7 +550,7 @@ async function renderChrome() {
         <a class="brand" href="index.html">Lumière<span>.</span></a>
         <button class="nav-toggle" aria-label="${t('nav.menu')}" aria-expanded="false" aria-controls="primary-nav">☰</button>
         <ul class="nav-links" id="primary-nav">
-          ${NAV.map(([h, k]) => `<li><a href="${h}" class="${h === page ? 'active' : ''}"${h === page ? ' aria-current="page"' : ''}>${t(k)}</a></li>`).join('')}
+          ${NAV.filter(([h]) => { const key = NAV_KEY_BY_HREF[h]; return !key || !pageHidden(key); }).map(([h, k]) => `<li><a href="${h}" class="${h === page ? 'active' : ''}"${h === page ? ' aria-current="page"' : ''}>${t(k)}</a></li>`).join('')}
           ${authLink}
           <li><button type="button" class="theme-toggle" data-theme-toggle></button></li>
           <li><a class="btn btn-primary btn-sm" href="booking.html">${t('nav.book-now')}</a></li>
@@ -584,10 +590,10 @@ async function renderChrome() {
         <span style="margin-left:auto;display:flex;gap:1.1rem;flex-wrap:wrap;align-items:center">
           <button type="button" class="theme-toggle" data-theme-toggle style="border-color:rgba(255,255,255,.35);color:#d7c7bd"></button>
           <a href="${langHref}" style="color:#b3a59c;text-decoration:none">${t('lang.switch')}</a>
-          <a href="location.html" style="color:#b3a59c;text-decoration:none">Location</a>
-          <a href="faq.html" style="color:#b3a59c;text-decoration:none">FAQ</a>
-          <a href="giftcard.html" style="color:#b3a59c;text-decoration:none">Gift Cards</a>
-          <a href="reviews.html" style="color:#b3a59c;text-decoration:none">Reviews</a>
+          ${!pageHidden('location') ? `<a href="location.html" style="color:#b3a59c;text-decoration:none">Location</a>` : ''}
+          ${!pageHidden('faq') ? `<a href="faq.html" style="color:#b3a59c;text-decoration:none">FAQ</a>` : ''}
+          ${!pageHidden('giftcard') ? `<a href="giftcard.html" style="color:#b3a59c;text-decoration:none">Gift Cards</a>` : ''}
+          ${!pageHidden('reviews') ? `<a href="reviews.html" style="color:#b3a59c;text-decoration:none">Reviews</a>` : ''}
           <a href="privacy.html" style="color:#b3a59c;text-decoration:none">${t('footer.privacy')}</a>
           <a href="terms.html" style="color:#b3a59c;text-decoration:none">${t('footer.terms')}</a>
           <a href="sms-consent.html" style="color:#b3a59c;text-decoration:none">${t('footer.sms')}</a>

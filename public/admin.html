@@ -565,10 +565,30 @@
           <span id="hs-msg" style="font-size:.85rem"></span>
         </div>
       </div>
+
+      <!-- Navigation pages -->
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin:2rem 0 .4rem">
+        <h3 style="margin:0">Navigation pages</h3>
+      </div>
+      <div class="card" style="padding:1.6rem;max-width:680px">
+        <p class="muted" style="font-size:.85rem;margin:0 0 1.2rem">Tick the pages to show in the menu &amp; footer. Unticked pages drop from navigation and the sitemap (they stay reachable by direct link).</p>
+        <div class="grid grid-2" style="gap:.55rem 1.4rem">
+          <label style="display:flex;align-items:center;gap:.55rem;font-size:.92rem;cursor:pointer"><input type="checkbox" id="np-gallery"> Gallery</label>
+          <label style="display:flex;align-items:center;gap:.55rem;font-size:.92rem;cursor:pointer"><input type="checkbox" id="np-team"> Team</label>
+          <label style="display:flex;align-items:center;gap:.55rem;font-size:.92rem;cursor:pointer"><input type="checkbox" id="np-reviews"> Reviews</label>
+          <label style="display:flex;align-items:center;gap:.55rem;font-size:.92rem;cursor:pointer"><input type="checkbox" id="np-location"> Location</label>
+          <label style="display:flex;align-items:center;gap:.55rem;font-size:.92rem;cursor:pointer"><input type="checkbox" id="np-faq"> FAQ</label>
+          <label style="display:flex;align-items:center;gap:.55rem;font-size:.92rem;cursor:pointer"><input type="checkbox" id="np-giftcard"> Gift cards</label>
+        </div>
+        <div style="margin-top:1.2rem;display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" id="np-save">Save navigation</button>
+          <span id="np-msg" style="font-size:.85rem"></span>
+        </div>
+      </div>
     </section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js?v=12"></script>
+  <script src="js/common.js?v=13"></script>
   <script>
     function bars(obj, labels) {
       const entries = Object.entries(obj);
@@ -2329,6 +2349,29 @@
         if (r.ok) {
           msg.style.color = '#2f7a45'; msg.textContent = '✓ Homepage updated.';
           window.__CFG__ = null; // bust cached config so the homepage picks up changes
+        } else {
+          msg.style.color = 'var(--rose-deep)'; msg.textContent = (r.data && r.data.error) || 'Could not save.';
+        }
+        setTimeout(() => { msg.textContent = ''; }, 4000);
+      });
+
+      // Navigation pages — populate checkboxes, then save
+      const NP_KEYS = ['gallery','team','reviews','location','faq','giftcard'];
+      api.config().then(cfg => {
+        const np = (cfg.salon && cfg.salon.navPages) || {};
+        NP_KEYS.forEach(k => { const el = document.getElementById('np-' + k); if (el) el.checked = np[k] !== false; });
+      });
+      document.getElementById('np-save').addEventListener('click', async () => {
+        const saveBtn = document.getElementById('np-save');
+        const msg = document.getElementById('np-msg');
+        const pages = {};
+        NP_KEYS.forEach(k => { pages[k] = !!(document.getElementById('np-' + k) || {}).checked; });
+        saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+        const r = await api.updateNavPages({ pages });
+        saveBtn.disabled = false; saveBtn.textContent = 'Save navigation';
+        if (r.ok) {
+          msg.style.color = '#2f7a45'; msg.textContent = '✓ Navigation updated.';
+          window.__CFG__ = null; // bust cached config so nav/footer pick up changes
         } else {
           msg.style.color = 'var(--rose-deep)'; msg.textContent = (r.data && r.data.error) || 'Could not save.';
         }
