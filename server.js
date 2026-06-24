@@ -1926,6 +1926,8 @@ async function handleAPI(req, res, url) {
     const completed = db.bookings.filter((b) => b.status === 'completed');
     const projectedRevenue = active.reduce((sum, b) => sum + (b.price || 0), 0);
     const actualRevenue = completed.reduce((sum, b) => sum + (b.price || 0), 0);
+    const noShowCount = db.bookings.filter((b) => b.status === 'no-show').length;
+    const noShowRate = (completed.length + noShowCount) ? Math.round((noShowCount / (completed.length + noShowCount)) * 100) : 0;
     const totalPointsIssued = (db.customers || []).reduce((sum, c) => sum + (c.points || 0), 0);
     const byCategory = {};
     for (const b of active) {
@@ -1995,6 +1997,8 @@ async function handleAPI(req, res, url) {
       totalBookings: db.bookings.length,
       activeBookings: active.length,
       cancelled: db.bookings.length - active.length,
+      noShow: noShowCount,
+      noShowRate,
       projectedRevenue,
       actualRevenue,
       totalPointsIssued,

@@ -1071,6 +1071,11 @@ function loadEsc() {
     try { const g = JSON.parse((ldMatch ? ldMatch[1] : '').replace(/\\u003c/g, '<')); ldOk = Array.isArray(g['@graph']) && g['@graph'].length > 0; } catch { /* invalid */ }
     ok('M22: home JSON-LD is valid with a @graph', ldOk, null);
 
+    // Dashboard stats expose no-show metrics (M23)
+    const statsR = await req('GET', '/api/stats');
+    ok('M23: /api/stats exposes noShow count', typeof statsR.b.noShow === 'number', statsR.b.noShow);
+    ok('M23: /api/stats exposes noShowRate (%)', typeof statsR.b.noShowRate === 'number', statsR.b.noShowRate);
+
   } catch (e) {
     fail++; console.log('  FAIL harness error →', e.message); if (log) console.log(log);
   } finally {

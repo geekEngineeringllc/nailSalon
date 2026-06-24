@@ -33,6 +33,13 @@
     #main-content input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
     #main-content textarea,
     #main-content select { background: var(--surface); color: var(--ink); }
+    /* Dashboard alert chips */
+    .dash-alert { display: inline-flex; align-items: center; gap: .35rem; padding: .5rem .95rem; border-radius: 10px;
+      font-size: .85rem; text-decoration: none; background: var(--rose-tint); color: var(--ink);
+      border: 1px solid var(--line); transition: transform .15s var(--ease); }
+    .dash-alert:hover { transform: translateY(-1px); border-color: var(--rose); }
+    .dash-alert.warn { background: #fcf0dd; color: #7a5a1e; border-color: #ecd9b0; }
+    .dash-alert strong { font-weight: 700; }
   </style>
 </head>
 <body>
@@ -65,6 +72,9 @@
       <nav id="admin-secnav" aria-label="Jump to admin section"></nav>
 
       <div class="stat-grid" id="stats"></div>
+
+      <div id="dash-alerts" style="margin-bottom:1.4rem"></div>
+      <div id="today-agenda" class="card" style="margin-bottom:2.5rem"></div>
 
       <div class="grid grid-3" style="margin-bottom:2.5rem">
         <div class="card"><h3 style="font-size:1rem">By category</h3><div id="byCat"></div></div>
@@ -788,6 +798,47 @@
           '<p class="muted" style="font-size:.78rem;margin-top:.6rem;margin-bottom:0">Active bookings · confirmed &amp; completed</p></div>';
     }
 
+    // Richer dashboard: today's agenda timeline + actionable alerts.
+    async function renderDashboardExtras(wlData) {
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+      const [todayData, lowData] = await Promise.all([
+        api.bookings({ date: todayStr }).catch(() => ({ bookings: [] })),
+        api.lowStockProducts().catch(() => ({ products: [] })),
+      ]);
+      const todays = (todayData.bookings || []).filter(b => b.status !== 'cancelled')
+        .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+      const lowStock = lowData.products || [];
+      const waitlist = (wlData && wlData.waitlist) || [];
+      const depositsDue = todays.filter(b => b.depositStatus === 'pending');
+
+      // Actionable alerts
+      const alerts = [];
+      if (depositsDue.length) alerts.push(`<a href="#asec-bookings" class="dash-alert"><strong>${depositsDue.length}</strong>&nbsp;deposit${depositsDue.length > 1 ? 's' : ''} due today</a>`);
+      if (lowStock.length)    alerts.push(`<a href="#asec-retail" class="dash-alert warn"><strong>${lowStock.length}</strong>&nbsp;product${lowStock.length > 1 ? 's' : ''} low on stock</a>`);
+      if (waitlist.length)    alerts.push(`<a href="#asec-waitlist" class="dash-alert"><strong>${waitlist.length}</strong>&nbsp;on the waitlist</a>`);
+      const alertsEl = document.getElementById('dash-alerts');
+      if (alertsEl) alertsEl.innerHTML = alerts.length ? `<div style="display:flex;gap:.6rem;flex-wrap:wrap">${alerts.join('')}</div>` : '';
+
+      // Today's agenda
+      const fmt = t => { const [h, m] = (t || '').split(':'); const hr = +h; return (hr % 12 || 12) + ':' + (m || '00') + (hr < 12 ? 'am' : 'pm'); };
+      const agendaEl = document.getElementById('today-agenda');
+      if (!agendaEl) return;
+      const heading = `<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:.5rem;margin-bottom:.8rem"><h3 style="margin:0;font-size:1rem">Today's agenda</h3><span class="muted" style="font-size:.82rem">${now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} · ${todays.length} appointment${todays.length !== 1 ? 's' : ''}</span></div>`;
+      if (!todays.length) { agendaEl.innerHTML = heading + `<p class="muted" style="font-size:.88rem;margin:0">No appointments scheduled today. 🌿</p>`; return; }
+      agendaEl.innerHTML = heading + `<div style="display:flex;flex-direction:column;gap:.45rem">` + todays.map(b => `
+        <div style="display:flex;align-items:center;gap:.8rem;padding:.5rem .7rem;border:1px solid var(--line);border-radius:10px;flex-wrap:wrap">
+          <div style="font-weight:600;min-width:66px;font-size:.9rem">${fmt(b.time)}</div>
+          <div style="flex:1;min-width:150px">
+            <div style="font-weight:500;font-size:.9rem">${esc(b.customer.name)} <span class="muted" style="font-weight:400">· ${esc(b.serviceName)}</span></div>
+            <div class="muted" style="font-size:.8rem">${esc(b.staffName)}${b.depositStatus === 'pending' ? ' · <span style="color:#a9772a">deposit due</span>' : ''}</div>
+          </div>
+          <span class="status ${b.status}">${b.status}</span>
+          ${b.status === 'confirmed' ? `<button class="btn btn-ghost btn-sm" onclick="setStatus('${b.id}','completed')" title="Mark completed">✓</button>
+          <button class="btn btn-ghost btn-sm" onclick="setStatus('${b.id}','no-show')" title="Mark no-show">✗</button>` : ''}
+        </div>`).join('') + `</div>`;
+    }
+
     async function load() {
       const commFrom = document.getElementById('comm-from') ? document.getElementById('comm-from').value : '';
       const commTo = document.getElementById('comm-to') ? document.getElementById('comm-to').value : '';
@@ -799,12 +850,14 @@
         <div class="stat"><div class="big">${money(stats.projectedRevenue)}</div><div class="lbl">Projected revenue</div></div>
         <div class="stat"><div class="big">${money(stats.actualRevenue)}</div><div class="lbl">Actual revenue</div></div>
         <div class="stat"><div class="big">${stats.cancelled}</div><div class="lbl">Cancelled</div></div>
+        <div class="stat"><div class="big">${stats.noShowRate != null ? stats.noShowRate + '%' : '—'}</div><div class="lbl">No-show rate (${stats.noShow || 0})</div></div>
         <div class="stat"><div class="big">${stats.totalBookings}</div><div class="lbl">All-time bookings</div></div>
         <div class="stat"><div class="big">${stats.totalPointsIssued || 0}</div><div class="lbl">Loyalty pts issued</div></div>
         <div class="stat"><div class="big">${stats.avgRating != null ? stats.avgRating + ' ★' : '—'}</div><div class="lbl">Avg rating (${stats.totalReviews || 0} reviews)</div></div>`;
       document.getElementById('byCat').innerHTML = bars(stats.byCategory, catLabels);
       document.getElementById('byStaff').innerHTML = bars(stats.byStaff, {});
       renderAnalytics(stats);
+      renderDashboardExtras(wlData);
       // Populate artist filter (preserve current selection)
       const bStaffSel = document.getElementById('bStaff');
       const prevStaff = bStaffSel.value;
