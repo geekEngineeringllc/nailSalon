@@ -195,7 +195,8 @@ function setSecurityHeaders(res) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src https://fonts.gstatic.com",
     "script-src 'self' 'unsafe-inline'",
-    "connect-src 'self'"
+    "connect-src 'self'",
+    "frame-src https://www.google.com https://maps.google.com"  // Google Maps embed on the location page
   ].join('; '));
 }
 
