@@ -558,6 +558,22 @@
         </div>
       </div>
 
+      <!-- Homepage content (feature cards + trust badges) -->
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin:2rem 0 .4rem">
+        <h3 style="margin:0">Homepage content</h3>
+      </div>
+      <div class="card" style="padding:1.6rem;max-width:680px">
+        <p class="muted" style="font-size:.85rem;margin:0 0 1rem">Edit the feature cards &amp; trust badges shown on the homepage. Use an emoji for each icon.</p>
+        <h4 style="margin:.4rem 0 .6rem;font-family:var(--font-body);font-size:.82rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft)">Feature cards</h4>
+        <div id="hc-vp"></div>
+        <h4 style="margin:1.2rem 0 .6rem;font-family:var(--font-body);font-size:.82rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft)">Trust badges</h4>
+        <div id="hc-trust"></div>
+        <div style="margin-top:1.2rem;display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" id="hc-save">Save content</button>
+          <span id="hc-msg" style="font-size:.85rem"></span>
+        </div>
+      </div>
+
       <!-- Homepage sections -->
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin:2rem 0 .4rem">
         <h3 style="margin:0">Homepage sections</h3>
@@ -603,7 +619,7 @@
     </section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js?v=14"></script>
+  <script src="js/common.js?v=15"></script>
   <script>
     function bars(obj, labels) {
       const entries = Object.entries(obj);
@@ -2408,6 +2424,38 @@
         saveBtn.disabled = false; saveBtn.textContent = 'Save hero';
         if (r.ok) {
           msg.style.color = '#2f7a45'; msg.textContent = '✓ Hero saved.';
+          window.__CFG__ = null; // bust cached config so the homepage picks up changes
+        } else {
+          msg.style.color = 'var(--rose-deep)'; msg.textContent = (r.data && r.data.error) || 'Could not save.';
+        }
+        setTimeout(() => { msg.textContent = ''; }, 4000);
+      });
+
+      // Homepage content — editable feature cards + trust badges (built from config)
+      function hcRow(it, group) {
+        it = it || {};
+        return `<div style="display:flex;gap:.5rem;margin-bottom:.5rem;align-items:flex-start" data-hc="${group}">
+          <input data-f="icon" value="${esc(it.icon || '')}" placeholder="✨" style="width:46px;text-align:center;padding:.5rem;border:1.5px solid var(--line);border-radius:8px;font-family:inherit">
+          <input data-f="title" value="${esc(it.title || '')}" placeholder="Title" style="flex:1;min-width:90px;padding:.5rem .7rem;border:1.5px solid var(--line);border-radius:8px;font-family:inherit">
+          <input data-f="text" value="${esc(it.text || '')}" placeholder="Short description" style="flex:2;min-width:140px;padding:.5rem .7rem;border:1.5px solid var(--line);border-radius:8px;font-family:inherit">
+        </div>`;
+      }
+      api.config().then(cfg => {
+        const s = cfg.salon || {};
+        document.getElementById('hc-vp').innerHTML = (s.valueProps || []).map(it => hcRow(it, 'vp')).join('') || hcRow({}, 'vp');
+        document.getElementById('hc-trust').innerHTML = (s.trust || []).map(it => hcRow(it, 'trust')).join('') || hcRow({}, 'trust');
+      });
+      document.getElementById('hc-save').addEventListener('click', async () => {
+        const saveBtn = document.getElementById('hc-save');
+        const msg = document.getElementById('hc-msg');
+        const collect = (group) => [...document.querySelectorAll(`[data-hc="${group}"]`)].map(row => {
+          const o = {}; row.querySelectorAll('input').forEach(inp => { o[inp.dataset.f] = inp.value; }); return o;
+        });
+        saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+        const r = await api.updateHomeContent({ valueProps: collect('vp'), trust: collect('trust') });
+        saveBtn.disabled = false; saveBtn.textContent = 'Save content';
+        if (r.ok) {
+          msg.style.color = '#2f7a45'; msg.textContent = '✓ Content saved.';
           window.__CFG__ = null; // bust cached config so the homepage picks up changes
         } else {
           msg.style.color = 'var(--rose-deep)'; msg.textContent = (r.data && r.data.error) || 'Could not save.';

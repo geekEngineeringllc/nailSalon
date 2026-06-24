@@ -71,7 +71,41 @@
       "eyebrow": "Beauty parlor & nail studio · Riverside",
       "headline": "Beauty, on your schedule.",
       "lead": "Nails, hair, skin and makeup under one elegant roof. Pick your service, choose your artist, and book a time that fits your day — all in under a minute."
-    }
+    },
+    "valueProps": [
+      {
+        "icon": "🗓️",
+        "title": "Real-time booking",
+        "text": "See live openings by artist and chair — no phone tag, no waiting on hold."
+      },
+      {
+        "icon": "💖",
+        "title": "Your favorite artist",
+        "text": "Request the hands you trust, or let us match you with the right specialist."
+      },
+      {
+        "icon": "✨",
+        "title": "Clean, calm space",
+        "text": "Sanitized stations, premium products, and a little quiet luxury every visit."
+      }
+    ],
+    "trust": [
+      {
+        "icon": "🧼",
+        "title": "Hospital-grade hygiene",
+        "text": "Tools sterilized in an autoclave; single-use files & buffers on every service."
+      },
+      {
+        "icon": "🎓",
+        "title": "Licensed artists",
+        "text": "Every technician is state-licensed and trained in the latest techniques."
+      },
+      {
+        "icon": "🌿",
+        "title": "Clean, vegan products",
+        "text": "Cruelty-free, low-odor polishes and premium care for sensitive skin & nails."
+      }
+    ]
   },
   "categories": [
     {

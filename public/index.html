@@ -73,7 +73,7 @@
 
     <!-- Value props -->
     <section class="container" data-section="valueProps" style="padding-top:1rem">
-      <div class="grid grid-3">
+      <div class="grid grid-3" id="valueprops-grid">
         <div class="card" data-reveal data-reveal-delay="1"><div class="icon">🗓️</div><h3>Real-time booking</h3><p class="muted">See live openings by artist and chair — no phone tag, no waiting on hold.</p></div>
         <div class="card" data-reveal data-reveal-delay="2"><div class="icon">💖</div><h3>Your favorite artist</h3><p class="muted">Request the hands you trust, or let us match you with the right specialist.</p></div>
         <div class="card" data-reveal data-reveal-delay="3"><div class="icon">✨</div><h3>Clean, calm space</h3><p class="muted">Sanitized stations, premium products, and a little quiet luxury every visit.</p></div>
@@ -93,7 +93,7 @@
 
     <!-- Trust band -->
     <section class="container" data-section="trust" style="padding-top:0">
-      <div class="trust-band">
+      <div class="trust-band" id="trust-grid">
         <div class="trust-item" data-reveal data-reveal-delay="1"><div class="t-ic">🧼</div><div><h4>Hospital-grade hygiene</h4><p>Tools sterilized in an autoclave; single-use files &amp; buffers on every service.</p></div></div>
         <div class="trust-item" data-reveal data-reveal-delay="2"><div class="t-ic">🎓</div><div><h4>Licensed artists</h4><p>Every technician is state-licensed and trained in the latest techniques.</p></div></div>
         <div class="trust-item" data-reveal data-reveal-delay="3"><div class="t-ic">🌿</div><div><h4>Clean, vegan products</h4><p>Cruelty-free, low-odor polishes and premium care for sensitive skin &amp; nails.</p></div></div>
@@ -174,7 +174,7 @@
   </main>
 
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js?v=14"></script>
+  <script src="js/common.js?v=15"></script>
   <script>
     const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
     const GRADS = ['#c98a86','#5a3d4f','#c8a96a','#a85f5b','#9d7b8c','#d8a48f','#7a5c6e','#caa37a'];
@@ -229,6 +229,14 @@
       if (hero.eyebrow)  document.getElementById('hero-eyebrow').textContent  = hero.eyebrow;
       if (hero.headline) document.getElementById('hero-headline').textContent = hero.headline;
       if (hero.lead)     document.getElementById('hero-lead').textContent     = hero.lead;
+
+      // Editable feature cards + trust badges (admin → Homepage content)
+      const vp = (cfg.salon && cfg.salon.valueProps) || [];
+      if (vp.length) document.getElementById('valueprops-grid').innerHTML = vp.map((it, i) =>
+        `<div class="card" data-reveal data-reveal-delay="${(i % 3) + 1}"><div class="icon">${esc(it.icon || '✨')}</div><h3>${esc(it.title || '')}</h3><p class="muted">${esc(it.text || '')}</p></div>`).join('');
+      const tr = (cfg.salon && cfg.salon.trust) || [];
+      if (tr.length) document.getElementById('trust-grid').innerHTML = tr.map((it, i) =>
+        `<div class="trust-item" data-reveal data-reveal-delay="${(i % 3) + 1}"><div class="t-ic">${esc(it.icon || '✨')}</div><div><h4>${esc(it.title || '')}</h4><p>${esc(it.text || '')}</p></div></div>`).join('');
 
       // hours pill
       renderHoursPill(cfg.salon && cfg.salon.hours);

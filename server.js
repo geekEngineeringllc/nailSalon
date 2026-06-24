@@ -3056,6 +3056,29 @@ async function handleAPI(req, res, url) {
     });
   }
 
+  // PATCH /api/admin/home-content — edit feature cards (valueProps) + trust items
+  if (req.method === 'PATCH' && url.pathname === '/api/admin/home-content') {
+    const body = await readBody(req);
+    const clean = (arr) => (Array.isArray(arr) ? arr : [])
+      .map((it) => ({
+        icon: String((it && it.icon) || '').trim().slice(0, 8),
+        title: String((it && it.title) || '').trim().slice(0, 80),
+        text: String((it && it.text) || '').trim().slice(0, 300),
+      }))
+      .filter((it) => it.title || it.text)
+      .slice(0, 6);
+    const valueProps = clean(body.valueProps);
+    const trust = clean(body.trust);
+    return withLock(() => {
+      const fresh = loadDB();
+      if (body.valueProps !== undefined) fresh.salon.valueProps = valueProps;
+      if (body.trust !== undefined) fresh.salon.trust = trust;
+      saveDB(fresh);
+      audit(req, 'admin.home-content.update', { valueProps: valueProps.length, trust: trust.length });
+      return sendJSON(res, 200, { ok: true, valueProps: fresh.salon.valueProps, trust: fresh.salon.trust });
+    });
+  }
+
   return sendJSON(res, 404, { error: 'Unknown API route.' });
 }
 

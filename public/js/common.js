@@ -274,6 +274,7 @@ const api = {
   async updateHomeSections(payload) { const r = await fetch('/api/admin/home-sections', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async updateNavPages(payload) { const r = await fetch('/api/admin/nav-pages', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async updateHero(payload) { const r = await fetch('/api/admin/hero', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); return { ok: r.ok, status: r.status, data: await r.json() }; },
+  async updateHomeContent(payload) { const r = await fetch('/api/admin/home-content', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async marketingOptout() { const r = await fetch('/api/marketing/optout', { method: 'POST' }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async marketingOptin() { const r = await fetch('/api/marketing/optin', { method: 'POST' }); return { ok: r.ok, status: r.status, data: await r.json() }; },
   async adminBroadcasts() { return (await fetch('/api/admin/broadcasts')).json(); },
