@@ -51,13 +51,13 @@
     <!-- Hero -->
     <section class="container hero">
       <div>
-        <p class="eyebrow">Beauty parlor &amp; nail studio · Riverside</p>
+        <p class="eyebrow" id="hero-eyebrow">Beauty parlor &amp; nail studio · Riverside</p>
         <div id="hours-pill" style="display:inline-flex;align-items:center;gap:.45rem;font-family:var(--font-body);font-size:.8rem;font-weight:500;margin-bottom:.9rem;padding:.32rem .8rem;border-radius:50px;background:var(--bg-soft);border:1px solid var(--line)">
           <span id="hours-dot" style="width:7px;height:7px;border-radius:50%;background:var(--line)"></span>
           <span id="hours-text" style="color:var(--ink-soft)">Checking hours…</span>
         </div>
-        <h1>Beauty, on your<br>schedule.</h1>
-        <p class="lead">Nails, hair, skin and makeup under one elegant roof. Pick your service, choose your artist, and book a time that fits your day — all in under a minute.</p>
+        <h1 id="hero-headline">Beauty, on your schedule.</h1>
+        <p class="lead" id="hero-lead">Nails, hair, skin and makeup under one elegant roof. Pick your service, choose your artist, and book a time that fits your day — all in under a minute.</p>
         <div class="hero-cta">
           <a class="btn btn-primary" href="booking.html">Book my appointment</a>
           <a class="btn btn-ghost" href="services.html">View the menu</a>
@@ -174,7 +174,7 @@
   </main>
 
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js?v=13"></script>
+  <script src="js/common.js?v=14"></script>
   <script>
     const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
     const GRADS = ['#c98a86','#5a3d4f','#c8a96a','#a85f5b','#9d7b8c','#d8a48f','#7a5c6e','#caa37a'];
@@ -223,6 +223,12 @@
       document.querySelectorAll('[data-section]').forEach(el => {
         if (HS[el.dataset.section] === false) el.style.display = 'none';
       });
+
+      // Editable hero copy (admin → Homepage hero)
+      const hero = (cfg.salon && cfg.salon.hero) || {};
+      if (hero.eyebrow)  document.getElementById('hero-eyebrow').textContent  = hero.eyebrow;
+      if (hero.headline) document.getElementById('hero-headline').textContent = hero.headline;
+      if (hero.lead)     document.getElementById('hero-lead').textContent     = hero.lead;
 
       // hours pill
       renderHoursPill(cfg.salon && cfg.salon.hours);

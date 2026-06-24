@@ -3039,6 +3039,23 @@ async function handleAPI(req, res, url) {
     });
   }
 
+  // PATCH /api/admin/hero — edit the homepage hero copy
+  if (req.method === 'PATCH' && url.pathname === '/api/admin/hero') {
+    const body = await readBody(req);
+    const hero = {};
+    for (const k of ['eyebrow', 'headline', 'lead']) {
+      if (typeof body[k] === 'string') hero[k] = body[k].trim();
+    }
+    if (!hero.headline) return sendJSON(res, 400, { error: 'A headline is required.' });
+    return withLock(() => {
+      const fresh = loadDB();
+      fresh.salon.hero = Object.assign({}, fresh.salon.hero, hero);
+      saveDB(fresh);
+      audit(req, 'admin.hero.update', hero);
+      return sendJSON(res, 200, { ok: true, hero: fresh.salon.hero });
+    });
+  }
+
   return sendJSON(res, 404, { error: 'Unknown API route.' });
 }
 

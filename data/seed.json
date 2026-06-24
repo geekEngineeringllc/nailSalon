@@ -66,6 +66,11 @@
       "faq": true,
       "giftcard": true,
       "location": true
+    },
+    "hero": {
+      "eyebrow": "Beauty parlor & nail studio · Riverside",
+      "headline": "Beauty, on your schedule.",
+      "lead": "Nails, hair, skin and makeup under one elegant roof. Pick your service, choose your artist, and book a time that fits your day — all in under a minute."
     }
   },
   "categories": [

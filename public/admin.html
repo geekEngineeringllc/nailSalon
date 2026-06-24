@@ -543,6 +543,21 @@
         </div>
       </div>
 
+      <!-- Homepage hero -->
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin:2rem 0 .4rem">
+        <h3 style="margin:0">Homepage hero</h3>
+      </div>
+      <div class="card" style="padding:1.6rem;max-width:680px">
+        <p class="muted" style="font-size:.85rem;margin:0 0 1.2rem">The headline guests see first on the homepage.</p>
+        <div class="field" style="margin:0"><label>Eyebrow (small label above the headline)</label><input id="hero-eyebrow" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"></div>
+        <div class="field" style="margin:.8rem 0 0"><label>Headline</label><input id="hero-headline" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"></div>
+        <div class="field" style="margin:.8rem 0 0"><label>Sub-text</label><textarea id="hero-lead" rows="3" style="width:100%;padding:.7rem 1rem;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;resize:vertical"></textarea></div>
+        <div style="margin-top:1.2rem;display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" id="hero-save">Save hero</button>
+          <span id="hero-msg" style="font-size:.85rem"></span>
+        </div>
+      </div>
+
       <!-- Homepage sections -->
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin:2rem 0 .4rem">
         <h3 style="margin:0">Homepage sections</h3>
@@ -588,7 +603,7 @@
     </section>
   </main>
   <footer class="site-footer" id="site-footer"></footer>
-  <script src="js/common.js?v=13"></script>
+  <script src="js/common.js?v=14"></script>
   <script>
     function bars(obj, labels) {
       const entries = Object.entries(obj);
@@ -2372,6 +2387,28 @@
         if (r.ok) {
           msg.style.color = '#2f7a45'; msg.textContent = '✓ Navigation updated.';
           window.__CFG__ = null; // bust cached config so nav/footer pick up changes
+        } else {
+          msg.style.color = 'var(--rose-deep)'; msg.textContent = (r.data && r.data.error) || 'Could not save.';
+        }
+        setTimeout(() => { msg.textContent = ''; }, 4000);
+      });
+
+      // Homepage hero — populate + save
+      api.config().then(cfg => {
+        const h = (cfg.salon && cfg.salon.hero) || {};
+        ['eyebrow','headline','lead'].forEach(k => { const el = document.getElementById('hero-' + k); if (el) el.value = h[k] || ''; });
+      });
+      document.getElementById('hero-save').addEventListener('click', async () => {
+        const saveBtn = document.getElementById('hero-save');
+        const msg = document.getElementById('hero-msg');
+        const payload = {};
+        ['eyebrow','headline','lead'].forEach(k => { payload[k] = (document.getElementById('hero-' + k) || {}).value || ''; });
+        saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+        const r = await api.updateHero(payload);
+        saveBtn.disabled = false; saveBtn.textContent = 'Save hero';
+        if (r.ok) {
+          msg.style.color = '#2f7a45'; msg.textContent = '✓ Hero saved.';
+          window.__CFG__ = null; // bust cached config so the homepage picks up changes
         } else {
           msg.style.color = 'var(--rose-deep)'; msg.textContent = (r.data && r.data.error) || 'Could not save.';
         }
