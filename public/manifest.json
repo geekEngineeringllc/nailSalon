@@ -1,8 +1,10 @@
 {
+  "id": "/",
   "name": "Lumière Beauty & Nail Studio",
   "short_name": "Lumière",
   "description": "Book beauty appointments at Lumière Beauty & Nail Studio in Riverside.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#fdfaf7",
   "theme_color": "#b0657a",
@@ -10,5 +12,10 @@
     { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ],
   "categories": ["lifestyle", "shopping"],
-  "lang": "en"
+  "lang": "en",
+  "shortcuts": [
+    { "name": "Book an appointment", "short_name": "Book", "url": "/booking.html", "description": "Start a new booking" },
+    { "name": "Manage my appointment", "short_name": "Manage", "url": "/manage.html", "description": "Reschedule or cancel a visit" },
+    { "name": "My account", "short_name": "Account", "url": "/account.html", "description": "Points, rewards & profile" }
+  ]
 }
