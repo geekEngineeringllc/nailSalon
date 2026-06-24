@@ -1022,6 +1022,55 @@ function loadEsc() {
     const icsMissing = await reqRaw('GET', '/api/bookings/ics?ref=');
     ok('M9.4: missing params → 400', icsMissing.s === 400, icsMissing.s);
 
+    // ===== M22: admin content management + dynamic area-based SEO =====
+    // Salon settings (contact + location fields)
+    const salBad = await req('PATCH', '/api/admin/salon', { name: ' ' });
+    ok('M22: salon PATCH blank name → 400', salBad.s === 400, salBad.b);
+    const salOk = await req('PATCH', '/api/admin/salon', { name: 'Lumière Test', city: 'Springfield', region: 'IL', country: 'US' });
+    ok('M22: salon PATCH → 200 + saved', salOk.s === 200 && salOk.b.salon.city === 'Springfield', salOk.b);
+    const cfgSalon = await req('GET', '/api/config');
+    ok('M22: /api/config reflects salon city', cfgSalon.b.salon.city === 'Springfield', cfgSalon.b.salon.city);
+
+    // Homepage hero (headline required)
+    const heroBad = await req('PATCH', '/api/admin/hero', { headline: ' ' });
+    ok('M22: hero PATCH blank headline → 400', heroBad.s === 400, heroBad.b);
+    const heroOk = await req('PATCH', '/api/admin/hero', { headline: 'Nails worth showing off.', eyebrow: 'Hi' });
+    ok('M22: hero PATCH → 200 + saved', heroOk.s === 200 && heroOk.b.hero.headline === 'Nails worth showing off.', heroOk.b);
+
+    // Homepage section visibility + gallery preview count (clamped 1..24)
+    const hsOk = await req('PATCH', '/api/admin/home-sections', { sections: { testimonials: false }, galleryPreviewCount: 5 });
+    ok('M22: home-sections PATCH → 200 + hides section', hsOk.s === 200 && hsOk.b.homeSections.testimonials === false, hsOk.b);
+    ok('M22: home-sections count saved', hsOk.b.galleryPreviewCount === 5, hsOk.b.galleryPreviewCount);
+    const hsClamp = await req('PATCH', '/api/admin/home-sections', { sections: {}, galleryPreviewCount: 999 });
+    ok('M22: home-sections count clamped to 24', hsClamp.b.galleryPreviewCount === 24, hsClamp.b.galleryPreviewCount);
+
+    // Homepage content — editable feature cards + trust badges
+    const hcOk = await req('PATCH', '/api/admin/home-content', { valueProps: [{ icon: '⚡', title: 'Fast', text: 'x' }], trust: [{ icon: '🏆', title: 'Best', text: 'y' }] });
+    ok('M22: home-content PATCH → 200 + saved', hcOk.s === 200 && hcOk.b.valueProps[0].title === 'Fast' && hcOk.b.trust[0].title === 'Best', hcOk.b);
+
+    // Nav-page visibility → drops from sitemap, still reachable by URL
+    const npOk = await req('PATCH', '/api/admin/nav-pages', { pages: { gallery: false } });
+    ok('M22: nav-pages PATCH → 200 + hides page', npOk.s === 200 && npOk.b.navPages.gallery === false, npOk.b);
+    const smNav = await reqRaw('GET', '/sitemap.xml');
+    ok('M22: hidden page absent from sitemap', !smNav.body.includes('/gallery.html'), null);
+    ok('M22: visible page present in sitemap', smNav.body.includes('/services.html'), null);
+    const galStill = await reqRaw('GET', '/gallery.html');
+    ok('M22: hidden page still reachable by URL', galStill.s === 200, galStill.s);
+
+    // robots.txt
+    const robots = await reqRaw('GET', '/robots.txt');
+    ok('M22: robots.txt → 200 + Sitemap line', robots.s === 200 && robots.body.includes('Sitemap:'), robots.body.slice(0, 60));
+
+    // Dynamic, area-based SEO injected into served homepage HTML
+    const homeHtml = await reqRaw('GET', '/');
+    ok('M22: home injects a <title>', /<title>[^<]+<\/title>/.test(homeHtml.body), null);
+    ok('M22: home injects keywords meta', /name="keywords"/.test(homeHtml.body), null);
+    ok('M22: home title reflects salon city', /Springfield/.test(homeHtml.body), null);
+    const ldMatch = homeHtml.body.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    let ldOk = false;
+    try { const g = JSON.parse((ldMatch ? ldMatch[1] : '').replace(/\\u003c/g, '<')); ldOk = Array.isArray(g['@graph']) && g['@graph'].length > 0; } catch { /* invalid */ }
+    ok('M22: home JSON-LD is valid with a @graph', ldOk, null);
+
   } catch (e) {
     fail++; console.log('  FAIL harness error →', e.message); if (log) console.log(log);
   } finally {
