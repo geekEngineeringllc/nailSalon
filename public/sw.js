@@ -1,4 +1,4 @@
-const CACHE = 'lumiere-v5';
+const CACHE = 'lumiere-v6';
 const SHELL = [
   '/css/styles.css',
   '/js/common.js?v=11',

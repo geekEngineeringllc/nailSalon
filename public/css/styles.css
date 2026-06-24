@@ -112,7 +112,7 @@ body {
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; line-height: 1.08; margin: 0 0 .4em; letter-spacing: -.01em; }
-h1 { font-size: var(--fs-h1); }
+h1 { font-size: var(--fs-h1); font-weight: 700; letter-spacing: -.022em; }
 h2 { font-size: var(--fs-h2); }
 h3 { font-size: var(--fs-h3); }
 h4 { font-size: var(--fs-h4); }
@@ -138,18 +138,26 @@ section { padding: 5.5rem 0; }
 /* ---- Buttons ---- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
-  padding: .85rem 1.7rem; border-radius: var(--r-pill); font-weight: 600;
-  font-size: .92rem; cursor: pointer; border: 1.5px solid transparent;
-  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease);
+  padding: .9rem 1.8rem; border-radius: var(--r-pill); font-weight: 600;
+  font-size: .92rem; line-height: 1; letter-spacing: .01em; min-height: 44px;
+  cursor: pointer; border: 1.5px solid transparent; position: relative; isolation: isolate;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease), filter var(--dur) var(--ease);
 }
 .btn:hover { transform: translateY(-2px); }
-.btn:active { transform: translateY(0); }
-.btn-primary { background: var(--rose-deep); color: #fff; box-shadow: var(--shadow-md); }
-.btn-primary:hover { background: var(--plum); box-shadow: var(--shadow-lg); }
+.btn:active { transform: translateY(0) scale(.98); }
+/* Primary CTA — gradient depth, crisp white text, brand glow + hover micro-interaction.
+   NOTE: scoped nav rule below uses :not(.btn) so .nav-links never overrides this colour. */
+.btn-primary {
+  background: linear-gradient(135deg, var(--rose-deep) 0%, var(--plum) 100%);
+  color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,.2);
+  box-shadow: 0 10px 24px -12px rgba(168,95,91,.75);
+}
+.btn-primary:hover { filter: brightness(1.06) saturate(1.05); box-shadow: 0 16px 34px -12px rgba(90,61,79,.8); }
 .btn-ghost { background: transparent; border-color: var(--ink); color: var(--ink); }
 .btn-ghost:hover { background: var(--ink); color: var(--bg); }
-.btn-gold { background: var(--gold); color: #3a2c10; }
-.btn-sm { padding: .55rem 1.1rem; font-size: .82rem; }
+.btn-gold { background: var(--gold); color: #3a2c10; box-shadow: 0 10px 24px -14px rgba(200,169,106,.9); }
+.btn-gold:hover { filter: brightness(1.05); }
+.btn-sm { padding: .55rem 1.15rem; font-size: .82rem; min-height: 0; }
 
 /* ---- Skip navigation (accessibility) ---- */
 .skip-link { position:absolute; top:-100%;left:0;z-index:200;padding:.5rem 1rem;background:var(--rose-deep);color:#fff;font-size:.9rem;border-radius:0 0 8px 0;text-decoration:none;transition:top .15s; }
@@ -170,8 +178,14 @@ section { padding: 5.5rem 0; }
 .brand { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; letter-spacing: .5px; }
 .brand span { color: var(--rose-deep); }
 .nav-links { display: flex; gap: 1.8rem; align-items: center; list-style: none; margin: 0; padding: 0; }
-.nav-links a { font-size: .9rem; font-weight: 500; color: var(--ink-soft); transition: color .2s; }
-.nav-links a:hover, .nav-links a.active { color: var(--accent-text); }
+/* Plain nav links only — :not(.btn) keeps the Book Now button's own colours. */
+.nav-links a:not(.btn) { font-size: .9rem; font-weight: 500; color: var(--ink-soft); position: relative; transition: color var(--dur) var(--ease); }
+.nav-links a:not(.btn)::after {
+  content: ""; position: absolute; left: 0; right: 100%; bottom: -5px; height: 2px;
+  background: var(--accent-text); border-radius: 2px; transition: right var(--dur) var(--ease);
+}
+.nav-links a:not(.btn):hover, .nav-links a:not(.btn).active { color: var(--accent-text); }
+.nav-links a:not(.btn):hover::after, .nav-links a:not(.btn).active::after { right: 0; }
 .nav-toggle { display: none; background: none; border: none; font-size: 1.6rem; cursor: pointer; color: inherit; }
 .theme-toggle {
   background: none; border: 1.5px solid currentColor; color: inherit;
@@ -186,14 +200,15 @@ section { padding: 5.5rem 0; }
 .book-fab {
   position: fixed; right: clamp(1rem, 3vw, 2rem); bottom: clamp(1rem, 3vw, 2rem);
   z-index: var(--z-fab); display: inline-flex; align-items: center; gap: .5rem;
-  padding: .9rem 1.55rem; border-radius: var(--r-pill);
-  background: var(--rose-deep); color: #fff; font-weight: 600; font-size: .92rem;
-  box-shadow: var(--shadow-lg); border: none; cursor: pointer; font-family: inherit;
+  padding: .95rem 1.6rem; border-radius: var(--r-pill);
+  background: linear-gradient(135deg, var(--rose-deep) 0%, var(--plum) 100%);
+  color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,.2); font-weight: 600; font-size: .92rem;
+  box-shadow: 0 16px 36px -12px rgba(90,61,79,.85); border: none; cursor: pointer; font-family: inherit;
   opacity: 0; transform: translateY(16px) scale(.96); pointer-events: none;
-  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease), background var(--dur) var(--ease);
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease), filter var(--dur) var(--ease);
 }
 .book-fab.show { opacity: 1; transform: none; pointer-events: auto; }
-.book-fab:hover { background: var(--plum); transform: translateY(-3px); }
+.book-fab:hover { filter: brightness(1.07) saturate(1.05); transform: translateY(-3px); }
 @media (max-width: 560px) { .book-fab { display: none; } }
 
 /* ---- Sticky mobile action bar (book + call) ---- */
@@ -220,14 +235,20 @@ section { padding: 5.5rem 0; }
 .hero-art {
   border-radius: var(--r-xl); min-height: 460px;
   background:
-    radial-gradient(circle at 30% 20%, rgba(255,255,255,.5), transparent 45%),
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,.55), transparent 45%),
+    radial-gradient(circle at 80% 80%, rgba(200,169,106,.35), transparent 50%),
     linear-gradient(135deg, var(--rose) 0%, var(--plum) 100%);
+  background-size: 180% 180%;
+  animation: heroDrift 16s ease-in-out infinite;
   position: relative; overflow: hidden; box-shadow: var(--shadow-lg);
 }
+@keyframes heroDrift { 0%, 100% { background-position: 0% 0%; } 50% { background-position: 100% 100%; } }
 .hero-art::after {
   content: "💅"; position: absolute; inset: 0; display: grid; place-items: center;
-  font-size: 8rem; opacity: .9; filter: drop-shadow(0 10px 20px rgba(0,0,0,.25));
+  font-size: 8rem; opacity: .92; filter: drop-shadow(0 14px 24px rgba(0,0,0,.28));
+  animation: floaty 6s ease-in-out infinite;
 }
+@keyframes floaty { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-14px) rotate(2deg); } }
 .hero h1 { margin-bottom: .3em; }
 .hero p.lead { font-size: 1.15rem; color: var(--ink-soft); max-width: 30rem; margin-bottom: 1.8rem; }
 .hero-cta { display: flex; gap: 1rem; flex-wrap: wrap; }
@@ -302,6 +323,8 @@ section { padding: 5.5rem 0; }
   transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 .gallery .tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.gallery .tile img { transition: transform var(--dur-slow) var(--ease); }
+.gallery .tile:hover img { transform: scale(1.07); }
 .gallery .tile.wide { grid-column: span 2; aspect-ratio: 2 / 1; }
 .gallery .tile.tall { grid-row: span 2; aspect-ratio: 1 / 2; }
 @media (max-width: 900px) {
@@ -436,7 +459,7 @@ table.bookings th { background: var(--bg-soft); font-weight: 600; }
 
 /* ---- Scroll-reveal (driven by IntersectionObserver in common.js) ---- */
 [data-reveal] {
-  opacity: 0; transform: translateY(14px);
+  opacity: 0; transform: translateY(18px) scale(.985);
   transition: opacity var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease);
   will-change: opacity, transform;
 }
@@ -469,6 +492,8 @@ table.bookings th { background: var(--bg-soft); font-weight: 600; }
   .gallery .tile.wide, .gallery .tile.tall { grid-column: span 1; grid-row: span 1; aspect-ratio: 1; }
   section { padding: 3.5rem 0; }
   .cta-band { padding: 2.2rem 1.4rem; }
+  .hero-cta { flex-direction: column; align-items: stretch; }
+  .hero-cta .btn { width: 100%; }
   /* Keep the booking wizard's Back / Next reachable while scrolling long steps */
   .wizard-nav {
     position: sticky; bottom: 0; z-index: 5;
